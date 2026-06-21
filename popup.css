@@ -72,6 +72,11 @@ select {
   font: inherit;
 }
 
+option {
+  color: #1f2933;
+  background: #ffffff;
+}
+
 select:focus {
   border-color: #2f80ed;
   outline: 2px solid rgba(47, 128, 237, 0.2);
