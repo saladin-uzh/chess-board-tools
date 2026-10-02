@@ -65,6 +65,9 @@
       savedKeybindings = normalizeKeybindings(null);
       renderKeybindings(savedKeybindings);
       setStatus("Settings unavailable. Using defaults.", "error");
+    } finally {
+      confirmSelect.disabled = false;
+      cancelSelect.disabled = false;
     }
   }
 

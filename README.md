@@ -46,6 +46,10 @@ shows a short description of the extension and lets you change the confirmation
 and cancellation keys. Changes are saved automatically and are applied to open
 Chess.com tabs without reloading the page.
 
+Letter shortcuts match the letter produced by the active keyboard layout,
+regardless of its physical position. Settings load before shortcuts and popup
+controls become active.
+
 The extension handles a shortcut only when the corresponding visible and
 enabled confirmation or cancellation button is present. It ignores key events
 inside form controls, text fields, editable elements, and shortcuts combined
@@ -74,3 +78,8 @@ The content script runs only on:
 The extension uses the `storage` permission only to save your shortcut settings.
 It makes no external network requests and does not collect or transmit data. It
 runs only on the listed Chess.com URLs.
+
+## Tests
+
+With Node.js 18 or newer, run `node --test tests/extension.test.cjs`. The tests
+use mocked DOM and Chrome storage APIs; they do not require a Chess.com account.

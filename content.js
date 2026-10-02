@@ -75,9 +75,9 @@
 
     let button = null;
 
-    if (event.code === keybindings.confirmKeyCode) {
+    if (matchesKeybinding(event, keybindings.confirmKeyCode)) {
       button = findConfirmButton();
-    } else if (event.code === keybindings.cancelKeyCode) {
+    } else if (matchesKeybinding(event, keybindings.cancelKeyCode)) {
       button = findCancelButton();
     }
 
@@ -88,6 +88,14 @@
     button.click();
     event.preventDefault();
     event.stopImmediatePropagation();
+  }
+
+  function matchesKeybinding(event, keyCode) {
+    if (keyCode.startsWith("Key")) {
+      return event.key.toUpperCase() === keyCode.slice(3);
+    }
+
+    return event.code === keyCode;
   }
 
   async function loadKeybindings() {
@@ -107,7 +115,8 @@
     keybindings = normalizeKeybindings(changes[KEYBINDING_STORAGE_KEY].newValue);
   });
 
-  loadKeybindings();
-  window.addEventListener("keydown", handleKeydown, true);
-  console.info("[Chess.com Confirm Move Hotkeys] Initialized.");
+  loadKeybindings().then(() => {
+    window.addEventListener("keydown", handleKeydown, true);
+    console.info("[Chess.com Confirm Move Hotkeys] Initialized.");
+  });
 })();
