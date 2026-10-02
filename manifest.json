@@ -2,12 +2,17 @@
   "manifest_version": 3,
   "name": "Chess.com Confirm Move Hotkeys",
   "version": "0.1.0",
-  "description": "Confirm or cancel Chess.com moves with Space and Escape.",
+  "description": "Confirm or cancel Chess.com moves with configurable keyboard shortcuts.",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
+  },
+  "permissions": ["storage"],
+  "action": {
+    "default_title": "Chess.com Confirm Move Hotkeys",
+    "default_popup": "popup.html"
   },
   "content_scripts": [
     {
@@ -16,7 +21,7 @@
         "https://www.chess.com/game/*",
         "https://www.chess.com/analysis/game/*"
       ],
-      "js": ["content.js"],
+      "js": ["settings.js", "content.js"],
       "run_at": "document_idle"
     }
   ]

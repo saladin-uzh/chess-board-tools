@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chess.com Confirm Move Hotkeys</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup">
+      <header class="popup__header">
+        <img
+          class="popup__icon"
+          src="icons/icon-48.png"
+          alt=""
+          width="32"
+          height="32"
+        >
+        <div>
+          <h1>Confirm Move Hotkeys</h1>
+          <p>Confirm or cancel Chess.com move prompts from the keyboard.</p>
+        </div>
+      </header>
+
+      <form class="settings" id="settings-form">
+        <label class="field" for="confirm-key">
+          <span>Confirm move key</span>
+          <select id="confirm-key" name="confirmKeyCode" disabled></select>
+        </label>
+
+        <label class="field" for="cancel-key">
+          <span>Cancel move key</span>
+          <select id="cancel-key" name="cancelKeyCode" disabled></select>
+        </label>
+
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+      </form>
+    </main>
+
+    <script src="settings.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
