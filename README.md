@@ -47,8 +47,8 @@ and cancellation keys. Changes are saved automatically and are applied to open
 Chess.com tabs without reloading the page.
 
 Letter shortcuts match the letter produced by the active keyboard layout,
-regardless of its physical position. Settings load before shortcuts and popup
-controls become active.
+regardless of its physical position. Settings load before shortcuts become
+active. Popup controls are disabled while settings load or save.
 
 The extension handles a shortcut only when the corresponding visible and
 enabled confirmation or cancellation button is present. It ignores key events

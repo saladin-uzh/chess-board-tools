@@ -87,8 +87,9 @@ function contentHarness() {
   };
 }
 
-function popupHarness() {
+function popupHarness(delayedSave = false) {
   const storage = deferred();
+  const save = deferred();
   const writes = [];
   let failSave = false;
   class Select {
@@ -127,6 +128,7 @@ function popupHarness() {
           get: () => storage.promise,
           async set(value) {
             if (failSave) throw new Error("Storage unavailable");
+            if (delayedSave) await save.promise;
             writes.push(plain(value));
           },
         },
@@ -135,7 +137,7 @@ function popupHarness() {
   });
   run(context, "settings.js");
   run(context, "popup.js");
-  return { storage, confirm, cancel, status, writes,
+  return { storage, save, confirm, cancel, status, writes,
     failSave: () => { failSave = true; } };
 }
 
@@ -220,6 +222,25 @@ test("popup enables defaults after a failed initial read", async () => {
   assert.equal(app.status.textContent, "Settings unavailable. Using defaults.");
 });
 
+test("popup blocks overlapping changes until the pending save completes", async () => {
+  const app = popupHarness(true);
+  app.storage.resolve({});
+  await flush();
+  const pending = app.confirm.choose("KeyA");
+  assert.equal(app.confirm.disabled, true);
+  assert.equal(app.cancel.disabled, true);
+  await app.cancel.choose("KeyA");
+  assert.equal(app.confirm.value, "KeyA");
+  assert.equal(app.cancel.value, "Escape");
+  app.save.resolve();
+  await pending;
+  assert.deepEqual(app.writes, [{ keybindings: { confirmKeyCode: "KeyA", cancelKeyCode: "Escape" } }]);
+  assert.equal(app.confirm.disabled, false);
+  assert.equal(app.cancel.disabled, false);
+  await app.cancel.choose("KeyS");
+  assert.deepEqual(app.writes[1], { keybindings: { confirmKeyCode: "KeyA", cancelKeyCode: "KeyS" } });
+});
+
 test("popup rejects duplicate keys and restores settings after a failed save", async () => {
   const app = popupHarness();
   app.storage.resolve({});
@@ -232,4 +253,6 @@ test("popup rejects duplicate keys and restores settings after a failed save", a
   await app.confirm.choose("KeyS");
   assert.equal(app.confirm.value, "KeyA");
   assert.equal(app.status.textContent, "Could not save settings.");
+  assert.equal(app.confirm.disabled, false);
+  assert.equal(app.cancel.disabled, false);
 });

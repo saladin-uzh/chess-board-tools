@@ -79,6 +79,8 @@
     }
 
     const nextKeybindings = getSelectedKeybindings();
+    confirmSelect.disabled = true;
+    cancelSelect.disabled = true;
 
     try {
       await chrome.storage.sync.set({
@@ -89,6 +91,9 @@
     } catch (error) {
       restoreSavedKeybindings();
       setStatus("Could not save settings.", "error");
+    } finally {
+      confirmSelect.disabled = false;
+      cancelSelect.disabled = false;
     }
   }
 
