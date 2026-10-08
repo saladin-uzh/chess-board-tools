@@ -164,8 +164,11 @@ Real unpacked-extension checks in Chrome for Testing:
 
 The user drew seven arrows on the analysis board. Its direct `svg.arrows` layer
 had computed `z-index: auto`, below fog at 5. The new scoped CSS rule was applied
-through DevTools on that board: arrows computed to 6 and remained clearly visible
-across fogged cells. The rule applies only while a direct fog overlay exists.
+through DevTools on that board: arrows remained clearly visible across fogged
+cells. Cell highlights share one host class for annotations and move highlights;
+the final rule raises that layer to 6 and arrows to 7, above fog at 5. Right-click
+annotations remained bright at 80% fog. Without the fog class, both host layers
+returned to `auto`. The rules apply only while a direct fog overlay exists.
 Native CUA supports left drag and right click but not right drag.
 Live move-confirmation hotkeys are not exercised
 on standalone analysis because it has no move-confirmation prompt; all eight

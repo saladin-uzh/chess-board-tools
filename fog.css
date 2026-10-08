@@ -19,8 +19,11 @@
 .chess-fog-overlay > .chess-fog-selected {
   box-shadow: inset 0 0 0 2px rgb(240 196 80 / 85%);
 }
-wc-chess-board:has(> .chess-fog-overlay) > svg.arrows {
+wc-chess-board:has(> .chess-fog-overlay) > .highlight {
   z-index: 6;
+}
+wc-chess-board:has(> .chess-fog-overlay) > svg.arrows {
+  z-index: 7;
 }
 .chess-fog-notice {
   position: absolute;
