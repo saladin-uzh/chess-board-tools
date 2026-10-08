@@ -35,9 +35,33 @@
 
         <p class="status" id="status" role="status" aria-live="polite"></p>
       </form>
+      <section class="fog-settings" aria-labelledby="fog-title">
+        <h2 id="fog-title">Semi-transparent Fog of War</h2>
+        <p>Bots and standalone or completed-game analysis. Movement visibility; no check or pin filtering.</p>
+        <label class="field fog-toggle" for="fog-enabled">
+          <span>Enable fog</span>
+          <input id="fog-enabled" type="checkbox" disabled>
+        </label>
+        <label class="field" for="fog-opacity">
+          <span>Fog opacity <output id="fog-opacity-value" for="fog-opacity">55%</output></span>
+          <input id="fog-opacity" type="range" min="20" max="80" step="1" value="55" disabled>
+        </label>
+        <label class="field" for="fog-perspective">
+          <span>Perspective</span>
+          <select id="fog-perspective" disabled>
+            <option value="auto">Auto (player color)</option>
+            <option value="white">White</option>
+            <option value="black">Black</option>
+          </select>
+        </label>
+        <p class="status" id="fog-save-status" role="status" aria-live="polite"></p>
+        <p id="fog-board-status">Choose White or Black for analysis. Flipping the board does not change perspective.</p>
+        <p>Fog preferences stay in this browser. Positions and game history are not stored.</p>
+      </section>
     </main>
 
     <script src="settings.js"></script>
     <script src="popup.js"></script>
+    <script src="fog-popup.js"></script>
   </body>
 </html>

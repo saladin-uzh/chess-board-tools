@@ -1,0 +1,42 @@
+.chess-fog-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none !important;
+}
+.chess-fog-overlay > span {
+  pointer-events: none !important;
+  background: transparent;
+}
+.chess-fog-overlay > .chess-fog-hidden {
+  background: rgb(20 24 30 / var(--chess-fog-opacity));
+}
+.chess-fog-overlay > .chess-fog-selected {
+  box-shadow: inset 0 0 0 2px rgb(240 196 80 / 85%);
+}
+wc-chess-board:has(> .chess-fog-overlay) > .highlight {
+  z-index: 6;
+}
+wc-chess-board:has(> .chess-fog-overlay) > svg.arrows {
+  z-index: 7;
+}
+.chess-fog-notice {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  max-width: 100%;
+  padding: 5px 8px;
+  background: #fff;
+  color: #1f2933;
+  font: 12px/1.4 system-ui, sans-serif;
+  pointer-events: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chess-fog-overlay > span { transition: none; }
+}

@@ -95,3 +95,16 @@ select:focus {
 .status--success {
   color: #137333;
 }
+
+.fog-settings {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid #cbd2d9;
+  margin-top: 12px;
+  padding-top: 16px;
+}
+
+h2 { margin: 0; font-size: 15px; }
+.fog-toggle { display: flex; align-items: center; justify-content: space-between; }
+input[type="range"] { width: 100%; accent-color: #526d3b; }
+input[type="checkbox"] { accent-color: #526d3b; }
