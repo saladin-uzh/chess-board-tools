@@ -162,8 +162,12 @@ Real unpacked-extension checks in Chrome for Testing:
   reveals the queen's rays immediately. Picker lower options remain tinted at
   80%; tracked in [issue #4](https://github.com/saladin-uzh/chess-confirm-move-hotkeys/issues/4) as a minor visual follow-up.
 
-Pending: manual arrow-drawing confirmation. Native CUA supports left drag and
-right click but not right drag. Live move-confirmation hotkeys are not exercised
+The user drew seven arrows on the analysis board. Its direct `svg.arrows` layer
+had computed `z-index: auto`, below fog at 5. The new scoped CSS rule was applied
+through DevTools on that board: arrows computed to 6 and remained clearly visible
+across fogged cells. The rule applies only while a direct fog overlay exists.
+Native CUA supports left drag and right click but not right drag.
+Live move-confirmation hotkeys are not exercised
 on standalone analysis because it has no move-confirmation prompt; all eight
 existing mocked hotkey regression tests pass and `content.js` is unchanged.
 No claim of live confirmation-prompt validation is made.
