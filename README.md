@@ -4,7 +4,7 @@
 
 A minimal Manifest V3 extension for Chrome and Chromium-based browsers that
 controls the Chess.com move confirmation dialog with configurable keyboard
-shortcuts.
+shortcuts, with optional semi-transparent Fog of War for bots and analysis.
 
 ## Install locally
 
@@ -63,6 +63,36 @@ The content script runs only on:
 - `https://www.chess.com/game/*`
 - `https://www.chess.com/analysis/game/*`
 
+## Semi-transparent Fog of War
+
+In the popup, enable **Semi-transparent Fog of War**, choose opacity (20–80%,
+default 55%), and select Auto, White, or Black. It starts disabled. Auto follows
+your player color in bot games; standalone analysis needs an explicit side.
+Flipping the board rotates the mask without changing perspective.
+
+Fog is supported on `/play/computer`, standalone `/analysis`, and completed
+`/analysis/game/live/*`, `/analysis/game/daily/*`, or
+`/analysis/game/computer/*` games. It stays unavailable for human games,
+classrooms, variants, incomplete state, and unsupported pages. Human-game use
+is outside this release under [Chess.com's Fair Play Policy](https://www.chess.com/legal/fair-play).
+
+Clear squares are the union of your pieces' occupied squares and movement
+destinations. Sliding pieces stop at blockers, knights jump, and pawns reveal
+empty forward moves and available captures rather than all attacked diagonals.
+Castling uses actual rights and clear paths; en passant uses the current FEN
+target and side to move. Check, pins, and enemy king attacks do not filter this
+visibility. A clear square does not mean a standard-chess move is legal.
+
+Selecting your piece outlines its own visibility while retaining the union.
+The overlay allows normal clicks, drags, and board controls. Fog returns when
+visibility is lost; there is no explored-area memory. During uncertain or
+animated positions, the mask is removed. The popup reports unavailable state.
+Reload the extension and page after updates, as described above.
+
+The adapter reads Chess.com's exposed board API. If that API changes, fog
+becomes unavailable instead of inferring castling or en-passant rights from
+piece placement.
+
 ## Troubleshooting
 
 - Reload the Chess.com tab after installing or updating the extension.
@@ -75,11 +105,18 @@ The content script runs only on:
 
 ## Security and privacy
 
-The extension uses the `storage` permission only to save your shortcut settings.
+The extension uses the `storage` permission only to save your shortcut and fog settings.
 It makes no external network requests and does not collect or transmit data. It
 runs only on the listed Chess.com URLs.
 
+Fog display preferences use a separate `chrome.storage.local` key. Position
+snapshots are used in memory to draw the mask; positions, move history, and
+account/game identifiers are not stored by the extension.
+
 ## Tests
 
-With Node.js 18 or newer, run `node --test tests/extension.test.cjs`. The tests
+With Node.js 18 or newer, run `node --test tests/*.test.cjs`. The tests
 use mocked DOM and Chrome storage APIs; they do not require a Chess.com account.
+They cover hotkeys, visibility rules, complete-state/context validation, popup
+races, and overlay lifecycle. Live-browser evidence is tracked separately in
+[the implementation checklist](docs/fog-of-war-implementation.md).

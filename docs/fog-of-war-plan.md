@@ -1,8 +1,8 @@
 # Semi-transparent Fog of War overlay
 
-Status: planning only; no implementation or runtime integration yet.
+Status: implemented on the feature branch; final browser validation and review in progress.
 
-Implementation branch: `codex/semi-transparent-fog-of-war`, based on merged
+Implementation branch: `semi-transparent-fog-of-war`, based on merged
 `main` commit `5e529a2f524808e020b420fdee686a89a1a18001`.
 See [implementation preparation](fog-of-war-implementation.md) for the starting
 checks, proposed module boundaries, and ordered work checklist.
@@ -89,6 +89,35 @@ Read-only inspection of the public analysis page on 2026-10-03 found:
 This confirms a candidate position-reading approach for the analysis page only.
 It does not prove the same selectors, perspective markers, or game-state sources
 work during a bot or human game.
+
+### Verified adapter evidence, 2026-10-08
+
+Chrome for Testing 154 loaded the unpacked extension in the existing testing
+profile. Disposable analysis positions were used; existing user games were not
+used as move fixtures. A temporary read-only MAIN-world probe established:
+
+- `wc-chess-board#board-analysis-board` and `#board-play-computer` expose
+  `board.game.getFEN()` continuously, including all six FEN fields.
+- `getMode().name`, `getVariant()`, and `getResult()` identify supported standard
+  chess contexts. Completed-game analysis uses `/analysis/game/{type}/{id}/analysis`
+  (with `computer`, `live`, or `daily`); a finished result is required.
+- `getPlayingAs()` returns 1/2 for White/Black in bot play; standalone analysis
+  returns no player side and requires explicit White/Black perspective.
+- `getOptions().flipped` tracks orientation independently of perspective.
+- `.highlight.growing-circle.square-XY` identifies the selected square; ordinary
+  last-move highlights do not count as selection.
+- `isDragging()` and `isAnimating()` must both return false before rendering.
+  Missing or changing APIs remove the mask instead of approximating state.
+- Loading `r3k2r/8/8/3pP3/8/8/8/R3K2R w KQkq d6 0 1` in a disposable analysis
+  board preserved rights and en passant outside the editor. Moving e5-d6 produced
+  `r3k2r/8/3P4/8/8/8/8/R3K2R b KQkq - 0 1`, confirming capture removal,
+  turn change, and expiration.
+
+The production MAIN-world bridge only reads this whitelist and passes a bounded
+JSON snapshot to the isolated controller. It never executes moves, reads engines,
+or persists positions. The host API is undocumented and may change; unsupported
+contexts and incomplete snapshots remain unavailable. The development probe is
+disabled and is not included in the repository.
 
 ## Implementation sequence
 

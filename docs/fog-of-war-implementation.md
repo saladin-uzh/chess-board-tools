@@ -2,11 +2,11 @@
 
 ## Starting point
 
-- Branch: `codex/semi-transparent-fog-of-war`.
+- Branch: `semi-transparent-fog-of-war`.
 - Base: `5e529a2f524808e020b420fdee686a89a1a18001`, merged PR #1.
 - Scope: [approved feature plan](fog-of-war-plan.md).
-- Preparation includes documentation and baseline validation only. Production
-  files, manifest coverage, permissions, and dependencies are unchanged.
+- Implementation adds isolated fog modules and a read-only MAIN-world bridge.
+  The existing hotkey controller, permissions, and dependencies are unchanged.
 - Node.js built-in tests are the existing validation path. There is no package
   manifest, dependency installation, build step, or CI workflow in this checkout.
 
@@ -21,54 +21,55 @@ node --check popup.js
 
 Result: 8 tests passed; all three scripts passed syntax checks.
 
-## First implementation task: verify the board adapter
+## Adapter verification checklist
 
 Complete this investigation before wiring a visibility overlay into the page.
 Inspect a disposable bot/analysis context; never use an existing user game as a
 test fixture or make a move in it.
 
-- [ ] Confirm the actual supported bot and completed-analysis URLs. The current
+- [x] Confirm the actual supported bot and completed-analysis URLs. The current
   manifest matches `/play/*`, `/game/*`, and `/analysis/game/*`; it does not
-  inject into the public `/analysis` page previously inspected.
-- [ ] Verify a complete, consistent piece placement snapshot and algebraic
+  inject into the public `/analysis` page previously inspected; the new fog
+  entries explicitly add that page and verified analysis routes.
+- [x] Verify a complete, consistent piece placement snapshot and algebraic
   coordinate mapping on both supported board types.
-- [ ] Find reliable markers for selected piece and board orientation. Treat
+- [x] Find reliable markers for selected piece and board orientation. Treat
   perspective and orientation separately.
-- [ ] Establish player color and an explicit manual perspective fallback.
-- [ ] Establish reliable context detection: bot game, completed analysis, human
+- [x] Establish player color and an explicit manual perspective fallback.
+- [x] Establish reliable context detection: bot game, completed analysis, human
   game, or unknown. Unknown and unsupported contexts must not enable fog.
-- [ ] Establish authoritative side-to-move, castling rights, and en-passant
+- [x] Establish authoritative side-to-move, castling rights, and en-passant
   target/expiration. Piece placement alone is insufficient.
 - [ ] Check state during dragging, confirmed moves, animations, history
   navigation, promotion, and board replacement. Document when a snapshot is
   safe to consume.
-- [ ] Record verified selectors, data sources, and limitations in a scoped
+- [x] Record verified selectors, data sources, and limitations in a scoped
   adapter-evidence section of the feature plan. Avoid account identifiers and
   private game histories in committed evidence or fixtures.
 
 Do not silently downgrade special-move visibility if full state is unavailable.
 Report the concrete missing source and review the scope before proceeding.
 
-## Proposed implementation boundaries
+## Implemented module boundaries
 
-These are intended file responsibilities, not pre-created stubs. Adjust names
-only when the adapter investigation provides a concrete reason.
+Modules follow the existing IIFE/global namespace conventions.
 
 | File | Responsibility |
 | --- | --- |
+| `fog-bridge.js` | Read only the verified host API in MAIN world; reject unknown modes and unfinished imported games. |
 | `fog-board.js` | Read and validate supported context, position, perspective, orientation, selection, and board geometry. No visibility calculation or move execution. |
 | `fog-visibility.js` | Pure movement-based visibility calculation from validated state; return the union mask and optional selected-piece mask. No DOM, storage, or network access. |
 | `fog-content.js` | Overlay lifecycle, rendering, scoped observers, batched updates, settings changes, and cleanup. |
 | `fog.css` | Board-aligned tint and selected-piece visibility outline; pointer-transparent rendering and reduced-motion behavior. |
 | `settings.js` | Add a separate validated fog preference schema/key; preserve existing keybinding normalization and storage semantics. |
-| `popup.html`, `popup.js`, `popup.css` | Small Fog of War section with enable switch, opacity, and perspective; race-safe loading/saving and incoming preference changes. |
+| `popup.html`, `fog-popup.js`, `popup.css` | Small Fog of War section with enable switch, opacity, and perspective; race-safe loading/saving and incoming preference changes. |
 | `manifest.json` | Register verified supported URL patterns and script/style load order once integration is ready. |
 
 Retain plain JavaScript and existing IIFE/global namespace conventions. Use
 explicit JSDoc contracts where useful; do not introduce TypeScript, a bundler,
 an engine, or new dependencies for preparation or by default during execution.
 
-## Data contracts to finalize after investigation
+## Data contracts
 
 - **Position:** 64 logical squares with validated piece type/color, side to
   move, explicit castling rights, and an en-passant target or explicit absence.
@@ -87,16 +88,16 @@ preferences separate from the existing `keybindings` sync-storage object.
 
 ## Ordered implementation checklist
 
-- [ ] Finish and document the adapter investigation above.
-- [ ] Implement and test the pure visibility calculator for both colors.
-- [ ] Implement the validated adapter and test incomplete/transient snapshots.
-- [ ] Implement overlay alignment and lifecycle on a disposable local board
-  fixture before testing on Chess.com.
-- [ ] Add local preferences and popup controls, with loading/save concurrency
+- [x] Finish and document the adapter investigation above (see plan evidence).
+- [x] Implement and test the pure visibility calculator for both colors.
+- [x] Implement the validated adapter and test incomplete/transient snapshots.
+- [x] Implement overlay alignment/lifecycle with mocked DOM regression tests
+  and real disposable analysis-board validation.
+- [x] Add local preferences and popup controls, with loading/save concurrency
   tests and incoming-change handling.
-- [ ] Integrate verified manifest matches and dependency-ordered script loading.
-- [ ] Verify disposable bot and completed-analysis contexts in a real browser.
-- [ ] Update both README versions for behavior, allowed contexts, privacy,
+- [x] Integrate verified manifest matches and dependency-ordered script loading.
+- [x] Verify disposable bot and completed-analysis contexts in Chrome for Testing.
+- [x] Update both README versions for behavior, allowed contexts, privacy,
   installation/reload steps, and test commands.
 - [ ] Review the scoped diff and open a separate implementation PR when asked.
 
@@ -131,3 +132,38 @@ Do not fold these fixes into preparation or expand feature scope implicitly.
 For later PR reviews, the user requested that additional minor findings be
 tracked as separate GitHub issues rather than repeatedly expanding the PR.
 Critical correctness/security findings still require assessment before merging.
+
+## Implementation validation, 2026-10-08
+
+`node --test tests/*.test.cjs`: 25 tests passed (8 existing hotkey tests and 17
+fog tests). DOM, bridge, lifecycle, and storage tests use mocks; they do not prove
+live compatibility. Pure tests cover both colors, every piece, blockers, pins,
+king attacks, castling rights/path, en passant/expiration, and promotion.
+
+Real unpacked-extension checks in Chrome for Testing:
+
+- Standalone analysis: explicit perspective required for Auto; White and Black
+  selected successfully, with preference persistence and active status.
+- Union mask and selected-piece outline; e2-e4 click move and e7-e5 drag move.
+- Board flip, drag resize, and browser zoom from 75% to 67% preserved alignment.
+- Light and Dark Blue themes remained readable at opacity 20% and 80%.
+- Right-click square annotation passed through fog; enable/disable/re-enable
+  updated the mask and popup status.
+- One new disposable bot fixture verified Auto color and e2-e4; it was ended.
+  Further interactive testing uses analysis boards per user preference.
+
+- Completed analysis: verified `/analysis/game/computer/{id}/analysis` after
+  extension/page reload; Auto requests a side, White activates the overlay,
+  and navigating to the last move updates the mask.
+- Custom analysis: selected king outlines c1/g1 with rights; O-O relocates both
+  pieces and removes expired en-passant visibility. Returning in history restores
+  d6/d5 visibility; e5-d6 removes the captured pawn and recomputes fog.
+- Promotion: a7-a8 opens the host picker; choosing Queen completes a8=Q+ and
+  reveals the queen's rays immediately. Picker lower options remain tinted at
+  80%; tracked in [issue #4](https://github.com/saladin-uzh/chess-confirm-move-hotkeys/issues/4) as a minor visual follow-up.
+
+Pending: manual arrow-drawing confirmation. Native CUA supports left drag and
+right click but not right drag. Live move-confirmation hotkeys are not exercised
+on standalone analysis because it has no move-confirmation prompt; all eight
+existing mocked hotkey regression tests pass and `content.js` is unchanged.
+No claim of live confirmation-prompt validation is made.

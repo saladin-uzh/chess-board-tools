@@ -9,7 +9,9 @@
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
   },
-  "permissions": ["storage"],
+  "permissions": [
+    "storage"
+  ],
   "action": {
     "default_title": "Chess.com Confirm Move Hotkeys",
     "default_popup": "popup.html"
@@ -21,7 +23,43 @@
         "https://www.chess.com/game/*",
         "https://www.chess.com/analysis/game/*"
       ],
-      "js": ["settings.js", "content.js"],
+      "js": [
+        "settings.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.chess.com/play/computer",
+        "https://www.chess.com/analysis",
+        "https://www.chess.com/analysis/game/live/*",
+        "https://www.chess.com/analysis/game/daily/*",
+        "https://www.chess.com/analysis/game/computer/*"
+      ],
+      "js": [
+        "fog-bridge.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.chess.com/play/computer",
+        "https://www.chess.com/analysis",
+        "https://www.chess.com/analysis/game/live/*",
+        "https://www.chess.com/analysis/game/daily/*",
+        "https://www.chess.com/analysis/game/computer/*"
+      ],
+      "js": [
+        "settings.js",
+        "fog-visibility.js",
+        "fog-board.js",
+        "fog-content.js"
+      ],
+      "css": [
+        "fog.css"
+      ],
       "run_at": "document_idle"
     }
   ]
