@@ -1,13 +1,12 @@
 (() => {
   "use strict";
 
-  const INTERACTIVE_TARGET_SELECTOR =
-    'input, textarea, select, button, [contenteditable="true"], [role="textbox"]';
   const CONFIRM_BUTTON_SELECTOR =
     "div.confirm-move-buttons .cc-button-primary";
   const BUTTONS_ROOT_SELECTOR = "div.confirm-move-buttons";
   const CANCEL_CANDIDATE_SELECTOR = "button, .cc-button, a";
   const {
+    hasInputFocus,
     KEYBINDING_STORAGE_KEY,
     normalizeKeybindings,
   } = globalThis.ChessConfirmMoveSettings;
@@ -53,49 +52,35 @@
     );
   }
 
-  function isInteractiveTarget(target) {
-    return (
-      target !== null &&
-      typeof target.closest === "function" &&
-      target.closest(INTERACTIVE_TARGET_SELECTOR) !== null
-    );
-  }
+  let controlPress = null;
 
-  function handleKeydown(event) {
-    if (
-      event.repeat ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.altKey ||
-      event.shiftKey ||
-      isInteractiveTarget(event.target)
-    ) {
-      return;
-    }
-
-    let button = null;
-
-    if (matchesKeybinding(event, keybindings.confirmKeyCode)) {
-      button = findConfirmButton();
-    } else if (matchesKeybinding(event, keybindings.cancelKeyCode)) {
-      button = findCancelButton();
-    }
-
-    if (button === null) {
-      return;
-    }
-
+  function act(event, code) {
+    if (hasInputFocus(event)) return;
+    const button = code === keybindings.confirmKeyCode ? findConfirmButton()
+      : code === keybindings.cancelKeyCode ? findCancelButton() : null;
+    if (!button) return;
     button.click();
     event.preventDefault();
     event.stopImmediatePropagation();
   }
 
-  function matchesKeybinding(event, keyCode) {
-    if (keyCode.startsWith("Key")) {
-      return event.key.toUpperCase() === keyCode.slice(3);
+  function handleKeydown(event) {
+    if (controlPress && event.code !== controlPress) controlPress = null;
+    if (event.code === "ControlLeft" || event.code === "ControlRight") {
+      if (!event.repeat && !event.metaKey && !event.altKey && !event.shiftKey && !hasInputFocus(event)) {
+        controlPress = event.code;
+      }
+      return;
     }
+    if (event.repeat || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+    act(event, event.code);
+  }
 
-    return event.code === keyCode;
+  function handleKeyup(event) {
+    if (event.code !== "ControlLeft" && event.code !== "ControlRight") return;
+    const standalone = controlPress === event.code;
+    controlPress = null;
+    if (standalone && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) act(event, "Control");
   }
 
   async function loadKeybindings() {
@@ -117,6 +102,10 @@
 
   loadKeybindings().then(() => {
     window.addEventListener("keydown", handleKeydown, true);
+    window.addEventListener("keyup", handleKeyup, true);
+    window.addEventListener("blur", () => { controlPress = null; });
+    window.addEventListener("focusin", () => { controlPress = null; }, true);
+    window.addEventListener("pagehide", () => { controlPress = null; });
     console.info("[Chess.com Confirm Move Hotkeys] Initialized.");
   });
 })();

@@ -14,20 +14,20 @@
 
 body {
   margin: 0;
-  min-width: 320px;
+  width: 360px;
   color: #1f2933;
   background: #ffffff;
 }
 
 .popup {
-  padding: 16px;
+  padding: 12px;
 }
 
 .popup__header {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .popup__icon {
@@ -50,7 +50,7 @@ p {
 
 .settings {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .field {
@@ -63,7 +63,7 @@ p {
 
 select {
   width: 100%;
-  min-height: 34px;
+  min-height: 30px;
   border: 1px solid #cbd2d9;
   border-radius: 6px;
   padding: 6px 8px;
@@ -84,7 +84,7 @@ select:focus {
 }
 
 .status {
-  min-height: 18px;
+  min-height: 0;
   color: #52606d;
 }
 
@@ -98,13 +98,17 @@ select:focus {
 
 .fog-settings {
   display: grid;
-  gap: 12px;
+  gap: 8px;
   border-top: 1px solid #cbd2d9;
-  margin-top: 12px;
-  padding-top: 16px;
+  margin-top: 8px;
+  padding-top: 10px;
 }
 
 h2 { margin: 0; font-size: 15px; }
 .fog-toggle { display: flex; align-items: center; justify-content: space-between; }
 input[type="range"] { width: 100%; accent-color: #526d3b; }
 input[type="checkbox"] { accent-color: #526d3b; }
+
+.settings { grid-template-columns: 1fr 1fr; }
+.settings .status { grid-column: 1 / -1; }
+.status:empty { display: none; }

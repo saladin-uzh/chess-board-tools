@@ -162,7 +162,9 @@ test('adapter rejects unsupported, transient, incomplete and disconnected snapsh
   assert.equal(validate(snapshot, { ...board, isConnected: false }), null);
   assert.equal(validate(snapshot, board, '/play/online'), null);
   assert.equal(validate(snapshot, board, '/analysis/classroom'), null);
-  assert.ok(validate({ ...snapshot, side: null }).unavailable);
+  assert.equal(validate({ ...snapshot, side: null }).side, 'white');
+  assert.equal(validate({ ...snapshot, side: null, flipped: true }).side, 'black');
+  assert.equal(validate({ ...snapshot, side: 'white', flipped: true }).side, 'white');
   const white = validate(snapshot, board, '/play/computer', 'white');
   const flipped = validate({ ...snapshot, flipped: true }, board, '/play/computer', 'white');
   assert.deepEqual(plain(white.position), plain(flipped.position));

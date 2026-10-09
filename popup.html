@@ -37,7 +37,7 @@
       </form>
       <section class="fog-settings" aria-labelledby="fog-title">
         <h2 id="fog-title">Semi-transparent Fog of War</h2>
-        <p>Bots and standalone or completed-game analysis. Movement visibility; no check or pin filtering.</p>
+        <p>Bots and analysis only. Movement visibility.</p>
         <label class="field fog-toggle" for="fog-enabled">
           <span>Enable fog</span>
           <input id="fog-enabled" type="checkbox" disabled>
@@ -49,14 +49,14 @@
         <label class="field" for="fog-perspective">
           <span>Perspective</span>
           <select id="fog-perspective" disabled>
-            <option value="auto">Auto (player color)</option>
+            <option value="auto">Auto (player / bottom)</option>
             <option value="white">White</option>
             <option value="black">Black</option>
           </select>
         </label>
         <p class="status" id="fog-save-status" role="status" aria-live="polite"></p>
-        <p id="fog-board-status">Choose White or Black for analysis. Flipping the board does not change perspective.</p>
-        <p>Fog preferences stay in this browser. Positions and game history are not stored.</p>
+        <p id="fog-board-status">Auto uses your color, or the bottom side when no player color is available.</p>
+        <p>Local fog settings; no position or history storage.</p>
       </section>
     </main>
 

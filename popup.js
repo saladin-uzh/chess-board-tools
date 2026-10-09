@@ -2,7 +2,8 @@
   "use strict";
 
   const {
-    ALLOWED_KEYS,
+    CONFIRM_KEYS,
+    CANCEL_KEYS,
     KEYBINDING_STORAGE_KEY,
     normalizeKeybindings,
   } = globalThis.ChessConfirmMoveSettings;
@@ -34,10 +35,8 @@
   }
 
   function populateSelects() {
-    for (const key of ALLOWED_KEYS) {
-      confirmSelect.append(createOption(key));
-      cancelSelect.append(createOption(key));
-    }
+    for (const key of CONFIRM_KEYS) confirmSelect.append(createOption(key));
+    for (const key of CANCEL_KEYS) cancelSelect.append(createOption(key));
   }
 
   function renderKeybindings(keybindings) {
