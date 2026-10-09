@@ -86,6 +86,7 @@
       "js": [
         "settings.js",
         "assist-board.js",
+        "assist-timer.js",
         "assist-content.js"
       ],
       "css": [

@@ -59,10 +59,10 @@ or cancellation button is present. All extension keyboard actions pause while
 an input, textarea, select, editable element, or textbox has focus. Events
 inside buttons and other interactive controls are also ignored.
 
-## Keyboard board control
+## Board control and thinking ticks
 
-The popup has a **Keyboard board control** switch. It starts disabled and uses
-local preferences.
+The popup has separate **Keyboard board control** and **Tick every 10 seconds
+of my turn** switches. Both start disabled and use local preferences.
 
 Type coordinates sequentially: `b`, `2` selects b2; `b`, `3` clicks b3.
 Coordinates stay algebraic when flipped. An incomplete letter appears beside
@@ -76,6 +76,12 @@ Board control supports standard human games, bots, and analysis. Unknown modes
 and unavailable APIs disable it. Clicks use the host pointer path; Chess.com
 may report them as synthetic events. The extension does not hide or bypass
 those checks.
+
+Ticks occur at 10, 20, 30… seconds of your own turn in an active game, including
+pending confirmation. Each new turn resets the timer. Unknown player color and
+analysis disable sound. First click or press a key in the game tab to unlock
+audio. Hidden tabs stay silent; missed ticks never accumulate. Enabling the
+feature or loading a page midway through a turn starts timing from that point.
 
 ## Supported pages
 

@@ -30,7 +30,7 @@
   ];
   const ASSIST_STORAGE_KEY = "boardAssistPreferences";
   function normalizeAssist(value) {
-    return { keyboard: value?.keyboard === true };
+    return { keyboard: value?.keyboard === true, ticking: value?.ticking === true };
   }
 
   function normalizeKeybindings(value) {

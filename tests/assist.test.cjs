@@ -8,7 +8,7 @@ const run = (context, file) => vm.runInContext(source(file), context, { filename
 const plain = value => JSON.parse(JSON.stringify(value));
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const context = vm.createContext({});
-for (const file of ['settings.js', 'assist-board.js']) run(context, file);
+for (const file of ['settings.js', 'assist-board.js', 'assist-timer.js']) run(context, file);
 const snapshot = { session: 1, context: 'bot', fen: '7k/8/8/8/8/8/P7/7K w - - 0 1', side: 'white', turn: 'white', active: true, stable: true, flipped: false };
 
 test('allowed action keys, old values and duplicate migration', () => {
@@ -21,7 +21,7 @@ test('allowed action keys, old values and duplicate migration', () => {
     assert.deepEqual(plain(s.normalizeKeybindings(input)), { confirmKeyCode: 'Space', cancelKeyCode: 'Escape' });
   }
   assert.deepEqual(plain(s.normalizeKeybindings({ confirmKeyCode: 'Enter', cancelKeyCode: 'KeyS' })), { confirmKeyCode: 'Enter', cancelKeyCode: 'Escape' });
-  assert.deepEqual(plain(s.normalizeAssist({ keyboard: 'true', ticking: 1 })), { keyboard: false });
+  assert.deepEqual(plain(s.normalizeAssist({ keyboard: 'true', ticking: 1 })), { keyboard: false, ticking: false });
 });
 
 test('adapter rejects unknown contexts, malformed state and transient boards', () => {
@@ -46,11 +46,59 @@ test('coordinate mapping is algebraic on both orientations and rejects bad geome
   assert.equal(point('b2', false, { ...rect, height: 700 }), null);
 });
 
+test('timer signals at 10-second boundaries, skips backlog and resets for new turns and sessions', () => {
+  const timer = context.ChessAssistTimer.createTurnTimer();
+  assert.equal(timer.update(snapshot, 0, true), false);
+  assert.equal(timer.update(snapshot, 9999, true), false);
+  assert.equal(timer.update(snapshot, 10000, true), true);
+  assert.equal(timer.update(snapshot, 10100, true), false);
+  assert.equal(timer.update(snapshot, 35000, true), true);
+  assert.equal(timer.update(snapshot, 35100, true), false);
+  assert.equal(timer.update(snapshot, 40000, false), false);
+  assert.equal(timer.update(snapshot, 40100, true), false);
+  assert.equal(timer.update(snapshot, 50000, true), true);
+  const opponent = { ...snapshot, turn: 'black' };
+  assert.equal(timer.update(opponent, 51000, true), false);
+  assert.equal(timer.update(snapshot, 60000, true), false);
+  assert.equal(timer.update(snapshot, 70000, true), true);
+  assert.equal(timer.update({ ...snapshot, session: 2 }, 71000, true), false);
+  assert.equal(timer.update({ ...snapshot, active: false }, 90000, true), false);
+  for (const input of [null, { ...snapshot, side: null }, { ...snapshot, context: 'analysis' }]) assert.equal(timer.update(input, 100000, true), false);
+});
 
+test('pending confirmation remains part of the same own turn', () => {
+  const timer = context.ChessAssistTimer.createTurnTimer();
+  timer.update(snapshot, 0, true);
+  const pending = { ...snapshot, turn: 'black', fen: snapshot.fen.replace(' w ', ' b ') };
+  assert.equal(timer.update(pending, 10000, true, true), true);
+  assert.equal(timer.update(pending, 20000, true, true), true);
+  assert.equal(timer.update(pending, 21000, true, false), false);
+  assert.equal(timer.update(snapshot, 30000, true), false);
+});
 
-function harness() {
-  const listeners = {}, docListeners = {}, timeouts = new Map(), intervals = new Map(), clicks = [];
-  let now = 0, serial = 0, changed, current = { ...snapshot, context: 'analysis', active: false, side: null }, board;
+test('audio waits for gesture, releases nodes and tolerates blocked or missing audio', async () => {
+  const events = []; let resumes = 0;
+  class Audio {
+    constructor() { this.state = 'suspended'; this.currentTime = 1; }
+    async resume() { resumes++; this.state = 'running'; }
+    createOscillator() { return { frequency: {}, connect() {}, start() { events.push('start'); }, stop() { this.onended(); }, disconnect() { events.push('disconnect'); } }; }
+    createGain() { return { gain: { setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
+    async close() { events.push('close'); }
+  }
+  const c = vm.createContext({ AudioContext: Audio }); run(c, 'assist-timer.js');
+  const audio = c.ChessAssistTimer.createAudio(); audio.tick(); assert.equal(events.length, 0);
+  audio.unlock(); await flush(); audio.tick(); assert.deepEqual(events, ['start', 'disconnect']);
+  audio.close(); await flush(); assert.equal(events.at(-1), 'close');
+  const blocked = vm.createContext({ AudioContext: class { constructor() { throw Error('Blocked'); } } }); run(blocked, 'assist-timer.js');
+  const failed = blocked.ChessAssistTimer.createAudio(); failed.unlock(); failed.unlock(); failed.tick();
+  const rejected = vm.createContext({ AudioContext: class { constructor() { this.state = 'suspended'; } resume() { resumes++; return Promise.reject(Error('Denied')); } } }); run(rejected, 'assist-timer.js');
+  const denied = rejected.ChessAssistTimer.createAudio(); denied.unlock(); await flush(); denied.unlock(); denied.tick();
+  assert.equal(resumes, 2);
+});
+
+function harness({ realTimer = false } = {}) {
+  const listeners = {}, docListeners = {}, timeouts = new Map(), intervals = new Map(), clicks = [], timerCalls = [], timerResets = [], ticks = [], unlocks = [];
+  let now = 0, serial = 0, changed, current = { ...snapshot, context: 'analysis', active: false, side: null }, board, confirmation;
   class Element {
     constructor() { this.isConnected = true; this.style = {}; this.picker = null; }
     getBoundingClientRect() { return { left: 0, top: 0, width: 800, height: 800 }; }
@@ -61,9 +109,9 @@ function harness() {
   }
   board = new Element();
   const document = { activeElement: null, visibilityState: 'visible', body: { append() {} },
-    querySelector: selector => selector.startsWith('wc-') ? board : null,
+    querySelector: selector => selector.startsWith('wc-') ? board : selector.startsWith('div.confirm-') ? confirmation : null,
     createElement: () => new Element(), addEventListener: (type, fn) => { docListeners[type] = fn; } };
-  const c = vm.createContext({ document, location: { pathname: '/analysis' },
+  const c = vm.createContext({ document, navigator: { userActivation: { isActive: true } }, location: { pathname: '/analysis' },
     getComputedStyle: () => ({ display: 'block', visibility: 'visible', pointerEvents: 'auto' }),
     performance: { now: () => now },
     setTimeout: (fn, delay) => { const id = ++serial; timeouts.set(id, { fn, due: now + delay }); return id; },
@@ -71,13 +119,22 @@ function harness() {
     addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
     chrome: { storage: { local: { get: async () => ({ boardAssistPreferences: { keyboard: true } }) }, onChanged: { addListener: fn => { changed = fn; } } } },
     ChessBoardAssist: { read: () => current, clickSquare: (b, square) => { clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
+    ChessAssistTimer: { createTurnTimer: () => ({ reset() { timerResets.push(true); }, update(...args) { timerCalls.push(args); return false; } }), createAudio: () => ({ unlock() { unlocks.push(now); }, close() {}, tick() { ticks.push(now); } }) },
   });
-  run(c, 'settings.js'); run(c, 'assist-content.js');
-  function dispatch(type, event = {}) { for (const fn of listeners[type] || []) fn(event); }
-  return { document, clicks, listeners, docListeners,
+  run(c, 'settings.js');
+  if (realTimer) {
+    const createAudio = c.ChessAssistTimer.createAudio;
+    run(c, 'assist-timer.js');
+    c.ChessAssistTimer = { ...c.ChessAssistTimer, createAudio };
+  }
+  run(c, 'assist-content.js');
+  function dispatch(type, event = {}) { event.type = type; for (const fn of listeners[type] || []) fn(event); }
+  return { document, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
     key(key, extra = {}) { const e = { key, code: key === 'Escape' ? 'Escape' : '', target: {}, preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...extra }; dispatch('keydown', e); return e; },
+    activation(value) { c.navigator = value; },
     dispatch, advance(ms) { now += ms; for (const [id, t] of timeouts) if (t.due <= now) { timeouts.delete(id); t.fn(); } },
     poll() { for (const fn of intervals.values()) fn(); },
+    confirm(value = true) { confirmation = value ? new Element() : null; },
     state(value) { current = value; }, replace() { board = new Element(); },
     change(value, area = 'local') { changed({ boardAssistPreferences: { newValue: value } }, area); },
     picker(piece) { const p = new Element(); p.piece = piece; const picker = new Element(); picker.querySelectorAll = () => [p]; board.picker = picker; },
@@ -121,7 +178,7 @@ function deferred() {
 function popupHarness() {
   const load = deferred(), save = deferred(), writes = [], elements = {};
   let changed;
-  for (const id of ['keyboard-enabled', 'assist-save-status']) {
+  for (const id of ['keyboard-enabled', 'ticking-enabled', 'assist-save-status']) {
     elements['#' + id] = { disabled: true, checked: false, addEventListener(type, fn) { this[type] = fn; } };
   }
   const c = vm.createContext({ document: { querySelector: id => elements[id] }, chrome: { storage: {
@@ -129,7 +186,7 @@ function popupHarness() {
     onChanged: { addListener: fn => { changed = fn; } },
   } } });
   run(c, 'settings.js'); run(c, 'assist-popup.js');
-  return { load, save, writes, keyboard: elements['#keyboard-enabled'], status: elements['#assist-save-status'],
+  return { load, save, writes, keyboard: elements['#keyboard-enabled'], ticking: elements['#ticking-enabled'], status: elements['#assist-save-status'],
     change: (value, area = 'local') => changed({ boardAssistPreferences: { newValue: value } }, area) };
 }
 
@@ -137,14 +194,14 @@ test('helper popup protects delayed reads/saves and keeps separate local prefere
   const app = popupHarness(); assert.equal(app.keyboard.disabled, true);
   app.change({ keyboard: true, ticking: true });
   app.load.resolve({ boardAssistPreferences: {} }); await flush();
-  assert.equal(app.keyboard.checked, true);
+  assert.equal(app.keyboard.checked, true); assert.equal(app.ticking.checked, true);
   app.keyboard.checked = false;
-  const pending = app.keyboard.change(); assert.equal(app.keyboard.disabled, true);
-  await app.keyboard.change(); assert.equal(app.writes.length, 0);
+  const pending = app.keyboard.change(); assert.equal(app.ticking.disabled, true);
+  await app.ticking.change(); assert.equal(app.writes.length, 0);
   app.change({ keyboard: true, ticking: false });
   app.save.resolve(); await pending;
-  assert.equal(app.keyboard.checked, true);
-  assert.deepEqual(app.writes, [{ boardAssistPreferences: { keyboard: false } }]);
+  assert.equal(app.keyboard.checked, true); assert.equal(app.ticking.checked, false);
+  assert.deepEqual(app.writes, [{ boardAssistPreferences: { keyboard: false, ticking: true } }]);
   app.change({ keyboard: false, ticking: true }, 'sync'); assert.equal(app.keyboard.checked, true);
 });
 
@@ -188,4 +245,156 @@ test('coordinate and promotion actions use host pointer events without calling g
   assert.equal(c.ChessBoardAssist.clickPromotion(element), true);
   assert.equal(events[1].clientX, 400);
   element.isConnected = false; assert.equal(c.ChessBoardAssist.clickPromotion(element), false);
+});
+
+
+test('dragging does not restart the turn timer or accumulate missed ticks', () => {
+  const timer = context.ChessAssistTimer.createTurnTimer(); timer.update(snapshot, 0, true);
+  assert.equal(timer.update({ ...snapshot, stable: false }, 5000, true), false);
+  assert.equal(timer.update({ ...snapshot, stable: false }, 10000, true), false);
+  assert.equal(timer.update(snapshot, 11000, true), false);
+  assert.equal(timer.update(snapshot, 20000, true), true);
+});
+
+
+test('returning from a throttled background tab consumes missed deadlines silently', async () => {
+  const app = harness(); await flush(); app.change({ ticking: true });
+  app.document.visibilityState = 'hidden'; app.docListeners.visibilitychange();
+  app.advance(35000);
+  app.document.visibilityState = 'visible'; app.poll();
+  assert.equal(app.timerCalls.at(-1)[2], false);
+  app.poll(); assert.equal(app.timerCalls.at(-1)[2], true);
+});
+
+test('keyboard preference changes do not restart an enabled turn timer', async () => {
+  const app = harness(); await flush(); app.change({ keyboard: true, ticking: true });
+  const resets = app.timerResets.length;
+  app.change({ keyboard: false, ticking: true });
+  assert.equal(app.timerResets.length, resets);
+  app.change({ keyboard: false, ticking: false });
+  assert.equal(app.timerResets.length, resets + 1);
+});
+
+test('black own turns use authoritative color rather than board orientation', () => {
+  const timer = context.ChessAssistTimer.createTurnTimer();
+  const black = { ...snapshot, side: 'black', turn: 'black', fen: snapshot.fen.replace(' w ', ' b ') };
+  assert.equal(timer.update(black, 0, true), false);
+  assert.equal(timer.update({ ...black, flipped: true }, 10000, true), true);
+  assert.equal(timer.update({ ...black, turn: 'white' }, 20000, true), false);
+});
+
+test('real content timer survives board replacement at nine seconds', async () => {
+  const app = harness({ realTimer: true }); await flush();
+  app.state(snapshot); app.change({ ticking: true });
+  app.advance(9000); app.replace(); app.poll();
+  app.advance(1000); app.poll(); assert.deepEqual(app.ticks, [10000]);
+});
+
+test('missing snapshots keep elapsed time but never replay unavailable deadlines', async () => {
+  const app = harness({ realTimer: true }); await flush();
+  app.state(snapshot); app.change({ ticking: true });
+  app.advance(9000); app.state(null); app.poll();
+  app.advance(2500); app.state(snapshot); app.replace(); app.poll();
+  assert.deepEqual(app.ticks, []);
+  app.advance(8500); app.poll(); assert.deepEqual(app.ticks, [20000]);
+  app.state(null); app.advance(10000); app.poll();
+  app.state(snapshot); app.poll(); assert.deepEqual(app.ticks, [20000]);
+  app.state({ ...snapshot, session: 2 }); app.poll();
+  app.advance(9999); app.poll(); assert.deepEqual(app.ticks, [20000]);
+  app.advance(1); app.poll(); assert.deepEqual(app.ticks, [20000, 40000]);
+});
+
+test('pending confirmation cannot preserve another session or player color', () => {
+  for (const change of [{ session: 2 }, { side: 'black', turn: 'black' }]) {
+    const timer = context.ChessAssistTimer.createTurnTimer(); timer.update(snapshot, 0, true);
+    const next = { ...snapshot, ...change };
+    assert.equal(timer.update(next, 9000, true, true), false);
+    assert.equal(timer.update(next, 10000, true, true), false);
+    assert.equal(timer.update(next, 19000, true, true), true);
+  }
+  const timer = context.ChessAssistTimer.createTurnTimer(); timer.update(snapshot, 0, true);
+  assert.equal(timer.update({ ...snapshot, session: 2, turn: 'black' }, 10000, true, true), false);
+});
+
+test('stale audio resume resolve and reject cannot affect a reopened context', async () => {
+  for (const outcome of ['resolve', 'reject']) {
+    const instances = [], ticks = [];
+    class Audio {
+      constructor() { this.state = 'suspended'; this.currentTime = 0; this.pending = deferred(); this.resumes = 0; instances.push(this); }
+      resume() { this.resumes++; return this.pending.promise; }
+      close() { this.state = 'closed'; return Promise.resolve(); }
+      createOscillator() { return { frequency: {}, connect() {}, disconnect() {}, start() { ticks.push(true); }, stop() { this.onended(); } }; }
+      createGain() { return { gain: { setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
+    }
+    const c = vm.createContext({ AudioContext: Audio }); run(c, 'assist-timer.js');
+    const audio = c.ChessAssistTimer.createAudio(); audio.unlock();
+    const old = instances[0]; audio.close(); audio.unlock();
+    assert.equal(instances.length, 2);
+    old.pending[outcome](outcome === 'reject' ? Error('Old context closed') : undefined); await flush();
+    audio.unlock(); assert.equal(instances[1].resumes, 1);
+    instances[1].state = 'running'; instances[1].pending.resolve(); await flush();
+    audio.tick(); assert.deepEqual(ticks, [true]);
+    audio.close(); audio.unlock(); assert.equal(instances.length, 3);
+  }
+});
+
+test('audio unlock accepts only trusted activating input in visible tabs', async () => {
+  const app = harness(); await flush(); app.change({ ticking: true });
+  const allowed = [['pointerdown', { pointerType: 'mouse' }], ['pointerup', { pointerType: 'touch' }],
+    ['pointerup', { pointerType: 'pen' }], ['keydown', { key: 'a' }], ['keydown', { key: 'Enter' }], ['keydown', { key: 'A', shiftKey: true }]];
+  for (const [type, event] of allowed) {
+    const before = app.unlocks.length; app.dispatch(type, { isTrusted: true, ...event });
+    assert.equal(app.unlocks.length, before + 1);
+  }
+  const denied = [['pointerdown', { pointerType: 'touch' }], ['pointerdown', { pointerType: 'pen' }],
+    ['pointerup', { pointerType: 'mouse' }], ['pointerup', {}], ['keydown', { key: 'Escape' }],
+    ['keydown', { key: 'a', code: 'Escape' }], ['keydown', { key: 'a', repeat: true }],
+    ...['Control', 'Meta', 'Alt', 'Shift', 'AltGraph', 'Fn'].map(key => ['keydown', { key }]),
+    ...['ctrlKey', 'metaKey', 'altKey'].map(flag => ['keydown', { key: 'a', [flag]: true }])];
+  const count = app.unlocks.length;
+  for (const [type, event] of denied) app.dispatch(type, { isTrusted: true, ...event });
+  app.dispatch('pointerdown', { pointerType: 'mouse', isTrusted: false });
+  app.key('a', { isTrusted: false });
+  app.document.visibilityState = 'hidden'; app.key('a', { isTrusted: true });
+  app.document.visibilityState = 'visible'; app.navigator.userActivation.isActive = false;
+  app.key('a', { isTrusted: true });
+  app.activation(undefined); app.dispatch('pointerdown', { pointerType: 'mouse', isTrusted: true });
+  app.activation({}); app.key('a', { isTrusted: true });
+  assert.equal(app.unlocks.length, count);
+  app.activation({ userActivation: { isActive: true } }); app.change({ ticking: false });
+  app.key('a', { isTrusted: true }); assert.equal(app.unlocks.length, count);
+});
+
+test('audio activation leaves ordinary key and pointer events untouched', async () => {
+  const app = harness(); await flush(); app.change({ ticking: true });
+  assert.equal(app.key('a', { isTrusted: true }).prevented, undefined);
+  app.dispatch('pointerup', { isTrusted: true, pointerType: 'touch', preventDefault() { assert.fail('Consumed pointer event'); }, stopImmediatePropagation() { assert.fail('Stopped pointer event'); } });
+  assert.equal(app.unlocks.length, 2);
+});
+
+test('enabling or loading ticks during pending confirmation starts a fresh clock', async () => {
+  for (const loading of [false, true]) {
+    const app = harness({ realTimer: true }); await flush();
+    app.state({ ...snapshot, turn: 'black', fen: snapshot.fen.replace(' w ', ' b ') }); app.confirm();
+    if (loading) { app.change({ ticking: true }); app.dispatch('pagehide'); app.dispatch('pageshow'); }
+    else { app.advance(5000); app.change({ ticking: true }); }
+    app.advance(9999); app.poll(); assert.deepEqual(app.ticks, []);
+    app.advance(1); app.poll(); assert.deepEqual(app.ticks, [loading ? 10000 : 15000]);
+    app.advance(10000); app.poll(); assert.equal(app.ticks.length, 2);
+    app.confirm(false); app.poll(); app.advance(10000); app.poll(); assert.equal(app.ticks.length, 2);
+  }
+});
+
+test('a stale confirmation button cannot start ticking in another session or color', async () => {
+  for (const change of [{ session: 2 }, { side: 'black' }]) {
+    const app = harness({ realTimer: true }); await flush();
+    app.state(snapshot); app.confirm(); app.change({ ticking: true });
+    const next = { ...snapshot, ...change, turn: change.side ? 'white' : 'black' };
+    app.state(next); app.poll(); app.advance(10000); app.poll(); app.advance(10000); app.poll();
+    assert.deepEqual(app.ticks, []);
+    app.change({ ticking: false }); app.change({ ticking: true });
+    app.advance(10000); app.poll(); assert.deepEqual(app.ticks, []);
+    app.confirm(false); app.poll(); app.confirm(); app.poll();
+    app.advance(10000); app.poll(); assert.equal(app.ticks.length, 1);
+  }
 });
