@@ -93,6 +93,7 @@ function popupHarness(delayedSave = false) {
   const save = deferred();
   const writes = [];
   let failSave = false;
+  let storageListener;
   class Select {
     constructor(id) {
       const tag = read("popup.html").match(new RegExp(`<select id="${id}"[^>]*>`));
@@ -125,11 +126,12 @@ function popupHarness(delayedSave = false) {
     window: { clearTimeout() {}, setTimeout() {} },
     chrome: {
       storage: {
+        onChanged: { addListener: handler => { storageListener = handler; } },
         sync: {
           get: () => storage.promise,
           async set(value) {
-            if (failSave) throw new Error("Storage unavailable");
             if (delayedSave) await save.promise;
+            if (failSave) throw new Error("Storage unavailable");
             writes.push(plain(value));
           },
         },
@@ -139,6 +141,8 @@ function popupHarness(delayedSave = false) {
   run(context, "settings.js");
   run(context, "popup.js");
   return { storage, save, confirm, cancel, status, writes,
+    change: (value, area = "sync", key = "keybindings") =>
+      storageListener({ [key]: { newValue: value } }, area),
     failSave: () => { failSave = true; } };
 }
 
@@ -305,4 +309,63 @@ test("normalization enforces action-specific options and preserves valid stored 
     assert.deepEqual(plain(normalize(input)), { confirmKeyCode: "Space", cancelKeyCode: "Escape" });
   }
   assert.deepEqual(plain(normalize({ confirmKeyCode: "Enter", cancelKeyCode: "KeyF" })), { confirmKeyCode: "Enter", cancelKeyCode: "Escape" });
+});
+
+test("popup reconciles incoming sync state before editing another field", async () => {
+  const app = popupHarness(); app.storage.resolve({}); await flush();
+  app.change({ confirmKeyCode: "Space", cancelKeyCode: "Control" }, "local");
+  app.change({ confirmKeyCode: "Space", cancelKeyCode: "Control" }, "sync", "fogPreferences");
+  assert.equal(app.cancel.value, "Escape");
+  app.change({ confirmKeyCode: "Space", cancelKeyCode: "Control" });
+  assert.equal(app.cancel.value, "Control");
+  await app.confirm.choose("Enter");
+  assert.deepEqual(app.writes, [{ keybindings: { confirmKeyCode: "Enter", cancelKeyCode: "Control" } }]);
+  app.change(undefined);
+  assert.equal(app.confirm.value, "Space"); assert.equal(app.cancel.value, "Escape");
+  app.change({ confirmKeyCode: "invalid", cancelKeyCode: "invalid" });
+  assert.equal(app.confirm.value, "Space"); assert.equal(app.cancel.value, "Escape");
+  app.change({ confirmKeyCode: "Control", cancelKeyCode: "Control" });
+  assert.equal(app.confirm.value, "Space"); assert.equal(app.cancel.value, "Escape");
+});
+
+for (const failRead of [false, true]) {
+  test(`incoming sync state supersedes initial ${failRead ? "failed" : "stale"} read`, async () => {
+    const app = popupHarness();
+    app.change({ confirmKeyCode: "Enter", cancelKeyCode: "Control" });
+    assert.equal(app.confirm.disabled, true); assert.equal(app.cancel.disabled, true);
+    if (failRead) app.storage.reject(new Error("Unavailable")); else app.storage.resolve({});
+    await flush();
+    assert.equal(app.confirm.value, "Enter"); assert.equal(app.cancel.value, "Control");
+    assert.equal(app.confirm.disabled, false); assert.equal(app.cancel.disabled, false);
+    assert.notEqual(app.status.textContent, "Settings unavailable. Using defaults.");
+  });
+}
+
+for (const failSave of [false, true]) {
+  for (const incoming of [{ confirmKeyCode: "Control", cancelKeyCode: "Space" }, undefined, { confirmKeyCode: "invalid" }]) {
+    test(`incoming sync state survives delayed ${failSave ? "failed" : "successful"} save: ${JSON.stringify(incoming)}`, async () => {
+      const app = popupHarness(true); app.storage.resolve({}); await flush();
+      const pending = app.confirm.choose("Enter");
+      app.change(incoming);
+      assert.equal(app.confirm.disabled, true); assert.equal(app.cancel.disabled, true);
+      if (failSave) app.failSave();
+      app.save.resolve(); await pending;
+      const expected = incoming?.confirmKeyCode === "Control" ? incoming : { confirmKeyCode: "Space", cancelKeyCode: "Escape" };
+      assert.equal(app.confirm.value, expected.confirmKeyCode); assert.equal(app.cancel.value, expected.cancelKeyCode);
+      assert.equal(app.confirm.disabled, false); assert.equal(app.cancel.disabled, false);
+      assert.equal(app.writes.length, failSave ? 0 : 1);
+    });
+  }
+}
+
+test("own storage event preserves saved selection without extra writes", async () => {
+  const app = popupHarness(true); app.storage.resolve({}); await flush();
+  const pending = app.confirm.choose("Enter");
+  app.change({ confirmKeyCode: "Enter", cancelKeyCode: "Escape" });
+  app.save.resolve(); await pending;
+  assert.equal(app.confirm.value, "Enter"); assert.equal(app.cancel.value, "Escape");
+  assert.equal(app.writes.length, 1);
+  assert.equal(app.status.textContent, "Saved.");
+  await app.cancel.choose("Control");
+  assert.deepEqual(app.writes[1], { keybindings: { confirmKeyCode: "Enter", cancelKeyCode: "Control" } });
 });

@@ -13,6 +13,9 @@
   const statusElement = document.querySelector("#status");
   let savedKeybindings = normalizeKeybindings(null);
   let statusTimer = null;
+  let revision = 0;
+  let loading = true;
+  let saving = false;
 
   function setStatus(message, type = "") {
     window.clearTimeout(statusTimer);
@@ -53,24 +56,38 @@
 
   function restoreSavedKeybindings() {
     renderKeybindings(savedKeybindings);
+    confirmSelect.disabled = loading || saving;
+    cancelSelect.disabled = loading || saving;
   }
 
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "sync" || !changes[KEYBINDING_STORAGE_KEY]) return;
+    revision++;
+    savedKeybindings = normalizeKeybindings(changes[KEYBINDING_STORAGE_KEY].newValue);
+    restoreSavedKeybindings();
+    setStatus("");
+  });
+
   async function loadKeybindings() {
+    const loadRevision = revision;
     try {
       const data = await chrome.storage.sync.get(KEYBINDING_STORAGE_KEY);
-      savedKeybindings = normalizeKeybindings(data[KEYBINDING_STORAGE_KEY]);
-      renderKeybindings(savedKeybindings);
+      if (revision === loadRevision) {
+        savedKeybindings = normalizeKeybindings(data[KEYBINDING_STORAGE_KEY]);
+      }
     } catch (error) {
-      savedKeybindings = normalizeKeybindings(null);
-      renderKeybindings(savedKeybindings);
-      setStatus("Settings unavailable. Using defaults.", "error");
+      if (revision === loadRevision) {
+        savedKeybindings = normalizeKeybindings(null);
+        setStatus("Settings unavailable. Using defaults.", "error");
+      }
     } finally {
-      confirmSelect.disabled = false;
-      cancelSelect.disabled = false;
+      loading = false;
+      restoreSavedKeybindings();
     }
   }
 
   async function saveKeybindings() {
+    if (loading || saving) return;
     if (confirmSelect.value === cancelSelect.value) {
       restoreSavedKeybindings();
       setStatus("Choose different keys.", "error");
@@ -78,6 +95,8 @@
     }
 
     const nextKeybindings = getSelectedKeybindings();
+    const saveRevision = revision;
+    saving = true;
     confirmSelect.disabled = true;
     cancelSelect.disabled = true;
 
@@ -85,14 +104,19 @@
       await chrome.storage.sync.set({
         [KEYBINDING_STORAGE_KEY]: nextKeybindings,
       });
-      savedKeybindings = nextKeybindings;
-      setStatus("Saved.", "success");
+      if (revision === saveRevision) {
+        savedKeybindings = nextKeybindings;
+      }
+      if (savedKeybindings.confirmKeyCode === nextKeybindings.confirmKeyCode &&
+          savedKeybindings.cancelKeyCode === nextKeybindings.cancelKeyCode) {
+        setStatus("Saved.", "success");
+      }
     } catch (error) {
       restoreSavedKeybindings();
       setStatus("Could not save settings.", "error");
     } finally {
-      confirmSelect.disabled = false;
-      cancelSelect.disabled = false;
+      saving = false;
+      restoreSavedKeybindings();
     }
   }
 

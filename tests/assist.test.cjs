@@ -102,6 +102,7 @@ function harness({ realTimer = false } = {}) {
   class Element {
     constructor() { this.isConnected = true; this.style = {}; this.picker = null; }
     getBoundingClientRect() { return { left: 0, top: 0, width: 800, height: 800 }; }
+    append(child) { (this.children ??= []).push(child); }
     getAttribute() { return null; }
     setAttribute() {}
     remove() { this.removed = true; }
@@ -129,7 +130,7 @@ function harness({ realTimer = false } = {}) {
   }
   run(c, 'assist-content.js');
   function dispatch(type, event = {}) { event.type = type; for (const fn of listeners[type] || []) fn(event); }
-  return { document, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
+  return { document, get board() { return board; }, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
     key(key, extra = {}) { const e = { key, code: key === 'Escape' ? 'Escape' : '', target: {}, preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...extra }; dispatch('keydown', e); return e; },
     activation(value) { c.navigator = value; },
     dispatch, advance(ms) { now += ms; for (const [id, t] of timeouts) if (t.due <= now) { timeouts.delete(id); t.fn(); } },
@@ -397,4 +398,57 @@ test('a stale confirmation button cannot start ticking in another session or col
     app.confirm(false); app.poll(); app.confirm(); app.poll();
     app.advance(10000); app.poll(); assert.equal(app.ticks.length, 1);
   }
+});
+
+test('completed observing review is accepted without enabling own-turn ticks', async () => {
+  const review = { ...snapshot, context: 'review', active: false, result: '1-0' };
+  const board = { id: 'board-single', isConnected: true };
+  for (const path of ['/game/live/123', '/game/daily/123/']) {
+    assert.equal(context.ChessBoardAssist.validate(JSON.stringify(review), board, path).context, 'review');
+  }
+  for (const change of [{ result: '*' }, { result: null }, { active: true }]) {
+    assert.equal(context.ChessBoardAssist.validate(JSON.stringify({ ...review, ...change }), board, '/game/live/123'), null);
+  }
+  assert.equal(context.ChessBoardAssist.validate(JSON.stringify(review), board, '/play/online'), null);
+  const app = harness({ realTimer: true }); await flush(); app.state(review); app.change({ keyboard: true, ticking: true });
+  app.key('b'); app.key('2'); assert.deepEqual(app.clicks, ['b2']);
+  app.advance(10000); app.poll(); assert.deepEqual(app.ticks, []);
+});
+
+test('keyboard selection shows the file immediately, then the square, in both orientations', async () => {
+  for (const flipped of [false, true]) {
+    const app = harness(); await flush(); app.state({ ...snapshot, context: 'analysis', active: false, flipped });
+    app.key('b');
+    const file = app.board.children.at(-1);
+    assert.equal(file.className, 'chess-assist-file'); assert.equal(file.style.left, flipped ? '75%' : '12.5%');
+    app.key('2'); assert.equal(file.removed, true);
+    const square = app.board.children.at(-1);
+    assert.equal(square.className, 'chess-assist-square');
+    assert.equal(square.style.left, flipped ? '75%' : '12.5%'); assert.equal(square.style.top, flipped ? '12.5%' : '75%');
+    app.key('c'); assert.notEqual(square.removed, true);
+    app.key('Escape'); assert.equal(square.removed, true);
+    const pendingFile = app.board.children.at(-1); assert.equal(pendingFile.removed, true);
+    app.key('a'); const expired = app.board.children.at(-1); app.advance(5000); assert.equal(expired.removed, true);
+    app.key('b'); app.key('2'); const selected = app.board.children.at(-1);
+    app.state({ ...snapshot, fen: snapshot.fen.replace(' w ', ' b ') }); app.poll(); assert.equal(selected.removed, true);
+  }
+});
+
+test('assist bridge gates observing review on a completed standard game', () => {
+  let handler, response, mode = 'observing', result = '1-0', variant = 'chess';
+  class Element { constructor() { this.tagName = 'WC-CHESS-BOARD'; this.id = 'board-single'; }
+    dispatchEvent(event) { response = JSON.parse(event.detail); } }
+  const board = new Element(); board.game = {
+    getMode: () => ({ name: mode }), getResult: () => result, getVariant: () => variant,
+    getFEN: () => snapshot.fen, getPlayingAs: () => undefined, getOptions: () => ({ flipped: false }),
+    isDragging: () => false, isAnimating: () => false,
+  };
+  const c = vm.createContext({ HTMLElement: Element, location: { pathname: '/game/live/123' },
+    document: { addEventListener: (type, fn) => { handler = fn; } },
+    CustomEvent: class { constructor(type, options) { Object.assign(this, options); } } });
+  run(c, 'assist-bridge.js'); handler({ target: board });
+  assert.equal(response.context, 'review'); assert.equal(response.active, false); assert.equal(response.result, '1-0');
+  result = '*'; handler({ target: board }); assert.equal(response, null);
+  result = '1-0'; variant = 'chess960'; handler({ target: board }); assert.equal(response, null);
+  variant = 'chess'; mode = 'unknown'; handler({ target: board }); assert.equal(response, null);
 });

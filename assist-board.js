@@ -12,7 +12,9 @@
       (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path));
     const human = input.context === "human" && board.id === "board-single" &&
       (/^\/play\/(?:online|daily)(?:\/|$)/.test(path) || /^\/game\/(?:live|daily)\/\d+\/?$/.test(path));
-    if (!bot && !analysis && !human) return null;
+    const review = input.context === "review" && input.active === false && board.id === "board-single" &&
+      /^\/game\/(?:live|daily)\/\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(input.result);
+    if (!bot && !analysis && !review && !human) return null;
     if (typeof input.fen !== "string" || input.fen.length > 160) return null;
     const fields = input.fen.split(" ");
     if (fields.length !== 6 || !/^[wb]$/.test(fields[1]) || !/^(?:-|K?Q?k?q?)$/.test(fields[2]) ||

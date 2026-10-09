@@ -8,10 +8,25 @@
   let lastVisibility = document.visibilityState;
   let confirmationButton = null, confirmationOwner = null;
   let board = null, identity = null, file = null, bufferTimer = null, pollTimer = null, indicator = null;
-  function clear() {
+  let filePreview = null, squareIndicator = null;
+  function clearBuffer() {
     file = null;
     clearTimeout(bufferTimer); bufferTimer = null;
     indicator?.remove(); indicator = null;
+    filePreview?.remove(); filePreview = null;
+  }
+  function clear() {
+    clearBuffer();
+    squareIndicator?.remove(); squareIndicator = null;
+  }
+  function showRegion(className, column, row = null) {
+    const region = document.createElement("div");
+    region.className = className;
+    region.setAttribute("aria-hidden", "true");
+    region.style.left = `${column * 12.5}%`;
+    region.style.top = row === null ? "0" : `${row * 12.5}%`;
+    board.append(region);
+    return region;
   }
   globalThis.ChessAssistInput = Object.freeze({ clear });
   function clickable(element) {
@@ -52,7 +67,7 @@
     if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
     if (event.code === "Escape") { clear(); return; }
     const snapshot = update();
-    if (!snapshot?.stable || (snapshot.context !== "analysis" && !snapshot.active)) { clear(); return; }
+    if (!snapshot?.stable || (!["analysis", "review"].includes(snapshot.context) && !snapshot.active)) { clear(); return; }
     const picker = promotion();
     const key = event.key?.toLowerCase();
     if (picker) {
@@ -63,7 +78,9 @@
       return;
     }
     if (/^[a-h]$/.test(key || "")) {
-      clear(); file = key;
+      clearBuffer(); file = key;
+      const column = key.charCodeAt(0) - 97;
+      filePreview = showRegion("chess-assist-file", snapshot.flipped ? 7 - column : column);
       const rect = board.getBoundingClientRect();
       indicator = document.createElement("div");
       indicator.className = "chess-assist-coordinate";
@@ -75,8 +92,13 @@
       consume(event);
     } else if (/^[1-8]$/.test(key || "") && file) {
       const square = `${file}${key}`;
-      clear();
-      if (clickSquare(board, square, snapshot)) consume(event);
+      clearBuffer();
+      if (clickSquare(board, square, snapshot)) {
+        squareIndicator?.remove();
+        const column = square.charCodeAt(0) - 97, row = Number(key) - 1;
+        squareIndicator = showRegion("chess-assist-square", snapshot.flipped ? 7 - column : column, snapshot.flipped ? row : 7 - row);
+        consume(event);
+      }
     }
   }
   function apply(value) {

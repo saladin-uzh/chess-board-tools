@@ -282,6 +282,10 @@ test('MAIN bridge reads full FEN only in verified modes and rejects unfinished i
   result = '0-1';
   ctx.location.pathname = '/analysis/game/computer/123/review'; handler({ target: board }); assert.equal(response, null);
   ctx.location.pathname = '/analysis/classroom'; handler({ target: board }); assert.equal(response, null);
+  ctx.location.pathname = '/game/live/123'; board.id = 'board-single'; mode = 'observing';
+  handler({ target: board }); assert.equal(response.context, 'review');
+  result = '*'; handler({ target: board }); assert.equal(response, null);
+  result = '1-0'; mode = 'playing'; handler({ target: board }); assert.equal(response, null);
   ctx.location.pathname = '/play/online'; mode = 'playing'; handler({ target: board }); assert.equal(response, null);
 });
 
@@ -399,4 +403,18 @@ test('content initialization cannot overwrite newer local preferences', async ()
   app.loading.resolve({ fogPreferences: { enabled: false } }); await flush(); app.tick();
   assert.equal(app.board.children.length, 1);
   assert.equal(app.timers.size, 1);
+});
+
+
+test('fog adapter accepts completed review and rejects unfinished review or mismatched routes', () => {
+  const input = { context: 'review', result: '1-0', stable: true, flipped: false, side: null, selected: null,
+    fen: fen({ a7: 'P' }) };
+  const board = { id: 'board-single', isConnected: true };
+  const validate = (value = input, path = '/game/live/123') => context.ChessFogBoard.validateSnapshot(JSON.stringify(value), board, path, 'white');
+  assert.equal(validate().side, 'white');
+  assert.equal(validate(input, '/game/daily/123').side, 'white');
+  assert.equal(validate({ ...input, result: '*' }), null);
+  assert.equal(validate({ ...input, result: undefined }), null);
+  assert.equal(validate({ ...input, stable: false }), null);
+  assert.equal(validate(input, '/play/online'), null);
 });

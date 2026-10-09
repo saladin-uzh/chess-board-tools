@@ -1,10 +1,11 @@
-# Chess.com Confirm Move Hotkeys
+# Chess Board Tools
 
 [Українська версія](README.uk.md)
 
-A minimal Manifest V3 extension for Chrome and Chromium-based browsers that
-controls the Chess.com move confirmation dialog with configurable keyboard
-shortcuts, with optional semi-transparent Fog of War for bots and analysis.
+A browser extension for Chess.com with keyboard board controls, configurable
+move confirmation shortcuts, and optional sound cues during your turn.
+Semi-transparent fog of war is available against bots, in analysis, and in
+completed game reviews.
 
 ## Install locally
 
@@ -18,7 +19,7 @@ Choose one option:
 - Clone the repository:
 
   ```bash
-  git clone https://github.com/saladin-uzh/chess-confirm-move-hotkeys.git
+  git clone https://github.com/saladin-uzh/chess-board-tools.git
   ```
 
 - Or select **Code → Download ZIP** on GitHub and extract the downloaded
@@ -29,12 +30,20 @@ Choose one option:
 1. Open `chrome://extensions` in Chrome or a Chromium-based browser.
 2. Enable **Developer mode**.
 3. Select **Load unpacked**.
-4. Select the extracted `chess-confirm-move-hotkeys` directory containing
+4. Select the extracted `chess-board-tools` directory containing
    `manifest.json`.
 5. Reload any Chess.com tabs that were already open.
 
 After pulling or downloading an update, select the extension's **Reload**
 button on `chrome://extensions`, then reload the Chess.com tab.
+
+### Updating a temporary Safari copy
+
+For an already-installed temporary Safari extension, use **Safari Settings →
+Extensions → Reload** after changing the files, then close and reopen the test
+tabs. Existing tabs can retain old scripts or stale extension event handlers.
+Analysis and completed reviews were verified in Safari 27.0.1; see the
+[runtime validation](docs/issues-and-review-validation.md) for coverage.
 
 ## Shortcuts and settings
 
@@ -65,14 +74,17 @@ The popup has separate **Keyboard board control** and **Tick every 10 seconds
 of my turn** switches. Both start disabled and use local preferences.
 
 Type coordinates sequentially: `b`, `2` selects b2; `b`, `3` clicks b3.
-Coordinates stay algebraic when flipped. An incomplete letter appears beside
+Coordinates stay algebraic when flipped. A letter immediately highlights its
+file; the following digit outlines the chosen square above fog. The square
+outline clears on position or lifecycle changes. An incomplete letter appears beside
 the board and clears after five seconds, Escape, focus changes, scrolling,
 position changes, or board replacement. Use Latin `a–h` in your active layout.
 When the host promotion picker opens, `q/r/b/n` choose queen/rook/bishop/knight;
 coordinate entry pauses. Chess.com validates moves and retains its normal
 confirmation flow. All keyboard actions pause while an input has focus.
 
-Board control supports standard human games, bots, and analysis. Unknown modes
+Board control supports standard human games, bots, analysis, and completed
+game reviews. Unknown modes
 and unavailable APIs disable it. Clicks use the host pointer path; Chess.com
 may report them as synthetic events. The extension does not hide or bypass
 those checks.
@@ -101,8 +113,9 @@ the board and follows board flips. Manual White/Black perspectives stay fixed.
 
 Fog is supported on `/play/computer`, standalone `/analysis`, and completed
 `/analysis/game/live/*`, `/analysis/game/daily/*`, or
-`/analysis/game/computer/*` games. It stays unavailable for human games,
-classrooms, variants, incomplete state, and unsupported pages. Human-game use
+`/analysis/game/computer/*` games, plus completed `/game/live/*` and
+`/game/daily/*` reviews. It stays unavailable for active human games,
+classrooms, variants, incomplete state, and unsupported pages. Active human-game use
 is outside this release under [Chess.com's Fair Play Policy](https://www.chess.com/legal/fair-play).
 
 Clear squares are the union of your pieces' occupied squares and movement
@@ -135,10 +148,16 @@ piece placement.
 ## Security and privacy
 
 The extension uses the `storage` permission only to save your shortcut, fog, and board helper settings.
-It makes no external network requests and does not collect or transmit data. It
-runs only on the listed Chess.com URLs.
+The extension code makes no external network requests and does not collect
+telemetry or game history. It runs only on the listed Chess.com URLs.
 
-Fog display preferences use a separate `chrome.storage.local` key. Position
+Shortcut settings use `chrome.storage.sync`. When Chrome Sync is enabled, Chrome
+synchronizes these settings with your other signed-in Chrome browsers. When
+syncing is disabled, these settings stay local to the browser. Chrome stores
+offline changes locally and resumes synchronization when back online.
+
+Fog and board helper preferences use separate `chrome.storage.local` keys
+and are not synchronized. Position
 snapshots are used in memory to draw the mask; positions, move history, and
 account/game identifiers are not stored by the extension.
 
