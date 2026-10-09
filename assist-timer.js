@@ -11,8 +11,9 @@
           return false;
         }
         const samePendingTurn = pending && key !== null && snapshot.session === session && snapshot.side === side;
+        const startingPendingTurn = pending && key === null;
         if (!snapshot.active || !snapshot.side || snapshot.context === "analysis" ||
-            (!samePendingTurn && snapshot.side !== snapshot.turn)) { this.reset(); return false; }
+            (!samePendingTurn && !startingPendingTurn && snapshot.side !== snapshot.turn)) { this.reset(); return false; }
         const next = samePendingTurn ? key : `${snapshot.session}:${snapshot.side}:${snapshot.fen}`;
         const wasUnavailable = unavailable;
         unavailable = false;

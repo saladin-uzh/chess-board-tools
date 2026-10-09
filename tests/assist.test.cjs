@@ -98,7 +98,7 @@ test('audio waits for gesture, releases nodes and tolerates blocked or missing a
 
 function harness({ realTimer = false } = {}) {
   const listeners = {}, docListeners = {}, timeouts = new Map(), intervals = new Map(), clicks = [], timerCalls = [], timerResets = [], ticks = [], unlocks = [];
-  let now = 0, serial = 0, changed, current = { ...snapshot, context: 'analysis', active: false, side: null }, board;
+  let now = 0, serial = 0, changed, current = { ...snapshot, context: 'analysis', active: false, side: null }, board, confirmation;
   class Element {
     constructor() { this.isConnected = true; this.style = {}; this.picker = null; }
     getBoundingClientRect() { return { left: 0, top: 0, width: 800, height: 800 }; }
@@ -109,7 +109,7 @@ function harness({ realTimer = false } = {}) {
   }
   board = new Element();
   const document = { activeElement: null, visibilityState: 'visible', body: { append() {} },
-    querySelector: selector => selector.startsWith('wc-') ? board : null,
+    querySelector: selector => selector.startsWith('wc-') ? board : selector.startsWith('div.confirm-') ? confirmation : null,
     createElement: () => new Element(), addEventListener: (type, fn) => { docListeners[type] = fn; } };
   const c = vm.createContext({ document, navigator: { userActivation: { isActive: true } }, location: { pathname: '/analysis' },
     getComputedStyle: () => ({ display: 'block', visibility: 'visible', pointerEvents: 'auto' }),
@@ -134,6 +134,7 @@ function harness({ realTimer = false } = {}) {
     activation(value) { c.navigator = value; },
     dispatch, advance(ms) { now += ms; for (const [id, t] of timeouts) if (t.due <= now) { timeouts.delete(id); t.fn(); } },
     poll() { for (const fn of intervals.values()) fn(); },
+    confirm(value = true) { confirmation = value ? new Element() : null; },
     state(value) { current = value; }, replace() { board = new Element(); },
     change(value, area = 'local') { changed({ boardAssistPreferences: { newValue: value } }, area); },
     picker(piece) { const p = new Element(); p.piece = piece; const picker = new Element(); picker.querySelectorAll = () => [p]; board.picker = picker; },
@@ -369,4 +370,31 @@ test('audio activation leaves ordinary key and pointer events untouched', async 
   assert.equal(app.key('a', { isTrusted: true }).prevented, undefined);
   app.dispatch('pointerup', { isTrusted: true, pointerType: 'touch', preventDefault() { assert.fail('Consumed pointer event'); }, stopImmediatePropagation() { assert.fail('Stopped pointer event'); } });
   assert.equal(app.unlocks.length, 2);
+});
+
+test('enabling or loading ticks during pending confirmation starts a fresh clock', async () => {
+  for (const loading of [false, true]) {
+    const app = harness({ realTimer: true }); await flush();
+    app.state({ ...snapshot, turn: 'black', fen: snapshot.fen.replace(' w ', ' b ') }); app.confirm();
+    if (loading) { app.change({ ticking: true }); app.dispatch('pagehide'); app.dispatch('pageshow'); }
+    else { app.advance(5000); app.change({ ticking: true }); }
+    app.advance(9999); app.poll(); assert.deepEqual(app.ticks, []);
+    app.advance(1); app.poll(); assert.deepEqual(app.ticks, [loading ? 10000 : 15000]);
+    app.advance(10000); app.poll(); assert.equal(app.ticks.length, 2);
+    app.confirm(false); app.poll(); app.advance(10000); app.poll(); assert.equal(app.ticks.length, 2);
+  }
+});
+
+test('a stale confirmation button cannot start ticking in another session or color', async () => {
+  for (const change of [{ session: 2 }, { side: 'black' }]) {
+    const app = harness({ realTimer: true }); await flush();
+    app.state(snapshot); app.confirm(); app.change({ ticking: true });
+    const next = { ...snapshot, ...change, turn: change.side ? 'white' : 'black' };
+    app.state(next); app.poll(); app.advance(10000); app.poll(); app.advance(10000); app.poll();
+    assert.deepEqual(app.ticks, []);
+    app.change({ ticking: false }); app.change({ ticking: true });
+    app.advance(10000); app.poll(); assert.deepEqual(app.ticks, []);
+    app.confirm(false); app.poll(); app.confirm(); app.poll();
+    app.advance(10000); app.poll(); assert.equal(app.ticks.length, 1);
+  }
 });

@@ -6,6 +6,7 @@
   const turnTimer = createTurnTimer(), audio = createAudio();
   let preferences = normalizeAssist(null), revision = 0;
   let lastVisibility = document.visibilityState;
+  let confirmationButton = null, confirmationOwner = null;
   let board = null, identity = null, file = null, bufferTimer = null, pollTimer = null, indicator = null;
   function clear() {
     file = null;
@@ -32,7 +33,12 @@
     const nextIdentity = snapshot ? `${location.pathname}:${snapshot.session}:${snapshot.fen}:${snapshot.flipped}` : null;
     if (!snapshot?.stable) clear();
     if (nextIdentity !== identity) { clear(); identity = nextIdentity; }
-    const pending = clickable(document.querySelector("div.confirm-move-buttons .cc-button-primary"));
+    const button = document.querySelector("div.confirm-move-buttons .cc-button-primary");
+    const owner = snapshot?.side ? `${snapshot.session}:${snapshot.side}` : null;
+    if (!clickable(button)) { confirmationButton = null; confirmationOwner = null; }
+    else if (button !== confirmationButton) { confirmationButton = button; confirmationOwner = owner; }
+    else if (confirmationOwner === null) confirmationOwner = owner;
+    const pending = confirmationButton !== null && owner !== null && confirmationOwner === owner;
     const visible = document.visibilityState === "visible";
     const resumed = lastVisibility !== "visible" && visible;
     lastVisibility = document.visibilityState;

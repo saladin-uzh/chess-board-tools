@@ -6,7 +6,7 @@ extension permission.
 
 ## Automated checks
 
-`node --test tests/*.test.cjs`: 51 passing tests. Added timer coverage includes
+`node --test tests/*.test.cjs`: 53 passing tests. Added timer coverage includes
 10-second deadlines, delayed polling without a backlog, own/opponent turns,
 unknown color, analysis, new sessions, game completion, pending confirmation,
 dragging, background return, and unavailable/blocked Web Audio. Changed
@@ -74,3 +74,14 @@ visibility records contained fourteen oscillators; there were no hidden or
 immediate catch-up ticks. The next tick occurred at 228746.9 ms on the existing
 schedule. Instrumentation was restored after the test. Physical touch/pen
 hardware was not tested.
+
+## Pending-confirmation enable regression
+
+Enabling ticking or restoring the controller while native confirmation is
+already visible starts a new clock despite the tentative opponent-turn FEN.
+The visible control is associated with its observed session and player color;
+a retained control cannot authorize ticking after either changes, including
+across preference toggles. Real-controller tests cover both start paths,
+confirmation removal, stale-control polling and a newly displayed control.
+This is controlled integration coverage; active human native prompts remain
+outside the runtime evidence above.
