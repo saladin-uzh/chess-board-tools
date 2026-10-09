@@ -25,7 +25,7 @@
   }
   function update() {
     const next = document.querySelector("wc-chess-board#board-play-computer, wc-chess-board#board-analysis-board, wc-chess-board#board-single");
-    if (next !== board) { clear(); turnTimer.reset(); identity = null; board = next; }
+    if (next !== board) { clear(); identity = null; board = next; }
     const rect = board?.getBoundingClientRect();
     const geometryValid = rect?.width > 0 && rect?.height > 0 && Math.abs(rect.width - rect.height) <= 1;
     const snapshot = board && geometryValid ? read(board) : null;

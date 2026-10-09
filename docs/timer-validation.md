@@ -38,3 +38,12 @@ confirmation prompt still require disposable runtime testing. The automated
 pending-confirmation test does not establish the host prompt state. Keep this
 PR in draft until these checks and keyboard prerequisite acceptance pass.
 v1.1.0 publication additionally requires the user's confirmation after merge.
+
+## Review regressions
+
+- Board replacement at nine seconds retains the original ten-second deadline
+  in an integration test using the real turn timer and content controller.
+- Missing snapshots consume unavailable deadlines without replay; a verified
+  new session starts a fresh clock.
+- Pending confirmation preserves time only for the same session and player
+  color, including when a stale confirmation control remains visible.

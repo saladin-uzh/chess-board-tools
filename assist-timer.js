@@ -1,18 +1,29 @@
 (() => {
   "use strict";
   function createTurnTimer() {
-    let key = null, start = 0, bucket = 0;
+    let key = null, session = null, side = null, start = 0, bucket = 0, unavailable = false;
     return {
-      reset() { key = null; bucket = 0; },
+      reset() { key = null; session = side = null; bucket = 0; unavailable = false; },
       update(snapshot, now, visible, pending = false) {
-        if (!snapshot?.active || !snapshot.side || snapshot.context === "analysis" ||
-            (!pending && snapshot.side !== snapshot.turn)) { this.reset(); return false; }
-        const next = pending && key !== null ? key : `${snapshot.session}:${snapshot.side}:${snapshot.fen}`;
-        if (next !== key) { key = next; start = now; bucket = 0; return false; }
+        if (!snapshot) {
+          unavailable = true;
+          if (key !== null) bucket = Math.max(bucket, Math.floor((now - start) / 10000));
+          return false;
+        }
+        const samePendingTurn = pending && key !== null && snapshot.session === session && snapshot.side === side;
+        if (!snapshot.active || !snapshot.side || snapshot.context === "analysis" ||
+            (!samePendingTurn && snapshot.side !== snapshot.turn)) { this.reset(); return false; }
+        const next = samePendingTurn ? key : `${snapshot.session}:${snapshot.side}:${snapshot.fen}`;
+        const wasUnavailable = unavailable;
+        unavailable = false;
+        if (next !== key) {
+          key = next; session = snapshot.session; side = snapshot.side;
+          start = now; bucket = 0; return false;
+        }
         const elapsedBucket = Math.floor((now - start) / 10000);
         if (elapsedBucket <= bucket) return false;
         bucket = elapsedBucket;
-        return visible && snapshot.stable;
+        return visible && snapshot.stable && !wasUnavailable;
       },
     };
   }
