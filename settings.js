@@ -28,6 +28,11 @@
     { code: "Space", label: "Space" },
     { code: "Control", label: "Ctrl" },
   ];
+  const ASSIST_STORAGE_KEY = "boardAssistPreferences";
+  function normalizeAssist(value) {
+    return { keyboard: value?.keyboard === true };
+  }
+
   function normalizeKeybindings(value) {
     if (value === null || typeof value !== "object") {
       return { ...DEFAULT_KEYBINDINGS };
@@ -72,6 +77,8 @@
     DEFAULT_KEYBINDINGS,
     CONFIRM_KEYS,
     CANCEL_KEYS,
+    ASSIST_STORAGE_KEY,
+    normalizeAssist,
     normalizeKeybindings,
   });
 })();

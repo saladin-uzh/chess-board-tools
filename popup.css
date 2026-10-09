@@ -96,7 +96,7 @@ select:focus {
   color: #137333;
 }
 
-.fog-settings {
+.fog-settings, .assist-settings {
   display: grid;
   gap: 8px;
   border-top: 1px solid #cbd2d9;
