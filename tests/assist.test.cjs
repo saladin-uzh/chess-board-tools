@@ -8,7 +8,7 @@ const run = (context, file) => vm.runInContext(source(file), context, { filename
 const plain = value => JSON.parse(JSON.stringify(value));
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const context = vm.createContext({});
-for (const file of ['settings.js', 'assist-board.js']) run(context, file);
+for (const file of ['settings.js', 'assist-board.js', 'assist-timer.js']) run(context, file);
 const snapshot = { session: 1, context: 'bot', fen: '7k/8/8/8/8/8/P7/7K w - - 0 1', side: 'white', turn: 'white', active: true, stable: true, flipped: false };
 
 test('allowed action keys, old values and duplicate migration', () => {
@@ -21,7 +21,7 @@ test('allowed action keys, old values and duplicate migration', () => {
     assert.deepEqual(plain(s.normalizeKeybindings(input)), { confirmKeyCode: 'Space', cancelKeyCode: 'Escape' });
   }
   assert.deepEqual(plain(s.normalizeKeybindings({ confirmKeyCode: 'Enter', cancelKeyCode: 'KeyS' })), { confirmKeyCode: 'Enter', cancelKeyCode: 'Escape' });
-  assert.deepEqual(plain(s.normalizeAssist({ keyboard: 'true', ticking: 1 })), { keyboard: false });
+  assert.deepEqual(plain(s.normalizeAssist({ keyboard: 'true', ticking: 1 })), { keyboard: false, ticking: false });
 });
 
 test('adapter rejects unknown contexts, malformed state and transient boards', () => {
@@ -46,10 +46,58 @@ test('coordinate mapping is algebraic on both orientations and rejects bad geome
   assert.equal(point('b2', false, { ...rect, height: 700 }), null);
 });
 
+test('timer signals at 10-second boundaries, skips backlog and resets for new turns and sessions', () => {
+  const timer = context.ChessAssistTimer.createTurnTimer();
+  assert.equal(timer.update(snapshot, 0, true), false);
+  assert.equal(timer.update(snapshot, 9999, true), false);
+  assert.equal(timer.update(snapshot, 10000, true), true);
+  assert.equal(timer.update(snapshot, 10100, true), false);
+  assert.equal(timer.update(snapshot, 35000, true), true);
+  assert.equal(timer.update(snapshot, 35100, true), false);
+  assert.equal(timer.update(snapshot, 40000, false), false);
+  assert.equal(timer.update(snapshot, 40100, true), false);
+  assert.equal(timer.update(snapshot, 50000, true), true);
+  const opponent = { ...snapshot, turn: 'black' };
+  assert.equal(timer.update(opponent, 51000, true), false);
+  assert.equal(timer.update(snapshot, 60000, true), false);
+  assert.equal(timer.update(snapshot, 70000, true), true);
+  assert.equal(timer.update({ ...snapshot, session: 2 }, 71000, true), false);
+  assert.equal(timer.update({ ...snapshot, active: false }, 90000, true), false);
+  for (const input of [null, { ...snapshot, side: null }, { ...snapshot, context: 'analysis' }]) assert.equal(timer.update(input, 100000, true), false);
+});
 
+test('pending confirmation remains part of the same own turn', () => {
+  const timer = context.ChessAssistTimer.createTurnTimer();
+  timer.update(snapshot, 0, true);
+  const pending = { ...snapshot, turn: 'black', fen: snapshot.fen.replace(' w ', ' b ') };
+  assert.equal(timer.update(pending, 10000, true, true), true);
+  assert.equal(timer.update(pending, 20000, true, true), true);
+  assert.equal(timer.update(pending, 21000, true, false), false);
+  assert.equal(timer.update(snapshot, 30000, true), false);
+});
+
+test('audio waits for gesture, releases nodes and tolerates blocked or missing audio', async () => {
+  const events = []; let resumes = 0;
+  class Audio {
+    constructor() { this.state = 'suspended'; this.currentTime = 1; }
+    async resume() { resumes++; this.state = 'running'; }
+    createOscillator() { return { frequency: {}, connect() {}, start() { events.push('start'); }, stop() { this.onended(); }, disconnect() { events.push('disconnect'); } }; }
+    createGain() { return { gain: { setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
+    async close() { events.push('close'); }
+  }
+  const c = vm.createContext({ AudioContext: Audio }); run(c, 'assist-timer.js');
+  const audio = c.ChessAssistTimer.createAudio(); audio.tick(); assert.equal(events.length, 0);
+  audio.unlock(); await flush(); audio.tick(); assert.deepEqual(events, ['start', 'disconnect']);
+  audio.close(); await flush(); assert.equal(events.at(-1), 'close');
+  const blocked = vm.createContext({ AudioContext: class { constructor() { throw Error('Blocked'); } } }); run(blocked, 'assist-timer.js');
+  const failed = blocked.ChessAssistTimer.createAudio(); failed.unlock(); failed.unlock(); failed.tick();
+  const rejected = vm.createContext({ AudioContext: class { constructor() { this.state = 'suspended'; } resume() { resumes++; return Promise.reject(Error('Denied')); } } }); run(rejected, 'assist-timer.js');
+  const denied = rejected.ChessAssistTimer.createAudio(); denied.unlock(); await flush(); denied.unlock(); denied.tick();
+  assert.equal(resumes, 2);
+});
 
 function harness() {
-  const listeners = {}, docListeners = {}, timeouts = new Map(), intervals = new Map(), clicks = [];
+  const listeners = {}, docListeners = {}, timeouts = new Map(), intervals = new Map(), clicks = [], timerCalls = [], timerResets = [];
   let now = 0, serial = 0, changed, current = { ...snapshot, context: 'analysis', active: false, side: null }, board;
   class Element {
     constructor() { this.isConnected = true; this.style = {}; this.picker = null; }
@@ -71,10 +119,11 @@ function harness() {
     addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
     chrome: { storage: { local: { get: async () => ({ boardAssistPreferences: { keyboard: true } }) }, onChanged: { addListener: fn => { changed = fn; } } } },
     ChessBoardAssist: { read: () => current, clickSquare: (b, square) => { clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
+    ChessAssistTimer: { createTurnTimer: () => ({ reset() { timerResets.push(true); }, update(...args) { timerCalls.push(args); return false; } }), createAudio: () => ({ unlock() {}, close() {}, tick() {} }) },
   });
   run(c, 'settings.js'); run(c, 'assist-content.js');
   function dispatch(type, event = {}) { for (const fn of listeners[type] || []) fn(event); }
-  return { document, clicks, listeners, docListeners,
+  return { document, clicks, timerCalls, timerResets, listeners, docListeners,
     key(key, extra = {}) { const e = { key, code: key === 'Escape' ? 'Escape' : '', target: {}, preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...extra }; dispatch('keydown', e); return e; },
     dispatch, advance(ms) { now += ms; for (const [id, t] of timeouts) if (t.due <= now) { timeouts.delete(id); t.fn(); } },
     poll() { for (const fn of intervals.values()) fn(); },
@@ -121,7 +170,7 @@ function deferred() {
 function popupHarness() {
   const load = deferred(), save = deferred(), writes = [], elements = {};
   let changed;
-  for (const id of ['keyboard-enabled', 'assist-save-status']) {
+  for (const id of ['keyboard-enabled', 'ticking-enabled', 'assist-save-status']) {
     elements['#' + id] = { disabled: true, checked: false, addEventListener(type, fn) { this[type] = fn; } };
   }
   const c = vm.createContext({ document: { querySelector: id => elements[id] }, chrome: { storage: {
@@ -129,7 +178,7 @@ function popupHarness() {
     onChanged: { addListener: fn => { changed = fn; } },
   } } });
   run(c, 'settings.js'); run(c, 'assist-popup.js');
-  return { load, save, writes, keyboard: elements['#keyboard-enabled'], status: elements['#assist-save-status'],
+  return { load, save, writes, keyboard: elements['#keyboard-enabled'], ticking: elements['#ticking-enabled'], status: elements['#assist-save-status'],
     change: (value, area = 'local') => changed({ boardAssistPreferences: { newValue: value } }, area) };
 }
 
@@ -137,14 +186,14 @@ test('helper popup protects delayed reads/saves and keeps separate local prefere
   const app = popupHarness(); assert.equal(app.keyboard.disabled, true);
   app.change({ keyboard: true, ticking: true });
   app.load.resolve({ boardAssistPreferences: {} }); await flush();
-  assert.equal(app.keyboard.checked, true);
+  assert.equal(app.keyboard.checked, true); assert.equal(app.ticking.checked, true);
   app.keyboard.checked = false;
-  const pending = app.keyboard.change(); assert.equal(app.keyboard.disabled, true);
-  await app.keyboard.change(); assert.equal(app.writes.length, 0);
+  const pending = app.keyboard.change(); assert.equal(app.ticking.disabled, true);
+  await app.ticking.change(); assert.equal(app.writes.length, 0);
   app.change({ keyboard: true, ticking: false });
   app.save.resolve(); await pending;
-  assert.equal(app.keyboard.checked, true);
-  assert.deepEqual(app.writes, [{ boardAssistPreferences: { keyboard: false } }]);
+  assert.equal(app.keyboard.checked, true); assert.equal(app.ticking.checked, false);
+  assert.deepEqual(app.writes, [{ boardAssistPreferences: { keyboard: false, ticking: true } }]);
   app.change({ keyboard: false, ticking: true }, 'sync'); assert.equal(app.keyboard.checked, true);
 });
 
@@ -188,4 +237,40 @@ test('coordinate and promotion actions use host pointer events without calling g
   assert.equal(c.ChessBoardAssist.clickPromotion(element), true);
   assert.equal(events[1].clientX, 400);
   element.isConnected = false; assert.equal(c.ChessBoardAssist.clickPromotion(element), false);
+});
+
+
+test('dragging does not restart the turn timer or accumulate missed ticks', () => {
+  const timer = context.ChessAssistTimer.createTurnTimer(); timer.update(snapshot, 0, true);
+  assert.equal(timer.update({ ...snapshot, stable: false }, 5000, true), false);
+  assert.equal(timer.update({ ...snapshot, stable: false }, 10000, true), false);
+  assert.equal(timer.update(snapshot, 11000, true), false);
+  assert.equal(timer.update(snapshot, 20000, true), true);
+});
+
+
+test('returning from a throttled background tab consumes missed deadlines silently', async () => {
+  const app = harness(); await flush(); app.change({ ticking: true });
+  app.document.visibilityState = 'hidden'; app.docListeners.visibilitychange();
+  app.advance(35000);
+  app.document.visibilityState = 'visible'; app.poll();
+  assert.equal(app.timerCalls.at(-1)[2], false);
+  app.poll(); assert.equal(app.timerCalls.at(-1)[2], true);
+});
+
+test('keyboard preference changes do not restart an enabled turn timer', async () => {
+  const app = harness(); await flush(); app.change({ keyboard: true, ticking: true });
+  const resets = app.timerResets.length;
+  app.change({ keyboard: false, ticking: true });
+  assert.equal(app.timerResets.length, resets);
+  app.change({ keyboard: false, ticking: false });
+  assert.equal(app.timerResets.length, resets + 1);
+});
+
+test('black own turns use authoritative color rather than board orientation', () => {
+  const timer = context.ChessAssistTimer.createTurnTimer();
+  const black = { ...snapshot, side: 'black', turn: 'black', fen: snapshot.fen.replace(' w ', ' b ') };
+  assert.equal(timer.update(black, 0, true), false);
+  assert.equal(timer.update({ ...black, flipped: true }, 10000, true), true);
+  assert.equal(timer.update({ ...black, turn: 'white' }, 20000, true), false);
 });

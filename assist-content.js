@@ -2,7 +2,10 @@
   "use strict";
   const { ASSIST_STORAGE_KEY, normalizeAssist, hasInputFocus } = globalThis.ChessConfirmMoveSettings;
   const { read, clickSquare, clickPromotion } = globalThis.ChessBoardAssist;
+  const { createTurnTimer, createAudio } = globalThis.ChessAssistTimer;
+  const turnTimer = createTurnTimer(), audio = createAudio();
   let preferences = normalizeAssist(null), revision = 0;
+  let lastVisibility = document.visibilityState;
   let board = null, identity = null, file = null, bufferTimer = null, pollTimer = null, indicator = null;
   function clear() {
     file = null;
@@ -22,13 +25,18 @@
   }
   function update() {
     const next = document.querySelector("wc-chess-board#board-play-computer, wc-chess-board#board-analysis-board, wc-chess-board#board-single");
-    if (next !== board) { clear(); identity = null; board = next; }
+    if (next !== board) { clear(); turnTimer.reset(); identity = null; board = next; }
     const rect = board?.getBoundingClientRect();
     const geometryValid = rect?.width > 0 && rect?.height > 0 && Math.abs(rect.width - rect.height) <= 1;
     const snapshot = board && geometryValid ? read(board) : null;
     const nextIdentity = snapshot ? `${location.pathname}:${snapshot.session}:${snapshot.fen}:${snapshot.flipped}` : null;
     if (!snapshot?.stable) clear();
     if (nextIdentity !== identity) { clear(); identity = nextIdentity; }
+    const pending = clickable(document.querySelector("div.confirm-move-buttons .cc-button-primary"));
+    const visible = document.visibilityState === "visible";
+    const resumed = lastVisibility !== "visible" && visible;
+    lastVisibility = document.visibilityState;
+    if (preferences.ticking && turnTimer.update(snapshot, performance.now(), visible && !resumed, pending)) audio.tick();
     return snapshot;
   }
   function consume(event) { event.preventDefault(); event.stopImmediatePropagation(); }
@@ -67,10 +75,12 @@
   }
   function apply(value) {
     const next = normalizeAssist(value);
+    if (next.ticking !== preferences.ticking) turnTimer.reset();
     preferences = next;
     clear();
     clearInterval(pollTimer); pollTimer = null;
-    if (preferences.keyboard) {
+    if (!preferences.ticking) audio.close();
+    if (preferences.keyboard || preferences.ticking) {
       update(); pollTimer = setInterval(update, 100);
     }
   }
@@ -82,16 +92,21 @@
   chrome.storage.local.get(ASSIST_STORAGE_KEY).then(data => {
     if (revision === loadRevision) apply(data[ASSIST_STORAGE_KEY]);
   }).catch(() => { if (revision === loadRevision) apply(null); });
+  const unlock = event => {
+    if (preferences.ticking && event.isTrusted && document.visibilityState === "visible") audio.unlock();
+  };
+  addEventListener("pointerdown", unlock, true);
+  addEventListener("keydown", unlock, true);
   addEventListener("keydown", handleKeydown, true);
   addEventListener("focusin", clear, true);
   addEventListener("blur", clear);
   addEventListener("scroll", clear, true);
   addEventListener("resize", clear);
   document.addEventListener("visibilitychange", () => {
-    clear(); if (preferences.keyboard) update();
+    clear(); if (preferences.keyboard || preferences.ticking) update();
   });
   addEventListener("pagehide", () => {
-    clear(); clearInterval(pollTimer); pollTimer = null;
+    clear(); clearInterval(pollTimer); pollTimer = null; turnTimer.reset(); audio.close();
   });
   addEventListener("pageshow", () => apply(preferences));
 })();
