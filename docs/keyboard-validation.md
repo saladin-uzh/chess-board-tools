@@ -27,9 +27,9 @@ or modified.
   Both use the host pointer path, including FairPlay.UntrustedUserEvent
   reporting for synthetic events. The extension does not bypass that report.
 
-## Remaining acceptance checks
+## Runtime coverage limits
 
 Active human live/daily games and their native confirmation prompt have not
 been exercised in a disposable game. Completed human-game inspection does
 not establish active-game behavior. Safari runtime behavior is also not
-verified. Keep this PR in draft until required runtime acceptance is complete.
+verified. These limitations remain documented for the v1.1.0 release.
