@@ -135,10 +135,16 @@ piece placement.
 ## Security and privacy
 
 The extension uses the `storage` permission only to save your shortcut, fog, and board helper settings.
-It makes no external network requests and does not collect or transmit data. It
-runs only on the listed Chess.com URLs.
+The extension code makes no external network requests and does not collect
+telemetry or game history. It runs only on the listed Chess.com URLs.
 
-Fog display preferences use a separate `chrome.storage.local` key. Position
+Shortcut settings use `chrome.storage.sync`. When Chrome Sync is enabled, Chrome
+synchronizes these settings with your other signed-in Chrome browsers. When
+syncing is disabled, these settings stay local to the browser. Chrome stores
+offline changes locally and resumes synchronization when back online.
+
+Fog and board helper preferences use separate `chrome.storage.local` keys
+and are not synchronized. Position
 snapshots are used in memory to draw the mask; positions, move history, and
 account/game identifiers are not stored by the extension.
 
