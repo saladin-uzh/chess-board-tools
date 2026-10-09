@@ -21,6 +21,7 @@
       "matches": [
         "https://www.chess.com/play/*",
         "https://www.chess.com/game/*",
+        "https://www.chess.com/analysis",
         "https://www.chess.com/analysis/game/*"
       ],
       "js": [
@@ -59,6 +60,36 @@
       ],
       "css": [
         "fog.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.chess.com/play/*",
+        "https://www.chess.com/game/*",
+        "https://www.chess.com/analysis",
+        "https://www.chess.com/analysis/game/*"
+      ],
+      "js": [
+        "assist-bridge.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.chess.com/play/*",
+        "https://www.chess.com/game/*",
+        "https://www.chess.com/analysis",
+        "https://www.chess.com/analysis/game/*"
+      ],
+      "js": [
+        "settings.js",
+        "assist-board.js",
+        "assist-content.js"
+      ],
+      "css": [
+        "assist.css"
       ],
       "run_at": "document_idle"
     }

@@ -59,6 +59,7 @@
     const button = code === keybindings.confirmKeyCode ? findConfirmButton()
       : code === keybindings.cancelKeyCode ? findCancelButton() : null;
     if (!button) return;
+    globalThis.ChessAssistInput?.clear();
     button.click();
     event.preventDefault();
     event.stopImmediatePropagation();

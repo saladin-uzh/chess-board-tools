@@ -59,12 +59,31 @@ or cancellation button is present. All extension keyboard actions pause while
 an input, textarea, select, editable element, or textbox has focus. Events
 inside buttons and other interactive controls are also ignored.
 
+## Keyboard board control
+
+The popup has a **Keyboard board control** switch. It starts disabled and uses
+local preferences.
+
+Type coordinates sequentially: `b`, `2` selects b2; `b`, `3` clicks b3.
+Coordinates stay algebraic when flipped. An incomplete letter appears beside
+the board and clears after five seconds, Escape, focus changes, scrolling,
+position changes, or board replacement. Use Latin `a–h` in your active layout.
+When the host promotion picker opens, `q/r/b/n` choose queen/rook/bishop/knight;
+coordinate entry pauses. Chess.com validates moves and retains its normal
+confirmation flow. All keyboard actions pause while an input has focus.
+
+Board control supports standard human games, bots, and analysis. Unknown modes
+and unavailable APIs disable it. Clicks use the host pointer path; Chess.com
+may report them as synthetic events. The extension does not hide or bypass
+those checks.
+
 ## Supported pages
 
 The content script runs only on:
 
 - `https://www.chess.com/play/*`
 - `https://www.chess.com/game/*`
+- `https://www.chess.com/analysis`
 - `https://www.chess.com/analysis/game/*`
 
 ## Semi-transparent Fog of War
@@ -109,7 +128,7 @@ piece placement.
 
 ## Security and privacy
 
-The extension uses the `storage` permission only to save your shortcut and fog settings.
+The extension uses the `storage` permission only to save your shortcut, fog, and board helper settings.
 It makes no external network requests and does not collect or transmit data. It
 runs only on the listed Chess.com URLs.
 
