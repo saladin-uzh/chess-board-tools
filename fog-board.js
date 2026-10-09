@@ -10,7 +10,9 @@
     const bot = input.context === "bot" && path === "/play/computer" && board.id === "board-play-computer";
     const analysis = input.context === "analysis" && board.id === "board-analysis-board" &&
       (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path));
-    if (!bot && !analysis) return null;
+    const review = input.context === "review" && board.id === "board-single" &&
+      /^\/game\/(?:live|daily)\/\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(input.result);
+    if (!bot && !analysis && !review) return null;
     const position = parseFEN(input.fen);
     if (!position || !(input.selected === null || Number.isInteger(input.selected) && input.selected >= 0 && input.selected < 64)) return null;
     const side = perspective === "auto" ? (["white", "black"].includes(input.side) ? input.side : input.flipped ? "black" : "white") : perspective;

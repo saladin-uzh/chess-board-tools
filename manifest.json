@@ -22,6 +22,7 @@
         "https://www.chess.com/play/*",
         "https://www.chess.com/game/*",
         "https://www.chess.com/analysis",
+        "https://www.chess.com/analysis?*",
         "https://www.chess.com/analysis/game/*"
       ],
       "js": [
@@ -34,9 +35,12 @@
       "matches": [
         "https://www.chess.com/play/computer",
         "https://www.chess.com/analysis",
+        "https://www.chess.com/analysis?*",
         "https://www.chess.com/analysis/game/live/*",
         "https://www.chess.com/analysis/game/daily/*",
-        "https://www.chess.com/analysis/game/computer/*"
+        "https://www.chess.com/analysis/game/computer/*",
+        "https://www.chess.com/game/live/*",
+        "https://www.chess.com/game/daily/*"
       ],
       "js": [
         "fog-bridge.js"
@@ -48,9 +52,12 @@
       "matches": [
         "https://www.chess.com/play/computer",
         "https://www.chess.com/analysis",
+        "https://www.chess.com/analysis?*",
         "https://www.chess.com/analysis/game/live/*",
         "https://www.chess.com/analysis/game/daily/*",
-        "https://www.chess.com/analysis/game/computer/*"
+        "https://www.chess.com/analysis/game/computer/*",
+        "https://www.chess.com/game/live/*",
+        "https://www.chess.com/game/daily/*"
       ],
       "js": [
         "settings.js",
@@ -68,6 +75,7 @@
         "https://www.chess.com/play/*",
         "https://www.chess.com/game/*",
         "https://www.chess.com/analysis",
+        "https://www.chess.com/analysis?*",
         "https://www.chess.com/analysis/game/*"
       ],
       "js": [
@@ -81,6 +89,7 @@
         "https://www.chess.com/play/*",
         "https://www.chess.com/game/*",
         "https://www.chess.com/analysis",
+        "https://www.chess.com/analysis?*",
         "https://www.chess.com/analysis/game/*"
       ],
       "js": [

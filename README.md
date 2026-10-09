@@ -65,14 +65,17 @@ The popup has separate **Keyboard board control** and **Tick every 10 seconds
 of my turn** switches. Both start disabled and use local preferences.
 
 Type coordinates sequentially: `b`, `2` selects b2; `b`, `3` clicks b3.
-Coordinates stay algebraic when flipped. An incomplete letter appears beside
+Coordinates stay algebraic when flipped. A letter immediately highlights its
+file; the following digit outlines the chosen square above fog. The square
+outline clears on position or lifecycle changes. An incomplete letter appears beside
 the board and clears after five seconds, Escape, focus changes, scrolling,
 position changes, or board replacement. Use Latin `a–h` in your active layout.
 When the host promotion picker opens, `q/r/b/n` choose queen/rook/bishop/knight;
 coordinate entry pauses. Chess.com validates moves and retains its normal
 confirmation flow. All keyboard actions pause while an input has focus.
 
-Board control supports standard human games, bots, and analysis. Unknown modes
+Board control supports standard human games, bots, analysis, and completed
+game reviews. Unknown modes
 and unavailable APIs disable it. Clicks use the host pointer path; Chess.com
 may report them as synthetic events. The extension does not hide or bypass
 those checks.
@@ -101,8 +104,9 @@ the board and follows board flips. Manual White/Black perspectives stay fixed.
 
 Fog is supported on `/play/computer`, standalone `/analysis`, and completed
 `/analysis/game/live/*`, `/analysis/game/daily/*`, or
-`/analysis/game/computer/*` games. It stays unavailable for human games,
-classrooms, variants, incomplete state, and unsupported pages. Human-game use
+`/analysis/game/computer/*` games, plus completed `/game/live/*` and
+`/game/daily/*` reviews. It stays unavailable for active human games,
+classrooms, variants, incomplete state, and unsupported pages. Active human-game use
 is outside this release under [Chess.com's Fair Play Policy](https://www.chess.com/legal/fair-play).
 
 Clear squares are the union of your pieces' occupied squares and movement
