@@ -93,9 +93,17 @@
     if (revision === loadRevision) apply(data[ASSIST_STORAGE_KEY]);
   }).catch(() => { if (revision === loadRevision) apply(null); });
   const unlock = event => {
-    if (preferences.ticking && event.isTrusted && document.visibilityState === "visible") audio.unlock();
+    if (!preferences.ticking || !event.isTrusted || document.visibilityState !== "visible" ||
+        globalThis.navigator?.userActivation?.isActive !== true) return;
+    const pointer = event.type === "pointerdown" && event.pointerType === "mouse" ||
+      event.type === "pointerup" && ["touch", "pen"].includes(event.pointerType);
+    const key = event.type === "keydown" && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey &&
+      typeof event.key === "string" && event.key.length > 0 && event.code !== "Escape" &&
+      !["Escape", "Control", "Alt", "AltGraph", "Meta", "Shift", "OS", "Super", "Hyper", "Fn", "FnLock"].includes(event.key);
+    if (pointer || key) audio.unlock();
   };
   addEventListener("pointerdown", unlock, true);
+  addEventListener("pointerup", unlock, true);
   addEventListener("keydown", unlock, true);
   addEventListener("keydown", handleKeydown, true);
   addEventListener("focusin", clear, true);

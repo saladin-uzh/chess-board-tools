@@ -6,7 +6,7 @@ extension permission.
 
 ## Automated checks
 
-`node --test tests/*.test.cjs`: 45 passing tests. Added timer coverage includes
+`node --test tests/*.test.cjs`: 51 passing tests. Added timer coverage includes
 10-second deadlines, delayed polling without a backlog, own/opponent turns,
 unknown color, analysis, new sessions, game completion, pending confirmation,
 dragging, background return, and unavailable/blocked Web Audio. Changed
@@ -49,3 +49,28 @@ v1.1.0 publication additionally requires the user's confirmation after merge.
   color, including when a stale confirmation control remains visible.
 - Deferred resolve and reject of a closed context cannot block reopened audio
   or clear the new context's pending resume flag; the new context emits a tick.
+- Trusted mouse pointerdown, touch/pen pointerup, and eligible keydown unlock
+  audio only with visible-document transient user activation. Escape,
+  modifiers, browser chords, repeats, untrusted events, hidden documents,
+  missing activation APIs, and inactive activation are covered by tests.
+  Synthetic touch/pen tests do not establish physical-device behavior.
+
+## Runtime retest after review fixes
+
+The revised extension was loaded from the timer worktree into isolated Chrome
+for Testing 154 (extension ID fokonkagndapcnjkbmnnbabdhfblbfib). The old test
+copies remained disabled; Safari was untouched.
+
+Mouse activation in the disposable bot game produced running oscillators at
+65665.8, 75664.8, and 85665.0 ms. After dispatched pagehide/pageshow lifecycle
+events closed and restored the controller at 168745.6 ms, a real keyboard
+press reactivated audio: ticks occurred at 178747.8, 188746.8, and 198747.1 ms.
+This verifies lifecycle handlers with real Web Audio, not a real BFCache
+navigation or an actual deferred-resume failure; those races have controlled
+Node regression coverage.
+
+The game tab was hidden at 200960.5 ms and returned at 221216.6 ms. Both
+visibility records contained fourteen oscillators; there were no hidden or
+immediate catch-up ticks. The next tick occurred at 228746.9 ms on the existing
+schedule. Instrumentation was restored after the test. Physical touch/pen
+hardware was not tested.

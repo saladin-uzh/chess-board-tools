@@ -97,7 +97,7 @@ test('audio waits for gesture, releases nodes and tolerates blocked or missing a
 });
 
 function harness({ realTimer = false } = {}) {
-  const listeners = {}, docListeners = {}, timeouts = new Map(), intervals = new Map(), clicks = [], timerCalls = [], timerResets = [], ticks = [];
+  const listeners = {}, docListeners = {}, timeouts = new Map(), intervals = new Map(), clicks = [], timerCalls = [], timerResets = [], ticks = [], unlocks = [];
   let now = 0, serial = 0, changed, current = { ...snapshot, context: 'analysis', active: false, side: null }, board;
   class Element {
     constructor() { this.isConnected = true; this.style = {}; this.picker = null; }
@@ -111,7 +111,7 @@ function harness({ realTimer = false } = {}) {
   const document = { activeElement: null, visibilityState: 'visible', body: { append() {} },
     querySelector: selector => selector.startsWith('wc-') ? board : null,
     createElement: () => new Element(), addEventListener: (type, fn) => { docListeners[type] = fn; } };
-  const c = vm.createContext({ document, location: { pathname: '/analysis' },
+  const c = vm.createContext({ document, navigator: { userActivation: { isActive: true } }, location: { pathname: '/analysis' },
     getComputedStyle: () => ({ display: 'block', visibility: 'visible', pointerEvents: 'auto' }),
     performance: { now: () => now },
     setTimeout: (fn, delay) => { const id = ++serial; timeouts.set(id, { fn, due: now + delay }); return id; },
@@ -119,7 +119,7 @@ function harness({ realTimer = false } = {}) {
     addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
     chrome: { storage: { local: { get: async () => ({ boardAssistPreferences: { keyboard: true } }) }, onChanged: { addListener: fn => { changed = fn; } } } },
     ChessBoardAssist: { read: () => current, clickSquare: (b, square) => { clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
-    ChessAssistTimer: { createTurnTimer: () => ({ reset() { timerResets.push(true); }, update(...args) { timerCalls.push(args); return false; } }), createAudio: () => ({ unlock() {}, close() {}, tick() { ticks.push(now); } }) },
+    ChessAssistTimer: { createTurnTimer: () => ({ reset() { timerResets.push(true); }, update(...args) { timerCalls.push(args); return false; } }), createAudio: () => ({ unlock() { unlocks.push(now); }, close() {}, tick() { ticks.push(now); } }) },
   });
   run(c, 'settings.js');
   if (realTimer) {
@@ -128,9 +128,10 @@ function harness({ realTimer = false } = {}) {
     c.ChessAssistTimer = { ...c.ChessAssistTimer, createAudio };
   }
   run(c, 'assist-content.js');
-  function dispatch(type, event = {}) { for (const fn of listeners[type] || []) fn(event); }
-  return { document, clicks, ticks, timerCalls, timerResets, listeners, docListeners,
+  function dispatch(type, event = {}) { event.type = type; for (const fn of listeners[type] || []) fn(event); }
+  return { document, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
     key(key, extra = {}) { const e = { key, code: key === 'Escape' ? 'Escape' : '', target: {}, preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...extra }; dispatch('keydown', e); return e; },
+    activation(value) { c.navigator = value; },
     dispatch, advance(ms) { now += ms; for (const [id, t] of timeouts) if (t.due <= now) { timeouts.delete(id); t.fn(); } },
     poll() { for (const fn of intervals.values()) fn(); },
     state(value) { current = value; }, replace() { board = new Element(); },
@@ -334,4 +335,38 @@ test('stale audio resume resolve and reject cannot affect a reopened context', a
     audio.tick(); assert.deepEqual(ticks, [true]);
     audio.close(); audio.unlock(); assert.equal(instances.length, 3);
   }
+});
+
+test('audio unlock accepts only trusted activating input in visible tabs', async () => {
+  const app = harness(); await flush(); app.change({ ticking: true });
+  const allowed = [['pointerdown', { pointerType: 'mouse' }], ['pointerup', { pointerType: 'touch' }],
+    ['pointerup', { pointerType: 'pen' }], ['keydown', { key: 'a' }], ['keydown', { key: 'Enter' }], ['keydown', { key: 'A', shiftKey: true }]];
+  for (const [type, event] of allowed) {
+    const before = app.unlocks.length; app.dispatch(type, { isTrusted: true, ...event });
+    assert.equal(app.unlocks.length, before + 1);
+  }
+  const denied = [['pointerdown', { pointerType: 'touch' }], ['pointerdown', { pointerType: 'pen' }],
+    ['pointerup', { pointerType: 'mouse' }], ['pointerup', {}], ['keydown', { key: 'Escape' }],
+    ['keydown', { key: 'a', code: 'Escape' }], ['keydown', { key: 'a', repeat: true }],
+    ...['Control', 'Meta', 'Alt', 'Shift', 'AltGraph', 'Fn'].map(key => ['keydown', { key }]),
+    ...['ctrlKey', 'metaKey', 'altKey'].map(flag => ['keydown', { key: 'a', [flag]: true }])];
+  const count = app.unlocks.length;
+  for (const [type, event] of denied) app.dispatch(type, { isTrusted: true, ...event });
+  app.dispatch('pointerdown', { pointerType: 'mouse', isTrusted: false });
+  app.key('a', { isTrusted: false });
+  app.document.visibilityState = 'hidden'; app.key('a', { isTrusted: true });
+  app.document.visibilityState = 'visible'; app.navigator.userActivation.isActive = false;
+  app.key('a', { isTrusted: true });
+  app.activation(undefined); app.dispatch('pointerdown', { pointerType: 'mouse', isTrusted: true });
+  app.activation({}); app.key('a', { isTrusted: true });
+  assert.equal(app.unlocks.length, count);
+  app.activation({ userActivation: { isActive: true } }); app.change({ ticking: false });
+  app.key('a', { isTrusted: true }); assert.equal(app.unlocks.length, count);
+});
+
+test('audio activation leaves ordinary key and pointer events untouched', async () => {
+  const app = harness(); await flush(); app.change({ ticking: true });
+  assert.equal(app.key('a', { isTrusted: true }).prevented, undefined);
+  app.dispatch('pointerup', { isTrusted: true, pointerType: 'touch', preventDefault() { assert.fail('Consumed pointer event'); }, stopImmediatePropagation() { assert.fail('Stopped pointer event'); } });
+  assert.equal(app.unlocks.length, 2);
 });
