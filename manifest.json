@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Chess.com Confirm Move Hotkeys",
-  "version": "1.1.1",
-  "description": "Confirm or cancel Chess.com moves with configurable keyboard shortcuts.",
+  "name": "Chess Board Tools",
+  "version": "1.1.2",
+  "description": "Keyboard controls, move confirmation shortcuts, turn sound cues, and optional fog of war for supported Chess.com boards.",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
@@ -13,7 +13,7 @@
     "storage"
   ],
   "action": {
-    "default_title": "Chess.com Confirm Move Hotkeys",
+    "default_title": "Chess Board Tools",
     "default_popup": "popup.html"
   },
   "content_scripts": [

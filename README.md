@@ -161,6 +161,26 @@ and are not synchronized. Position
 snapshots are used in memory to draw the mask; positions, move history, and
 account/game identifiers are not stored by the extension.
 
+Safari implements the sync storage API but does not synchronize these settings
+between devices. The popup follows system/browser light or dark appearance.
+
+## Store preparation
+
+The first store editions are being prepared. English/Ukrainian listing text and
+review instructions are in [the store kit](docs/store/README.md). Static support
+and privacy pages are in `site/`; verify their public URLs after GitHub Pages
+deployment before submission. The macOS edition targets macOS 27 and must pass
+signed-app validation before App Store submission.
+
+Build a runtime-only candidate ZIP with `python3 scripts/package-extension.py`.
+After manually signing the release commit and tag, build the final ZIP with
+`python3 scripts/package-extension.py --ref v1.1.2`. Output, SHA-256 and provenance
+are written to `build/`. Final Git signature verification, Chrome Web Store
+signing and Apple app signing are separate steps.
+
+See the ordered [manual release steps](docs/manual-release-steps.uk.md) and
+[current preparation evidence](docs/store-preparation-validation.md).
+
 ## Tests
 
 With Node.js 18 or newer, run `node --test tests/*.test.cjs`. The tests
