@@ -50,13 +50,35 @@ the extension/host handlers. They do not establish trusted physical-key input.
 Native input with the current system layout did not establish Latin-coordinate
 behavior; the system layout was left unchanged while the user was playing.
 
-## Deferred coverage
+## Safari runtime evidence
 
-Safari keyboard failure still requires inspection of the installed Safari copy,
-permissions, injected scripts, and key events. Safari was not controlled,
-reloaded, or changed during this work, as requested. No speculative Safari fix
-or claim of Safari runtime support is included.
+Tested on 2026-10-09 in Safari 27.0.1 with the existing temporary extension.
+Keyboard board control was already enabled. The original injected bridge lacked
+the new review snapshot's `result` field. Settings → Extensions → Reload loaded
+the current code, including the new file and square indicators.
+
+- Native b2–b3 worked on standalone analysis and the requested completed review,
+  producing the expected host FEN. File and square indicators were visually
+  verified after native letter/digit input.
+- A tab that was open across the extension reload read storage but stopped
+  delivering storage change events and runtime status messages. A fresh tab
+  restored both: toggling fog in the popup immediately removed the mask and
+  the popup reported the active perspective correctly. This is a development
+  reload limitation; no browser-specific production workaround was added.
+- Fresh `/analysis?fen=…` received the scripts and 80% fog. Sixteen promotion
+  cases used native key presses: both colors, both orientations, and q/r/b/n.
+  All produced the expected promoted piece, closed the picker, and retained fog.
+- All picker choices and cancellation were visibly above fog. A native click
+  on cancellation restored the original white FEN and retained the mask.
+
+The Safari checks establish native-key behavior in analysis and completed
+review, unlike the earlier Chrome event-dispatch matrices. Tests used only
+disposable analysis positions and hypothetical completed-review moves.
+
+## Coverage limits
 
 Actual two-device Chrome Sync and active human-game runtime checks were not
 performed. Distributed conflict merging remains outside issue #3's scope.
-No release, publication, push, or issue closure was performed.
+Safari packaging/distribution, older Safari releases, and Safari's full
+20%/80% light/dark matrix were not tested. Release and publication remain outside
+this work.

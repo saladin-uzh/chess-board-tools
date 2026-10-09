@@ -4,7 +4,8 @@
 
 A minimal Manifest V3 extension for Chrome and Chromium-based browsers that
 controls the Chess.com move confirmation dialog with configurable keyboard
-shortcuts, with optional semi-transparent Fog of War for bots and analysis.
+shortcuts, with optional semi-transparent Fog of War for bots, analysis, and
+completed game reviews.
 
 ## Install locally
 
@@ -35,6 +36,14 @@ Choose one option:
 
 After pulling or downloading an update, select the extension's **Reload**
 button on `chrome://extensions`, then reload the Chess.com tab.
+
+### Updating a temporary Safari copy
+
+For an already-installed temporary Safari extension, use **Safari Settings →
+Extensions → Reload** after changing the files, then close and reopen the test
+tabs. Existing tabs can retain old scripts or stale extension event handlers.
+Analysis and completed reviews were verified in Safari 27.0.1; see the
+[runtime validation](docs/issues-and-review-validation.md) for coverage.
 
 ## Shortcuts and settings
 
