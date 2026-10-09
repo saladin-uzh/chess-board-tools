@@ -25,6 +25,9 @@ wc-chess-board:has(> .chess-fog-overlay) > .highlight {
 wc-chess-board:has(> .chess-fog-overlay) > svg.arrows {
   z-index: 7;
 }
+wc-chess-board:has(> .chess-fog-overlay) > .promotion-window--visible {
+  z-index: 9;
+}
 .chess-fog-notice {
   position: absolute;
   top: 0;
