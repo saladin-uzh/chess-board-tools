@@ -313,3 +313,25 @@ test('pending confirmation cannot preserve another session or player color', () 
   const timer = context.ChessAssistTimer.createTurnTimer(); timer.update(snapshot, 0, true);
   assert.equal(timer.update({ ...snapshot, session: 2, turn: 'black' }, 10000, true, true), false);
 });
+
+test('stale audio resume resolve and reject cannot affect a reopened context', async () => {
+  for (const outcome of ['resolve', 'reject']) {
+    const instances = [], ticks = [];
+    class Audio {
+      constructor() { this.state = 'suspended'; this.currentTime = 0; this.pending = deferred(); this.resumes = 0; instances.push(this); }
+      resume() { this.resumes++; return this.pending.promise; }
+      close() { this.state = 'closed'; return Promise.resolve(); }
+      createOscillator() { return { frequency: {}, connect() {}, disconnect() {}, start() { ticks.push(true); }, stop() { this.onended(); } }; }
+      createGain() { return { gain: { setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
+    }
+    const c = vm.createContext({ AudioContext: Audio }); run(c, 'assist-timer.js');
+    const audio = c.ChessAssistTimer.createAudio(); audio.unlock();
+    const old = instances[0]; audio.close(); audio.unlock();
+    assert.equal(instances.length, 2);
+    old.pending[outcome](outcome === 'reject' ? Error('Old context closed') : undefined); await flush();
+    audio.unlock(); assert.equal(instances[1].resumes, 1);
+    instances[1].state = 'running'; instances[1].pending.resolve(); await flush();
+    audio.tick(); assert.deepEqual(ticks, [true]);
+    audio.close(); audio.unlock(); assert.equal(instances.length, 3);
+  }
+});

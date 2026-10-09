@@ -47,3 +47,5 @@ v1.1.0 publication additionally requires the user's confirmation after merge.
   new session starts a fresh clock.
 - Pending confirmation preserves time only for the same session and player
   color, including when a stale confirmation control remains visible.
+- Deferred resolve and reject of a closed context cannot block reopened audio
+  or clear the new context's pending resume flag; the new context emits a tick.

@@ -28,7 +28,7 @@
     };
   }
   function createAudio() {
-    let context = null, blocked = false, resuming = false;
+    let context = null, blocked = false, resuming = false, generation = 0;
     return {
       unlock() {
         if (blocked || resuming) return;
@@ -38,8 +38,10 @@
           context ??= new Audio();
           if (context.state === "suspended") {
             resuming = true;
-            Promise.resolve(context.resume()).catch(() => { blocked = true; })
-              .finally(() => { resuming = false; });
+            const resumedContext = context, resumedGeneration = generation;
+            const current = () => context === resumedContext && generation === resumedGeneration;
+            Promise.resolve(resumedContext.resume()).catch(() => { if (current()) blocked = true; })
+              .finally(() => { if (current()) resuming = false; });
           }
         } catch { blocked = true; }
       },
@@ -58,8 +60,11 @@
         } catch { blocked = true; }
       },
       close() {
-        if (context) { Promise.resolve(context.close()).catch(() => {}); context = null; }
-        blocked = false;
+        const closedContext = context;
+        generation++;
+        context = null; blocked = false; resuming = false;
+        try { if (closedContext) Promise.resolve(closedContext.close()).catch(() => {}); }
+        catch { /* A closing context cannot affect the next audio session. */ }
       },
     };
   }
