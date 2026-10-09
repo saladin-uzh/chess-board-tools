@@ -1,6 +1,6 @@
 # Thinking timer validation
 
-This PR is stacked on keyboard board control. The timer uses its independent
+Keyboard board control and the timer are merged into main. The timer uses its independent
 read-only adapter; fog contexts remain unchanged. No new dependency or
 extension permission.
 
@@ -31,13 +31,13 @@ before the visibilitychange listener. Retesting recorded:
 The combined popup fit without visible scrolling or clipped content. Safari
 was not modified or reloaded.
 
-## Remaining acceptance checks
+## Runtime coverage limits
 
 Own-turn state in active human live/daily games and their native pending
 confirmation prompt still require disposable runtime testing. The automated
-pending-confirmation test does not establish the host prompt state. Keep this
-PR in draft until these checks and keyboard prerequisite acceptance pass.
-v1.1.0 publication additionally requires the user's confirmation after merge.
+pending-confirmation test does not establish the host prompt state. These
+limitations remain documented for the v1.1.0 release. Publication was
+explicitly authorized after the feature reviews and merge.
 
 ## Review regressions
 
