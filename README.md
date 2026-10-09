@@ -46,14 +46,18 @@ shows a short description of the extension and lets you change the confirmation
 and cancellation keys. Changes are saved automatically and are applied to open
 Chess.com tabs without reloading the page.
 
-Letter shortcuts match the letter produced by the active keyboard layout,
-regardless of its physical position. Settings load before shortcuts become
-active. Popup controls are disabled while settings load or save.
+Confirmation offers Enter, Space, or Ctrl; cancellation offers Esc, Space, or
+Ctrl. Defaults are Space and Esc, and the two actions require different keys.
+Previously saved unsupported keys fall back to defaults.
 
-The extension handles a shortcut only when the corresponding visible and
-enabled confirmation or cancellation button is present. It ignores key events
-inside form controls, text fields, editable elements, and shortcuts combined
-with modifier keys.
+Ctrl means either Control key pressed and released alone. Ctrl combinations
+such as Ctrl+C are ignored. Shortcuts activate after settings load; popup
+controls are disabled while loading or saving.
+
+The extension handles a shortcut only when its visible, enabled confirmation
+or cancellation button is present. All extension keyboard actions pause while
+an input, textarea, select, editable element, or textbox has focus. Events
+inside buttons and other interactive controls are also ignored.
 
 ## Supported pages
 
@@ -67,8 +71,8 @@ The content script runs only on:
 
 In the popup, enable **Semi-transparent Fog of War**, choose opacity (20–80%,
 default 55%), and select Auto, White, or Black. It starts disabled. Auto follows
-your player color in bot games; standalone analysis needs an explicit side.
-Flipping the board rotates the mask without changing perspective.
+your player color when available; otherwise it uses the side at the bottom of
+the board and follows board flips. Manual White/Black perspectives stay fixed.
 
 Fog is supported on `/play/computer`, standalone `/analysis`, and completed
 `/analysis/game/live/*`, `/analysis/game/daily/*`, or

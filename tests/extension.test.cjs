@@ -74,14 +74,15 @@ function contentHarness() {
     storage, confirm, cancel,
     change: (value, area = "sync") =>
       storageListener({ keybindings: { newValue: value } }, area),
-    key(code, key, overrides = {}) {
+    listeners, document: context.document,
+    key(code, key, overrides = {}, type = "keydown") {
       const event = {
         code, key, target: {},
         preventDefault() { this.prevented = true; },
         stopImmediatePropagation() { this.stopped = true; },
         ...overrides,
       };
-      listeners.keydown?.(event);
+      listeners[type]?.(event);
       return event;
     },
   };
@@ -145,23 +146,20 @@ test("initial storage loading cannot trigger the opposite move action", async ()
   const app = contentHarness();
   app.key("Space", " ");
   assert.equal(app.confirm.clicks, 0);
-  app.storage.resolve({ keybindings: { confirmKeyCode: "KeyA", cancelKeyCode: "Space" } });
+  app.storage.resolve({ keybindings: { confirmKeyCode: "Enter", cancelKeyCode: "Space" } });
   await flush();
   assert.equal(app.key("Space", " ").prevented, true);
   assert.equal(app.confirm.clicks, 0);
   assert.equal(app.cancel.clicks, 1);
 });
 
-test("letter shortcuts follow AZERTY characters and handle Caps Lock", async () => {
+test("removed keys normalize to defaults without activating letters", async () => {
   const app = contentHarness();
   app.storage.resolve({ keybindings: { confirmKeyCode: "KeyA", cancelKeyCode: "KeyS" } });
   await flush();
-  assert.equal(app.key("KeyA", "q").prevented, undefined);
-  assert.equal(app.key("KeyQ", "a").prevented, true);
-  assert.equal(app.key("KeyQ", "A").prevented, true);
-  assert.equal(app.key("KeyS", "s").prevented, true);
-  assert.equal(app.confirm.clicks, 2);
-  assert.equal(app.cancel.clicks, 1);
+  assert.equal(app.key("KeyA", "a").prevented, undefined);
+  assert.equal(app.key("Space", " ").prevented, true);
+  assert.equal(app.key("Escape", "Escape").prevented, true);
 });
 
 test("storage read failure enables default shortcuts", async () => {
@@ -186,11 +184,11 @@ test("shortcut guards and live storage changes remain effective", async () => {
   app.confirm.visible = false;
   assert.equal(app.key("Space", " ").prevented, undefined);
   app.confirm.visible = true;
-  app.change({ confirmKeyCode: "Enter", cancelKeyCode: "KeyF" }, "local");
+  app.change({ confirmKeyCode: "Enter", cancelKeyCode: "Control" }, "local");
   assert.equal(app.key("Enter", "Enter").prevented, undefined);
-  app.change({ confirmKeyCode: "Enter", cancelKeyCode: "KeyF" });
+  app.change({ confirmKeyCode: "Enter", cancelKeyCode: "Control" });
   assert.equal(app.key("Enter", "Enter").prevented, true);
-  assert.equal(app.key("KeyF", "f").prevented, true);
+  assert.equal(app.key("Escape", "Escape").prevented, undefined);
   app.change(undefined);
   assert.equal(app.key("Space", " ").prevented, true);
 });
@@ -199,16 +197,16 @@ test("popup prevents edits until the stored pair renders", async () => {
   const app = popupHarness();
   assert.equal(app.confirm.disabled, true);
   assert.equal(app.cancel.disabled, true);
-  await app.confirm.choose("KeyA");
+  await app.confirm.choose("Enter");
   assert.equal(app.writes.length, 0);
-  app.storage.resolve({ keybindings: { confirmKeyCode: "Enter", cancelKeyCode: "KeyF" } });
+  app.storage.resolve({ keybindings: { confirmKeyCode: "Enter", cancelKeyCode: "Control" } });
   await flush();
   assert.equal(app.confirm.disabled, false);
   assert.equal(app.cancel.disabled, false);
   assert.equal(app.confirm.value, "Enter");
-  assert.equal(app.cancel.value, "KeyF");
-  await app.confirm.choose("KeyA");
-  assert.deepEqual(app.writes, [{ keybindings: { confirmKeyCode: "KeyA", cancelKeyCode: "KeyF" } }]);
+  assert.equal(app.cancel.value, "Control");
+  await app.confirm.choose("Enter");
+  assert.deepEqual(app.writes, [{ keybindings: { confirmKeyCode: "Enter", cancelKeyCode: "Control" } }]);
 });
 
 test("popup enables defaults after a failed initial read", async () => {
@@ -226,33 +224,85 @@ test("popup blocks overlapping changes until the pending save completes", async 
   const app = popupHarness(true);
   app.storage.resolve({});
   await flush();
-  const pending = app.confirm.choose("KeyA");
+  const pending = app.confirm.choose("Enter");
   assert.equal(app.confirm.disabled, true);
   assert.equal(app.cancel.disabled, true);
-  await app.cancel.choose("KeyA");
-  assert.equal(app.confirm.value, "KeyA");
+  await app.cancel.choose("Enter");
+  assert.equal(app.confirm.value, "Enter");
   assert.equal(app.cancel.value, "Escape");
   app.save.resolve();
   await pending;
-  assert.deepEqual(app.writes, [{ keybindings: { confirmKeyCode: "KeyA", cancelKeyCode: "Escape" } }]);
+  assert.deepEqual(app.writes, [{ keybindings: { confirmKeyCode: "Enter", cancelKeyCode: "Escape" } }]);
   assert.equal(app.confirm.disabled, false);
   assert.equal(app.cancel.disabled, false);
-  await app.cancel.choose("KeyS");
-  assert.deepEqual(app.writes[1], { keybindings: { confirmKeyCode: "KeyA", cancelKeyCode: "KeyS" } });
+  await app.cancel.choose("Control");
+  assert.deepEqual(app.writes[1], { keybindings: { confirmKeyCode: "Enter", cancelKeyCode: "Control" } });
 });
 
 test("popup rejects duplicate keys and restores settings after a failed save", async () => {
   const app = popupHarness();
   app.storage.resolve({});
   await flush();
-  await app.confirm.choose("Escape");
+  await app.cancel.choose("Space");
   assert.equal(app.writes.length, 0);
   assert.equal(app.confirm.value, "Space");
-  await app.confirm.choose("KeyA");
+  await app.confirm.choose("Enter");
   app.failSave();
-  await app.confirm.choose("KeyS");
-  assert.equal(app.confirm.value, "KeyA");
+  await app.confirm.choose("Control");
+  assert.equal(app.confirm.value, "Enter");
   assert.equal(app.status.textContent, "Could not save settings.");
   assert.equal(app.confirm.disabled, false);
   assert.equal(app.cancel.disabled, false);
+});
+
+
+test("both Ctrl keys act only on standalone release; chords, blur and focus cancel", async () => {
+  const app = contentHarness(); app.storage.resolve({}); await flush();
+  app.change({ confirmKeyCode: "Control", cancelKeyCode: "Escape" });
+  for (const code of ["ControlLeft", "ControlRight"]) {
+    app.key(code, "Control", { ctrlKey: true });
+    assert.equal(app.confirm.clicks, code === "ControlLeft" ? 0 : 1);
+    assert.equal(app.key(code, "Control", {}, "keyup").prevented, true);
+  }
+  app.key("ControlLeft", "Control", { ctrlKey: true });
+  app.key("KeyC", "c", { ctrlKey: true });
+  assert.equal(app.key("ControlLeft", "Control", {}, "keyup").prevented, undefined);
+  for (const reset of ["blur", "focusin", "pagehide"]) {
+    app.key("ControlLeft", "Control", { ctrlKey: true }); app.listeners[reset]();
+    assert.equal(app.key("ControlLeft", "Control", {}, "keyup").prevented, undefined);
+  }
+  assert.equal(app.confirm.clicks, 2);
+  app.change({ confirmKeyCode: "Space", cancelKeyCode: "Control" });
+  app.key("ControlRight", "Control", { ctrlKey: true });
+  app.key("ControlRight", "Control", {}, "keyup");
+  assert.equal(app.cancel.clicks, 1);
+});
+
+test("active input focus and composed editable targets suppress all hotkeys", async () => {
+  const app = contentHarness(); app.storage.resolve({}); await flush();
+  app.document.activeElement = { closest: () => ({}) };
+  assert.equal(app.key("Space", " ").prevented, undefined);
+  assert.equal(app.key("Escape", "Escape").prevented, undefined);
+  app.document.activeElement = { shadowRoot: { activeElement: { isContentEditable: true } } };
+  assert.equal(app.key("Space", " ").prevented, undefined);
+  app.document.activeElement = null;
+  assert.equal(app.key("Space", " ", { composedPath: () => [{ isContentEditable: true }] }).prevented, undefined);
+  app.change({ confirmKeyCode: "Control", cancelKeyCode: "Escape" });
+  app.key("ControlLeft", "Control", { ctrlKey: true });
+  app.document.activeElement = { isContentEditable: true };
+  assert.equal(app.key("ControlLeft", "Control", {}, "keyup").prevented, undefined);
+  assert.equal(app.confirm.clicks, 0);
+});
+
+
+test("normalization enforces action-specific options and preserves valid stored values", () => {
+  const context = vm.createContext({}); run(context, "settings.js");
+  const { normalizeKeybindings: normalize, CONFIRM_KEYS, CANCEL_KEYS } = context.ChessConfirmMoveSettings;
+  assert.deepEqual(plain(CONFIRM_KEYS.map(key => key.code)), ["Enter", "Space", "Control"]);
+  assert.deepEqual(plain(CANCEL_KEYS.map(key => key.code)), ["Escape", "Space", "Control"]);
+  for (const input of [{ confirmKeyCode: "Escape", cancelKeyCode: "Enter" },
+    { confirmKeyCode: "Control", cancelKeyCode: "Control" }, { confirmKeyCode: "KeyA", cancelKeyCode: "Space" }]) {
+    assert.deepEqual(plain(normalize(input)), { confirmKeyCode: "Space", cancelKeyCode: "Escape" });
+  }
+  assert.deepEqual(plain(normalize({ confirmKeyCode: "Enter", cancelKeyCode: "KeyF" })), { confirmKeyCode: "Enter", cancelKeyCode: "Escape" });
 });

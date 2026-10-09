@@ -18,29 +18,25 @@
     confirmKeyCode: "Space",
     cancelKeyCode: "Escape",
   };
-  const ALLOWED_KEYS = [
-    { code: "Space", label: "Space" },
+  const CONFIRM_KEYS = [
     { code: "Enter", label: "Enter" },
-    { code: "Escape", label: "Escape" },
-    { code: "KeyA", label: "A" },
-    { code: "KeyS", label: "S" },
-    { code: "KeyD", label: "D" },
-    { code: "KeyF", label: "F" },
+    { code: "Space", label: "Space" },
+    { code: "Control", label: "Ctrl" },
   ];
-
-  function isAllowedKeyCode(code) {
-    return ALLOWED_KEYS.some((key) => key.code === code);
-  }
-
+  const CANCEL_KEYS = [
+    { code: "Escape", label: "Esc" },
+    { code: "Space", label: "Space" },
+    { code: "Control", label: "Ctrl" },
+  ];
   function normalizeKeybindings(value) {
     if (value === null || typeof value !== "object") {
       return { ...DEFAULT_KEYBINDINGS };
     }
 
-    const confirmKeyCode = isAllowedKeyCode(value.confirmKeyCode)
+    const confirmKeyCode = CONFIRM_KEYS.some(key => key.code === value.confirmKeyCode)
       ? value.confirmKeyCode
       : DEFAULT_KEYBINDINGS.confirmKeyCode;
-    const cancelKeyCode = isAllowedKeyCode(value.cancelKeyCode)
+    const cancelKeyCode = CANCEL_KEYS.some(key => key.code === value.cancelKeyCode)
       ? value.cancelKeyCode
       : DEFAULT_KEYBINDINGS.cancelKeyCode;
 
@@ -54,13 +50,28 @@
     };
   }
 
+  function isInteractiveTarget(target) {
+    return Boolean(target?.isContentEditable || target?.closest?.(
+      'input, textarea, select, button, [contenteditable]:not([contenteditable="false"]), [role="textbox"]',
+    ));
+  }
+
+  function hasInputFocus(event) {
+    let active = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    return isInteractiveTarget(active) || isInteractiveTarget(event.target) ||
+      Boolean(event.composedPath?.().some(isInteractiveTarget));
+  }
+
   globalThis.ChessConfirmMoveSettings = Object.freeze({
+    hasInputFocus,
     FOG_STORAGE_KEY,
     DEFAULT_FOG,
     normalizeFog,
     KEYBINDING_STORAGE_KEY,
     DEFAULT_KEYBINDINGS,
-    ALLOWED_KEYS,
+    CONFIRM_KEYS,
+    CANCEL_KEYS,
     normalizeKeybindings,
   });
 })();
