@@ -1,10 +1,10 @@
-# Chess.com Confirm Move Hotkeys
+# Chess Board Tools
 
 [Українська версія](README.uk.md)
 
-A minimal Manifest V3 extension for Chrome and Chromium-based browsers that
-controls the Chess.com move confirmation dialog with configurable keyboard
-shortcuts, with optional semi-transparent Fog of War for bots, analysis, and
+A browser extension for Chess.com with keyboard board controls, configurable
+move confirmation shortcuts, and optional sound cues during your turn.
+Semi-transparent fog of war is available against bots, in analysis, and in
 completed game reviews.
 
 ## Install locally
@@ -19,7 +19,7 @@ Choose one option:
 - Clone the repository:
 
   ```bash
-  git clone https://github.com/saladin-uzh/chess-confirm-move-hotkeys.git
+  git clone https://github.com/saladin-uzh/chess-board-tools.git
   ```
 
 - Or select **Code → Download ZIP** on GitHub and extract the downloaded
@@ -30,7 +30,7 @@ Choose one option:
 1. Open `chrome://extensions` in Chrome or a Chromium-based browser.
 2. Enable **Developer mode**.
 3. Select **Load unpacked**.
-4. Select the extracted `chess-confirm-move-hotkeys` directory containing
+4. Select the extracted `chess-board-tools` directory containing
    `manifest.json`.
 5. Reload any Chess.com tabs that were already open.
 

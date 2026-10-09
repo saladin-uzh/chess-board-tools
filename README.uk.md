@@ -1,11 +1,11 @@
-# Chess.com Confirm Move Hotkeys
+# Chess Board Tools
 
 [English version](README.md)
 
-Мінімальне Chrome/Chromium-розширення Manifest V3 для керування вікном
-підтвердження ходу на Chess.com за допомогою налаштовуваних гарячих клавіш,
-із додатковим напівпрозорим туманом війни для ботів, аналізу та перегляду
-завершених партій.
+Розширення для Chess.com із керуванням дошкою з клавіатури, налаштовуваними
+клавішами підтвердження ходу та додатковими звуковими сигналами під час вашої
+черги. Напівпрозорий туман війни доступний у партіях проти ботів, в аналізі та
+під час перегляду завершених партій.
 
 ## Локальне встановлення
 
@@ -19,7 +19,7 @@
 - Клонуйте репозиторій:
 
   ```bash
-  git clone https://github.com/saladin-uzh/chess-confirm-move-hotkeys.git
+  git clone https://github.com/saladin-uzh/chess-board-tools.git
   ```
 
 - Або виберіть **Code → Download ZIP** на GitHub і розпакуйте завантажений
@@ -30,7 +30,7 @@
 1. Відкрийте `chrome://extensions` у Chrome або Chromium-браузері.
 2. Увімкніть **Developer mode**.
 3. Натисніть **Load unpacked**.
-4. Виберіть розпаковану папку `chess-confirm-move-hotkeys`, яка містить
+4. Виберіть розпаковану папку `chess-board-tools`, яка містить
    `manifest.json`.
 5. Перезавантажте вкладки Chess.com, які вже були відкриті.
 
