@@ -18,7 +18,7 @@ Enter coordinates with the keyboard, customize move confirmation/cancellation sh
 
 The settings popup follows the system's light or dark appearance. Open the containing app for instructions on enabling the extension and granting access to Chess.com.
 
-Chess.com validates moves and keeps its normal confirmation flow. Shortcuts require visible enabled site buttons. Keyboard actions pause in input fields. Sound needs interaction with the game tab, stays silent in hidden tabs, and is disabled in analysis. Fog represents movement visibility, not legal-move advice.
+Chess.com validates moves and keeps its normal confirmation flow. Shortcuts require visible enabled site buttons. Keyboard actions pause in input fields. Sound needs interaction with the game tab, stays silent in hidden tabs, and is disabled in analysis. Fog shows piece visibility, including pawn capture diagonals rather than forward moves, without legal-move advice.
 
 No engine evaluations, recommended moves, or automated play. No ads, purchases, or subscriptions. The extension code sends no external network requests or telemetry and stores no game history. Preferences stay in Safari's local extension storage; Chrome Sync is a feature of the Chrome edition and is not promised in Safari.
 

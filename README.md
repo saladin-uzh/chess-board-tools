@@ -119,10 +119,11 @@ classrooms, variants, incomplete state, and unsupported pages. Active human-game
 is outside this release under [Chess.com's Fair Play Policy](https://www.chess.com/legal/fair-play).
 
 Clear squares are the union of your pieces' occupied squares and movement
-destinations. Sliding pieces stop at blockers, knights jump, and pawns reveal
-empty forward moves and available captures rather than all attacked diagonals.
-Castling uses actual rights and clear paths; en passant uses the current FEN
-target and side to move. Check, pins, and enemy king attacks do not filter this
+destinations, except that pawns reveal their two forward capture diagonals
+regardless of occupancy or side to move, without revealing forward movement
+squares. Sliding pieces stop at blockers and knights jump. Castling uses actual
+rights and clear paths. En passant does not expand pawn sight beyond those
+diagonals. Check, pins, and enemy king attacks do not filter this
 visibility. A clear square does not mean a standard-chess move is legal.
 
 Selecting your piece outlines its own visibility while retaining the union.

@@ -46,24 +46,68 @@ test('FEN parser requires complete bounded state and valid kings, ranks and en p
   assert.equal(index('i2'), null);
 });
 
-test('pawn movement differs from empty-square attack maps, for both colors and edges', () => {
+test('pawns reveal capture diagonals, not forward moves, for both colors and edges', () => {
   for (const [side, pawn, start, single, double, diagonals] of [
     ['white', 'P', 'a2', 'a3', 'a4', ['b3']],
     ['black', 'p', 'h7', 'h6', 'h5', ['g6']],
   ]) {
     const result = mask({ [start]: pawn }, start, side);
     assert.equal(seen(result, start), true);
-    assert.equal(seen(result, single), true);
-    assert.equal(seen(result, double), true);
-    for (const square of diagonals) assert.equal(seen(result, square), false);
+    assert.equal(seen(result, single), false);
+    assert.equal(seen(result, double), false);
+    for (const square of diagonals) assert.equal(seen(result, square), true);
+    assert.equal(result.filter(Boolean).length, 1 + diagonals.length);
     const blocked = mask({ [start]: pawn, [single]: side === 'white' ? 'n' : 'N' }, start, side);
     assert.equal(seen(blocked, single), false);
     assert.equal(seen(blocked, double), false);
   }
   const capture = mask({ d4: 'P', c5: 'p', e5: 'N' }, 'd4');
   assert.equal(seen(capture, 'c5'), true);
-  assert.equal(seen(capture, 'e5'), false);
+  assert.equal(seen(capture, 'e5'), true);
+  assert.equal(seen(capture, 'd5'), false);
   assert.equal(seen(capture, 'd6'), false);
+});
+
+test('pawn capture visibility ignores occupancy, blockers and side to move', () => {
+  for (const [side, pawn, from, forward, left, right] of [
+    ['white', 'P', 'd4', 'd5', 'c5', 'e5'],
+    ['black', 'p', 'd5', 'd4', 'c4', 'e4'],
+  ]) {
+    for (const occupant of [null, side === 'white' ? 'N' : 'n', side === 'white' ? 'n' : 'N']) {
+      for (const turn of ['w', 'b']) {
+        const result = mask({ [from]: pawn, [forward]: 'n', [left]: occupant, [right]: occupant }, from, side, turn);
+        assert.equal(seen(result, left), true);
+        assert.equal(seen(result, right), true);
+        assert.equal(seen(result, forward), false);
+        assert.equal(result.filter(Boolean).length, 3);
+      }
+    }
+  }
+  for (const [side, pawn, from, diagonal] of [
+    ['white', 'P', 'h2', 'g3'], ['black', 'p', 'a7', 'b6'],
+  ]) {
+    const result = mask({ [from]: pawn }, from, side);
+    assert.equal(seen(result, diagonal), true);
+    assert.equal(result.filter(Boolean).length, 2);
+  }
+  for (const [side, pawn, from] of [['white', 'P', 'a8'], ['black', 'p', 'a1']]) {
+    assert.equal(mask({ [from]: pawn }, from, side).filter(Boolean).length, 1);
+  }
+});
+
+test('pawn capture diagonals enter the union and selected mask without revealing forward squares', () => {
+  for (const [side, pieces, from, diagonals, forward] of [
+    ['white', { d4: 'P' }, 'd4', ['c5', 'e5'], 'd5'],
+    ['black', { d5: 'p' }, 'd5', ['c4', 'e4'], 'd4'],
+  ]) {
+    const result = visibility(parseFEN(fen(pieces)), side, index(from));
+    for (const square of diagonals) {
+      assert.equal(seen(result.union, square), true);
+      assert.equal(seen(result.selected, square), true);
+    }
+    assert.equal(seen(result.union, forward), false);
+    assert.equal(seen(result.selected, forward), false);
+  }
 });
 
 test('sliding pieces stop at friendly or enemy blockers in each direction', () => {
@@ -120,23 +164,25 @@ test('castling depends on actual rights, rook and clear path, independently of a
   assert.equal(seen(black, 'c8'), true);
 });
 
-test('en passant reveals target and pawn only while available, for both colors', () => {
+test('en passant does not expand pawn visibility beyond capture diagonals', () => {
   for (const [pieces, from, side, turn, target, captured] of [
     [{ e5: 'P', d5: 'p' }, 'e5', 'white', 'w', 'd6', 'd5'],
     [{ e4: 'p', d4: 'P' }, 'e4', 'black', 'b', 'd3', 'd4'],
   ]) {
     const active = mask(pieces, from, side, turn, '-', target);
     assert.equal(seen(active, target), true);
-    assert.equal(seen(active, captured), true);
+    assert.equal(seen(active, captured), false);
     const expired = mask(pieces, from, side, turn);
-    assert.equal(seen(expired, target), false);
+    assert.equal(seen(expired, target), true);
     assert.equal(seen(expired, captured), false);
+    assert.deepEqual(plain(active), plain(expired));
   }
 });
 
 test('promotion uses the committed piece type and selection does not replace the union', () => {
   const pawn = mask({ a7: 'P' }, 'a7');
-  assert.equal(seen(pawn, 'a8'), true);
+  assert.equal(seen(pawn, 'a8'), false);
+  assert.equal(seen(pawn, 'b8'), true);
   const queen = mask({ a8: 'Q' }, 'a8');
   assert.equal(seen(queen, 'a1'), true);
   const position = parseFEN(fen({ a8: 'Q', b2: 'P' }));
