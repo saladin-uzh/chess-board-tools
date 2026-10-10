@@ -1,6 +1,37 @@
 # Ручні кроки релізу — у порядку виконання
 
-Стан на 2026-10-10: PR #13 і #14 перевірені власником та merged у `main` (`986b1eb` і `223e5fe`). Наступний реліз — **v1.1.2**, включно з підготовкою магазинів, #11 та обома фіксами. Manifest уже має 1.1.2; tag і GitHub Release v1.1.2 ще не створені. Pages опубліковано й перевірено. Підписаний реліз 1.1.1 зберігається без змін. Актуальна діагностика та план: [release-plan-v1.1.2.uk.md](release-plan-v1.1.2.uk.md).
+Стан на 2026-10-10: підписаний GitHub Release **v1.1.2** опубліковано з commit `0a111d2999eb508a6fcf69d39ce1b06405f0a5e4`. Фінальний ZIP завантажено в Chrome Web Store; item ID `cjcnnbgmhglibikfjocccmgfcpopclie`, статус **Чернетка**, на review не подано. Developer account і внесок завершені власником; `sam@openminds.dev` підтверджено. Збережено двомовний опис, категорію Games, мову English, іконку, три screenshots, promo, support/home/privacy URL, permission/privacy declarations і test instructions. Public/free та всі регіони вибрані. Automatic publishing ще не налаштовано: цей вибір потрібно перевірити під час подання.
+
+### Реліз 1.1.3 перед поданням
+
+PR #16 merged `e57b436`; власник підтвердив Safari runtime: «Усе працює». Підготовка v1.1.3 включає цей фікс, 75 regression tests і новий ZIP. Опублікований v1.1.2 не переписувати. Замінити package Chrome draft на 1.1.3; після успішного подання вибрати ручну публікацію після схвалення.
+
+### Поточний ручний крок: GPG signing v1.1.3
+
+Release diff staged у `/Users/saladin/code/labs/chess/pawn-fog-fix`, гілка `codex/release-v1.1.3`. Candidate SHA-256 `de71863fff5c481510c4cd5b8e317a2c0290e8cc88467431dfa886fd7278deb3`; 75 tests, syntax checks і package validation пройшли. GPG у неінтерактивному терміналі повернув `Inappropriate ioctl for device`.
+
+```bash
+cd /Users/saladin/code/labs/chess/pawn-fog-fix
+export GPG_TTY=$(tty)
+gpg-connect-agent updatestartuptty /bye
+git diff --cached --stat
+git commit -S -m "Prepare Chess Board Tools v1.1.3"
+git verify-commit HEAD
+git tag -s v1.1.3 -m "Release v1.1.3"
+git verify-tag v1.1.3
+```
+
+PIN/passphrase вводить власник. Після успіху Codex перевірить final ZIP, опублікує GitHub release і замінить Chrome draft package.
+
+### Наступні ручні кроки
+
+1. Завершити Chrome runtime checklist: одноразова unrated людська партія `/game/<id>`, обидві орієнтації, focus guards і native confirmation; перевірити фінальний 1.1.2.
+2. Перевірити реальний Chrome Sync між двома профілями з тим самим extension ID; локальні fog/keyboard/tick preferences не повинні синхронізуватися.
+3. Перевірити справжній toolbar popup: light/dark, клавіатурну навігацію, native selects і VoiceOver; повторити `/analysis` та ticking проти одноразового бота.
+4. Повідомити результати. Після проходження gates Codex може подати з ручною публікацією після схвалення.
+5. Після Chrome перейти до Apple Developer Program і повного Xcode; підписана Safari збірка ще не підготовлена.
+
+Наведений нижче початковий checklist містить історичні кроки; актуальний статус релізу й Chrome draft — у цьому блоці.
 
 Цей файл відрізняє дії власника від тих, які може виконати Codex після отримання доступу. Галочки ставити лише після фактичного виконання. Порядок — спочатку Chrome, потім macOS. Обидві версії безкоштовні; видавець — фізична особа.
 

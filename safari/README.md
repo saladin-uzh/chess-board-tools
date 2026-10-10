@@ -5,7 +5,7 @@ Status: preparation only. No Xcode project, signed app, provisioning profile, ar
 Use Xcode's Safari Web Extension converter on the extracted, verified release ZIP. Keep the canonical web sources at the repository root; regenerate/copy target resources from that ZIP before each archive, and compare them with its provenance hashes. Do not maintain independent web behavior in the native project.
 
 - Product: Chess Board Tools; macOS only; deployment target 27.0.
-- Version: 1.1.2; initial build number 1, monotonically increasing on uploads.
+- Version: 1.1.3; initial build number 1, monotonically increasing on uploads.
 - App ID: io.github.saladin-uzh.ChessBoardTools.
 - Extension ID: io.github.saladin-uzh.ChessBoardTools.Extension.
 - Team: publisher's enrolled personal Apple Developer account; select in Xcode rather than committing a team ID or secrets.
