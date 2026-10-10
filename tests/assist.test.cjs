@@ -554,6 +554,46 @@ test('daily in-page analysis uses keyboard input without own-turn ticks', async 
 });
 
 
+test('completed direct-game analysis and review allow keyboard input but never ticks', async () => {
+  let handler, raw, mode = 'playing', result = '*';
+  const location = { pathname: '/game/123' };
+  class Element {
+    constructor() { this.tagName = 'WC-CHESS-BOARD'; this.id = 'board-single'; this.isConnected = true; }
+    dispatchEvent(event) { raw = event.detail; }
+  }
+  const board = new Element(); board.game = {
+    getMode: () => ({ name: mode }), getResult: () => result, getVariant: () => 'chess',
+    getFEN: () => snapshot.fen, getPlayingAs: () => 1, getOptions: () => ({ flipped: false }),
+    isDragging: () => false, isAnimating: () => false, isAtEndOfLine: () => true,
+  };
+  const c = vm.createContext({ HTMLElement: Element, location,
+    document: { addEventListener: (type, fn) => { handler = fn; } },
+    CustomEvent: class { constructor(type, options) { Object.assign(this, options); } } });
+  run(c, 'assist-bridge.js'); run(c, 'assist-board.js');
+  const read = () => { handler({ target: board }); return c.ChessBoardAssist.validate(raw, board, location.pathname); };
+  const app = harness({ realTimer: true }); await flush();
+  app.change({ keyboard: true, ticking: true }); app.state(read()); app.key('b');
+  for (const route of ['/game/123', '/game/123/', '/game/live/123']) {
+    location.pathname = route;
+    for (const nextMode of ['analysis', 'observing']) {
+      mode = nextMode; result = '*'; assert.equal(read(), null);
+      for (const completed of ['1-0', '0-1', '1/2-1/2']) {
+        result = completed; const state = read();
+        assert.equal(state.context, mode === 'analysis' ? 'analysis' : 'review');
+        assert.equal(state.active, false);
+        app.state(state); app.poll(); app.key('b'); app.key('2'); app.key('b'); app.key('3');
+        assert.deepEqual(app.clicks.slice(-2), ['b2', 'b3']);
+        app.advance(10000); app.poll(); assert.deepEqual(app.ticks, []);
+        assert.equal(c.ChessBoardAssist.validate(JSON.stringify({ ...state, active: true }), board, route), null);
+      }
+    }
+  }
+  for (const route of ['/game/abc', '/game/123/other', '/play/online']) {
+    location.pathname = route; assert.equal(read(), null);
+  }
+});
+
+
 test('mode and active-state transitions clear buffered files and square indicators', async () => {
   const analysis = { ...snapshot, context: 'analysis', active: false };
   const human = { ...snapshot, context: 'human', active: true };

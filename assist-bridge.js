@@ -15,9 +15,12 @@
       const analysis = mode === "analysis" && (
         board.id === "board-analysis-board" &&
           (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path)) ||
-        board.id === "board-single" && /^\/game\/daily\/\d+\/?$/.test(path));
+        board.id === "board-single" && (
+          /^\/game\/daily\/\d+\/?$/.test(path) ||
+          /^\/game\/(?:live\/)?\d+\/?$/.test(path) &&
+            ["1-0", "0-1", "1/2-1/2"].includes(game.getResult())));
       const review = board.id === "board-single" && mode === "observing" &&
-        /^\/game\/(?:live|daily)\/\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(game.getResult());
+        /^\/game\/(?:(?:live|daily)\/)?\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(game.getResult());
       const human = board.id === "board-single" && mode === "playing" &&
         (/^\/play\/(?:online|daily)(?:\/|$)/.test(path) || /^\/game\/(?:(?:live|daily)\/)?\d+\/?$/.test(path));
       if ((bot || analysis || review || human) && game.getVariant() === "chess") {
