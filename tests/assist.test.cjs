@@ -36,6 +36,18 @@ test('adapter rejects unknown contexts, malformed state and transient boards', (
   assert.equal(validate({ ...snapshot, context: 'analysis', side: null, active: false }, { ...board, id: 'board-analysis-board' }, '/analysis').context, 'analysis');
 });
 
+test('human game routes accept numeric IDs without requiring a live or daily prefix', () => {
+  const board = { id: 'board-single', isConnected: true };
+  const validate = (route, b = board) => context.ChessBoardAssist.validate(JSON.stringify({ ...snapshot, context: 'human' }), b, route);
+  for (const route of ['/game/123', '/game/123/', '/game/live/123', '/game/daily/123', '/play/online', '/play/daily']) {
+    assert.equal(validate(route)?.context, 'human', route);
+  }
+  for (const route of ['/game/', '/game/live', '/game/abc', '/game/123/analysis', '/game/computer/123', '/games/123']) {
+    assert.equal(validate(route), null, route);
+  }
+  assert.equal(validate('/game/123', { ...board, id: 'board-analysis-board' }), null);
+});
+
 test('coordinate mapping is algebraic on both orientations and rejects bad geometry', () => {
   const { point } = context.ChessBoardAssist;
   const rect = { left: 10, top: 20, width: 800, height: 800 };
@@ -233,6 +245,57 @@ test('bridge snapshots are read-only, identify game replacement and reject unsup
   game.getMode = () => ({ name: 'observing' }); listener({ target: board }); assert.equal(result, null);
   game.getMode = () => ({ name: 'playing' }); game.getVariant = () => 'crazyhouse'; listener({ target: board }); assert.equal(result, null);
   game.getVariant = () => 'chess'; location.pathname = '/analysis/classroom'; listener({ target: board }); assert.equal(result, null);
+});
+
+test('bridge and adapter recognize direct human game URLs and keep live-state guards', () => {
+  let listener, result;
+  const game = {
+    getMode: () => ({ name: 'playing' }), getPlayingAs: () => 1, getVariant: () => 'chess',
+    getFEN: () => snapshot.fen, getOptions: () => ({ flipped: false }), getResult: () => '*',
+    isAtEndOfLine: () => true, isDragging: () => false, isAnimating: () => false,
+  };
+  class Element {
+    constructor() { this.tagName = 'WC-CHESS-BOARD'; this.id = 'board-single'; this.isConnected = true; this.game = game; }
+    dispatchEvent(event) { result = event.detail; }
+  }
+  const location = { pathname: '/game/123' };
+  const c = vm.createContext({ HTMLElement: Element, location,
+    document: { addEventListener: (type, fn) => { listener = fn; } },
+    CustomEvent: class { constructor(type, options) { Object.assign(this, options); } },
+  });
+  run(c, 'assist-bridge.js'); run(c, 'assist-board.js');
+  const board = new Element();
+  const read = () => { listener({ target: board }); return c.ChessBoardAssist.validate(result, board, location.pathname); };
+  for (const route of ['/game/123', '/game/123/', '/game/live/123', '/game/daily/123']) {
+    location.pathname = route;
+    assert.equal(read()?.context, 'human', route);
+    assert.equal(read().active, true);
+  }
+  location.pathname = '/game/123';
+  game.isAtEndOfLine = () => false; assert.equal(read().active, false);
+  game.isAtEndOfLine = () => true;
+  game.getResult = () => '1-0'; assert.equal(read().active, false);
+  game.getResult = () => '*';
+  game.isDragging = () => true; assert.equal(read().stable, false);
+  game.isDragging = () => false;
+  game.isAnimating = () => true; assert.equal(read().stable, false);
+  game.isAnimating = () => false;
+  game.getMode = () => ({ name: 'observing' }); assert.equal(read(), null);
+  game.getMode = () => ({ name: 'playing' });
+  game.getVariant = () => 'crazyhouse'; assert.equal(read(), null);
+  game.getVariant = () => 'chess';
+  location.pathname = '/game/123/analysis'; assert.equal(read(), null);
+});
+
+test('human keyboard actions require an active stable snapshot', async () => {
+  const app = harness(); await flush();
+  app.state({ ...snapshot, context: 'human' });
+  app.key('b'); app.key('2'); assert.deepEqual(app.clicks, ['b2']);
+  for (const change of [{ active: false }, { stable: false }]) {
+    app.state({ ...snapshot, context: 'human', ...change });
+    assert.equal(app.key('b').prevented, undefined);
+    app.key('3'); assert.deepEqual(app.clicks, ['b2']);
+  }
 });
 
 test('coordinate and promotion actions use host pointer events without calling game.move', () => {

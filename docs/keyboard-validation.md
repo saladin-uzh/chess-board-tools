@@ -33,3 +33,28 @@ Active human live/daily games and their native confirmation prompt have not
 been exercised in a disposable game. Completed human-game inspection does
 not establish active-game behavior. Safari runtime behavior is also not
 verified. These limitations remain documented for the v1.1.0 release.
+
+## Direct human-game URL regression
+
+The human-game bridge and adapter now accept `/game/<numeric-id>` and its
+optional trailing slash, alongside `/game/live/<id>` and `/game/daily/<id>`.
+Previously the direct URL was rejected before coordinate input could run.
+The existing `https://www.chess.com/game/*` manifest matches already cover
+these URLs; no new permission or injection scope is needed.
+
+`node --test tests/*.test.cjs`: 70 tests pass. Changed scripts pass
+`node --check`, and `git diff --check` passes.
+
+Regression tests reproduce the rejected route in both the bridge and adapter,
+check legacy routes and malformed paths, and preserve the standard-game,
+playing-mode, latest-position, completed-result, and stable-board guards.
+Content tests check that active human snapshots accept coordinate input while
+inactive or unstable snapshots do not.
+
+Runtime acceptance remains pending: after the tournament, use a disposable
+unrated human game at `/game/<id>`, enable keyboard control, and verify a legal
+move with sequential source/destination coordinates, both board orientations,
+and native move confirmation if enabled. Do not test by changing an existing
+competitive game. Host pointer dispatch and untrusted-event reporting are
+unchanged. This regression has not been verified in Safari or an active human
+game.
