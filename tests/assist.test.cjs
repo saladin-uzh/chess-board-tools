@@ -552,3 +552,26 @@ test('daily in-page analysis uses keyboard input without own-turn ticks', async 
   const forgedActive = { ...analysis, active: true };
   board.id = 'board-single'; assert.equal(c.ChessBoardAssist.validate(JSON.stringify(forgedActive), board, location.pathname), null);
 });
+
+
+test('mode and active-state transitions clear buffered files and square indicators', async () => {
+  const analysis = { ...snapshot, context: 'analysis', active: false };
+  const human = { ...snapshot, context: 'human', active: true };
+  for (const [before, after] of [[analysis, human], [human, analysis],
+    [human, { ...human, active: false }], [{ ...human, active: false }, human]]) {
+    const app = harness(); await flush(); app.state(before);
+    if (before.active || before.context === 'analysis') {
+      app.key('b'); app.key('2');
+      const square = app.board.children.at(-1);
+      app.key('c'); const file = app.board.children.at(-1);
+      const count = app.clicks.length;
+      app.state(after); app.key('3');
+      assert.equal(app.clicks.length, count);
+      assert.equal(file.removed, true); assert.equal(square.removed, true);
+    } else {
+      app.state(human); app.key('b');
+      app.state(before); app.poll(); app.state(after); app.key('2');
+      assert.deepEqual(app.clicks, []);
+    }
+  }
+});

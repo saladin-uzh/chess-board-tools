@@ -45,7 +45,7 @@
     const rect = board?.getBoundingClientRect();
     const geometryValid = rect?.width > 0 && rect?.height > 0 && Math.abs(rect.width - rect.height) <= 1;
     const snapshot = board && geometryValid ? read(board) : null;
-    const nextIdentity = snapshot ? `${location.pathname}:${snapshot.session}:${snapshot.fen}:${snapshot.flipped}` : null;
+    const nextIdentity = snapshot ? `${location.pathname}:${snapshot.session}:${snapshot.context}:${snapshot.active}:${snapshot.fen}:${snapshot.flipped}` : null;
     if (!snapshot?.stable) clear();
     if (nextIdentity !== identity) { clear(); identity = nextIdentity; }
     const button = document.querySelector("div.confirm-move-buttons .cc-button-primary");
