@@ -1,8 +1,10 @@
 # Store submission kit
 
-Prepared for candidate **1.1.2**. This kit is not a submitted or published listing.
+Next release target: **1.1.2**; the manifest already reads 1.1.2; both fixes are merged. This kit is not a submitted or published listing.
 PR #12, which implements issue #11, was merged into main at `7c9d4b1`.
 The earlier signed/published GitHub release 1.1.1 remains unchanged.
+PR #13 and #14 are merged. See `../release-plan-v1.1.2.uk.md` for the
+Pages failure diagnosis and updated release gates.
 
 ## Text and destinations
 
@@ -32,7 +34,8 @@ remains English. Do not advertise full Ukrainian UI localization.
 
 Use the same three Chrome screenshots for both listing locales: they accurately
 show the English UI. Screenshots were taken with Chrome for Testing 154.0.8037.0
-from the unpacked candidate ZIP. Popup captures show its real extension document
+from the current 1.1.2 unpacked candidate ZIP after PR #13/#14, regenerated
+and visually inspected on 2026-10-10. See `../v1.1.2-validation.md`. Popup captures show its real extension document
 in a tab, not the browser toolbar frame. No screenshot uses private account data,
 active human games, fabricated board overlays, or a fabricated Ukrainian UI.
 The promotional image is separately designed artwork, not a screenshot.
@@ -58,6 +61,6 @@ manifest version to match the tag. Git signatures do not replace store signing.
 - [Safari extension distribution](https://developer.apple.com/safari/extensions/)
 - [macOS screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications)
 
-Public URLs in the metadata must be checked after deployment; they are currently
-planned destinations. No payment, store enrollment, Xcode installation,
+Public URLs in the metadata should be rechecked before submission; they are
+confirmed HTTP 200 destinations as of 2026-10-10. No payment, store enrollment, Xcode installation,
 App Store signing, or store submission happened during this preparation.

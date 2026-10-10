@@ -1,45 +1,58 @@
 # Ручні кроки релізу — у порядку виконання
 
-Стан на 2026-10-09: PR #10 і #12 merged; #11 закрита. Підписані release commit `d8ec72b` і tag `v1.1.1` перевірено; GitHub Release 1.1.1 вже має ZIP. Не змінювати цей tag або його артефакт. Нові матеріали й узгоджена назва підготовлені для **1.1.2**.
+Стан на 2026-10-10: PR #13 і #14 перевірені власником та merged у `main` (`986b1eb` і `223e5fe`). Наступний реліз — **v1.1.2**, включно з підготовкою магазинів, #11 та обома фіксами. Manifest уже має 1.1.2; tag і GitHub Release v1.1.2 ще не створені. Pages опубліковано й перевірено. Підписаний реліз 1.1.1 зберігається без змін. Актуальна діагностика та план: [release-plan-v1.1.2.uk.md](release-plan-v1.1.2.uk.md).
 
 Цей файл відрізняє дії власника від тих, які може виконати Codex після отримання доступу. Галочки ставити лише після фактичного виконання. Порядок — спочатку Chrome, потім macOS. Обидві версії безкоштовні; видавець — фізична особа.
 
-## 1. Підписати новий release commit і tag — власник
+## 1. Увімкнути Pages та перевірити support/privacy — власник + Codex
 
-Перед підписанням переглянути `git diff`, нові файли та `docs/store-preparation-validation.md`. Ці команди призначені для поточного checkout; не включати сторонні зміни. У разі зміни runtime-файлів повторити перевірки й скриншоти.
+- [x] У [Settings → Pages](https://github.com/saladin-uzh/chess-board-tools/settings/pages) вибрати source **GitHub Actions**. Це усуває підтверджену причину падіння run `37970530778`: сайт Pages раніше не був налаштований. Обліковий запис має admin access; зміна workflow не потрібна для цього виправлення.
+- [x] Повторна спроба №2 run `37970530778` успішна. Якщо source сайту зміниться, запустити актуальний workflow на `main`:
 
 ```bash
-cd /Users/saladin/code/labs/chess/chrome-extension
-node --test tests/*.test.cjs
-git diff --check
-git add manifest.json popup.html README.md README.uk.md .gitignore .github/workflows/pages.yml scripts/package-extension.py site safari docs/store docs/manual-release-steps.uk.md docs/store-preparation-validation.md docs/v1.1.2-release-notes.md
-git diff --cached --check
-git commit -S -m "Prepare Chess Board Tools v1.1.2 for store distribution"
-git verify-commit HEAD
-git tag -s v1.1.2 -m "Release v1.1.2"
-git verify-tag v1.1.2`
+gh workflow run pages.yml --repo saladin-uzh/chess-board-tools --ref main
 ```
 
-- [ ] Підписаний commit і tag перевірені. PIN/passphrase вводить власник; не передавати їх Codex і не зберігати в репозиторії.
+- [x] Deployment успішний; HTTP 200 та наявність Chess Board Tools перевірені для `/`, `/support.html`, `/support.uk.html`, `/privacy.html`, `/privacy.uk.html` на `https://saladin-uzh.github.io/chess-board-tools/`.
+- [x] Внутрішні EN/UK посилання сайту перевірені: HTTP 200. Перед store submission повторно перевірити всі URL із metadata.
 
-## 2. Фінальний ZIP, push і GitHub Release — може виконати Codex
+## 2. Підготувати й підписати release commit та tag — Codex + власник
 
-Після кроку 1 виконати:
+- [x] PR #15 (daily in-page analysis) перевірений повторно та merged `1721d15`; 74 тести пройшли.
+- [x] Власник після merge повідомив «Все, наче, працює» у контексті Safari daily analysis; це попередній runtime feedback. Candidate checks пройшли, 74 тести. Детальний Chrome store checklist залишається окремим gate. Попередній candidate checksum уже не актуальний; див. `release-plan-v1.1.2.uk.md`.
+
+- [ ] В окремому release checkout від актуального `main` підтвердити manifest/Safari version **1.1.2**; release notes уже оновлено у `docs/v1.1.2-release-notes.md`. Не змінювати встановлену Safari копію.
+- [ ] Повторити 72 регресійні тести, JavaScript syntax checks, package validation. Побудувати candidate 1.1.2, перевірити fog capture diagonals на одноразовій `/analysis`, клавіатуру в одноразовій unrated людській партії `/game/<id>` та перенесення налаштувань 1.1.1 → 1.1.2. Факт перевірки PR власником не підміняє результати встановленого фінального пакета.
+- [x] Оновлені analysis/fog та light/dark popup screenshots після #13/#14; перевірені 1280×800. Runtime evidence і candidate SHA-256: `docs/v1.1.2-validation.md`.
+- [x] Same-ID unpacked upgrade 1.1.1 → 1.1.2 повторно пройшов; shortcuts і локальні preferences збережені.
+- [ ] Власник перевіряє candidate у видимому ізольованому Chrome for Testing: одноразова unrated людська партія `/game/<id>`, координати, flip, focus guards і native confirmation. Профіль не має Chess.com login; увійти самостійно. До результату не підписувати/публікувати реліз.
+- [ ] Переглянути diff та підписати лише підготовлені release-файли. PIN/passphrase вводить власник.
+
+Наведені команди виконувати **лише в підготовленому release checkout**, після перевірок candidate і підготовки release diff. Якщо release preparation йде через PR, підписаний tag створювати після merge на окремому підписаному release commit в актуальному `main`: пакувальник перевіряє також підпис target commit.
+
+```bash
+node --test tests/*.test.cjs
+git diff --check
+git add manifest.json docs/v1.1.2-release-notes.md safari/README.md
+git diff --cached --check
+git commit -S -m "Prepare Chess Board Tools v1.1.2"
+git verify-commit HEAD
+git tag -s v1.1.2 -m "Release v1.1.2"
+git verify-tag v1.1.2
+```
+
+- [ ] Підпис commit/tag перевірений; tag включає обидва merge-коміти. Tag має відповідати manifest 1.1.2; не переписувати існуючі tags.
+
+## 3. Фінальний ZIP, push і GitHub Release — може виконати Codex
 
 ```bash
 python3 scripts/package-extension.py --ref v1.1.2
 ```
 
-Пакувальник перевіряє підпис tag і цільового commit, відповідність версії, 22 runtime-файли, manifest/HTML/CSS references та цілісність ZIP. Видає ZIP, `.sha256` і `.provenance.json` у `build/`. Final ZIP має бути ідентичний перевіреному candidate за SHA-256; різниця потребує повторної перевірки.
+Пакувальник перевіряє підпис tag і цільового commit, відповідність версії, 22 runtime-файли, manifest/HTML/CSS references та цілісність ZIP. Видає ZIP, `.sha256` і `.provenance.json` у `build/`. Final ZIP має збігатися з перевіреним **1.1.2 candidate** за SHA-256; старий candidate до #13/#14 не використовувати.
 
-- [ ] Push `main` і `v1.1.2`; не force-push. SSH origin у цій сесії не працював; HTTPS з наявним `gh auth git-credential` працював. Не змінювати глобальну конфігурацію Git.
-- [ ] Створити GitHub Release з `docs/v1.1.2-release-notes.md` і трьома фінальними артефактами. Не завантажувати candidate замість фінального ZIP.
-
-## 3. Опублікувати support/privacy — може виконати Codex
-
-- [ ] Після push увімкнути GitHub Pages із source **GitHub Actions** у цьому репозиторії. Workflow `.github/workflows/pages.yml` публікує лише `site/`.
-- [ ] Запустити workflow за потреби й перевірити HTTP 200 для `/`, `/support.html`, `/support.uk.html`, `/privacy.html`, `/privacy.uk.html` на `https://saladin-uzh.github.io/chess-board-tools/`.
-- [ ] Перевірити посилання й EN/UK сторінки. У dashboard магазинів використовувати лише підтверджені URL.
+- [ ] Push release commit у `main` і `v1.1.2`; не force-push. За потреби HTTPS з наявним `gh auth git-credential`, без зміни глобальної конфігурації Git.
+- [ ] Створити GitHub Release з `docs/v1.1.2-release-notes.md` та трьома фінальними артефактами. Перевірити version, provenance і завантажений checksum.
 
 ## 4. Chrome developer account — власник
 
@@ -51,7 +64,7 @@ python3 scripts/package-extension.py --ref v1.1.2
 - [ ] У двох профілях Chrome з тим самим обліковим записом, ввімкненою синхронізацією extensions/settings і встановленим **тим самим extension ID**, змінити shortcuts та підтвердити появу в другому профілі. Різні IDs unpacked/store extension не доводять Sync.
 - [ ] Переконатися, що fog/keyboard/tick preferences не синхронізуються. Перевірити поведінку з вимкненим Sync і після відновлення мережі.
 - [ ] У справжньому toolbar popup Chrome перевірити light/dark, перемикання з відкритим popup, Tab/Shift+Tab, expanded selects, checked/unchecked checkboxes, slider endpoints, loading/error/success і VoiceOver announcements. Headless extension-document перевірки не замінюють нативні меню чи screen reader.
-- [ ] Після встановлення фінального пакета повторити `/analysis` за `docs/store/review-notes.en.md`. Unpacked оновлення 1.1.1 → 1.1.2 зі збереженням параметрів уже перевірене; доставку оновлення через Web Store перевірити під час першого наступного магазинного релізу. Timer окремо перевірити проти одноразового бота, без активної людської партії.
+- [ ] Після встановлення фінального пакета повторити `/analysis` за `docs/store/review-notes.en.md`. Історично перевірене лише unpacked оновлення 1.1.1 → 1.1.2; для 1.1.2 повторити перевірку зі збереженням параметрів; доставку оновлення через Web Store перевірити під час першого наступного магазинного релізу. Timer окремо перевірити проти одноразового бота, без активної людської партії.
 
 ## 6. Chrome подання — може виконати Codex після кроків 1–5
 

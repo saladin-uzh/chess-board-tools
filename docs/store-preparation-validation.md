@@ -1,5 +1,10 @@
 # Store preparation validation — 2026-10-09
 
+Historical evidence for candidate 1.1.2. The current target is **v1.1.2**
+after merged PR #13/#14; see [release-plan-v1.1.2.uk.md](release-plan-v1.1.2.uk.md)
+for current checks, the Pages failure diagnosis, and pending gates. The release
+status below describes the original preparation date.
+
 ## Source and release status
 
 - PR #10 was already merged when implementation began. Existing release commit `d8ec72b` and tag `v1.1.1` both passed Git signature verification. GitHub Release 1.1.1 already has its original ZIP; neither tag nor asset was replaced.
