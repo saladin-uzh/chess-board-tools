@@ -1,5 +1,7 @@
 # Chess Board Tools
 
+[![Support and privacy pages](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml)
+
 [English version](README.md)
 
 Розширення для Chess.com із керуванням дошкою з клавіатури, налаштовуваними
