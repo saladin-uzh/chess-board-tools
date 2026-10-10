@@ -11,11 +11,14 @@
     const analysis = input.context === "analysis" && (
       board.id === "board-analysis-board" &&
         (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path)) ||
-      input.active === false && board.id === "board-single" && /^\/game\/daily\/\d+\/?$/.test(path));
+      input.active === false && board.id === "board-single" && (
+          /^\/game\/daily\/\d+\/?$/.test(path) ||
+          /^\/game\/(?:live\/)?\d+\/?$/.test(path) &&
+            ["1-0", "0-1", "1/2-1/2"].includes(input.result)));
     const human = input.context === "human" && board.id === "board-single" &&
       (/^\/play\/(?:online|daily)(?:\/|$)/.test(path) || /^\/game\/(?:(?:live|daily)\/)?\d+\/?$/.test(path));
     const review = input.context === "review" && input.active === false && board.id === "board-single" &&
-      /^\/game\/(?:live|daily)\/\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(input.result);
+      /^\/game\/(?:(?:live|daily)\/)?\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(input.result);
     if (!bot && !analysis && !review && !human) return null;
     if (typeof input.fen !== "string" || input.fen.length > 160) return null;
     const fields = input.fen.split(" ");
