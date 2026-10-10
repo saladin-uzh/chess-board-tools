@@ -1,5 +1,7 @@
 # Chess Board Tools
 
+[![Support and privacy pages](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml/badge.svg)](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml)
+
 [Українська версія](README.uk.md)
 
 A browser extension for Chess.com with keyboard board controls, configurable
