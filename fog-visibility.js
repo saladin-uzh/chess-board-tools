@@ -40,7 +40,7 @@
 
   function visibility(position, side, selected = null) {
     if (!position || !["white", "black"].includes(side)) return null;
-    const { squares, sideToMove, castling, enPassant } = position;
+    const { squares, castling } = position;
     const union = Array(64).fill(false);
     let selectedMask = null;
     for (let from = 0; from < 64; from++) {
@@ -85,20 +85,10 @@
         }
       } else if (type === "p") {
         const direction = side === "white" ? 1 : -1;
-        const next = from + direction * 8;
-        if (next >= 0 && next < 64 && !squares[next]) {
-          mask[next] = true;
-          const double = next + direction * 8;
-          if (y === (side === "white" ? 1 : 6) && !squares[double]) mask[double] = true;
-        }
+        // Pawn sight follows capture diagonals, regardless of occupancy or turn.
         for (const dx of [-1, 1]) {
           if (x + dx < 0 || x + dx > 7 || y + direction < 0 || y + direction > 7) continue;
-          const target = next + dx;
-          if (squares[target] && colorOf(squares[target]) !== side) mask[target] = true;
-          if (sideToMove === side && target === enPassant) {
-            mask[target] = true;
-            mask[target - direction * 8] = true;
-          }
+          mask[(y + direction) * 8 + x + dx] = true;
         }
       }
       for (let i = 0; i < 64; i++) union[i] ||= mask[i];
