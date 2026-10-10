@@ -515,3 +515,40 @@ test('assist bridge gates observing review on a completed standard game', () => 
   result = '1-0'; variant = 'chess960'; handler({ target: board }); assert.equal(response, null);
   variant = 'chess'; mode = 'unknown'; handler({ target: board }); assert.equal(response, null);
 });
+
+
+test('daily in-page analysis uses keyboard input without own-turn ticks', async () => {
+  let handler, raw, mode = 'analysis', variant = 'chess';
+  const location = { pathname: '/game/daily/123' };
+  class Element {
+    constructor() { this.tagName = 'WC-CHESS-BOARD'; this.id = 'board-single'; this.isConnected = true; }
+    dispatchEvent(event) { raw = event.detail; }
+  }
+  const board = new Element(); board.game = {
+    getMode: () => ({ name: mode }), getResult: () => '*', getVariant: () => variant,
+    getFEN: () => snapshot.fen, getPlayingAs: () => 1, getOptions: () => ({ flipped: true }),
+    isDragging: () => false, isAnimating: () => false, isAtEndOfLine: () => false,
+  };
+  const c = vm.createContext({ HTMLElement: Element, location,
+    document: { addEventListener: (type, fn) => { handler = fn; } },
+    CustomEvent: class { constructor(type, options) { Object.assign(this, options); } } });
+  run(c, 'assist-bridge.js'); run(c, 'assist-board.js');
+  const read = () => { handler({ target: board }); return c.ChessBoardAssist.validate(raw, board, location.pathname); };
+  const analysis = read();
+  assert.equal(analysis?.context, 'analysis'); assert.equal(analysis.active, false);
+  const app = harness({ realTimer: true }); await flush();
+  app.state(analysis); app.change({ keyboard: true, ticking: true });
+  app.key('b'); app.key('2'); assert.deepEqual(app.clicks, ['b2']);
+  app.advance(10000); app.poll(); assert.deepEqual(app.ticks, []);
+  location.pathname = '/game/daily/123/'; assert.equal(read().context, 'analysis');
+  for (const route of ['/game/live/123', '/game/123', '/play/online', '/game/daily/abc', '/game/daily/123/other']) {
+    location.pathname = route; assert.equal(read(), null, route);
+  }
+  location.pathname = '/game/daily/123';
+  mode = 'observing'; assert.equal(read(), null);
+  mode = 'unknown'; assert.equal(read(), null);
+  mode = 'analysis'; variant = 'crazyhouse'; assert.equal(read(), null);
+  variant = 'chess'; board.id = 'board-other'; assert.equal(read(), null);
+  const forgedActive = { ...analysis, active: true };
+  board.id = 'board-single'; assert.equal(c.ChessBoardAssist.validate(JSON.stringify(forgedActive), board, location.pathname), null);
+});

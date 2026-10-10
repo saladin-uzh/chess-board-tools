@@ -58,3 +58,20 @@ and native move confirmation if enabled. Do not test by changing an existing
 competitive game. Host pointer dispatch and untrusted-event reporting are
 unchanged. This regression has not been verified in Safari or an active human
 game.
+
+## In-page daily analysis regression
+
+The assist bridge and adapter accept `board-single` in host `analysis` mode on
+`/game/daily/<numeric-id>`, including a trailing slash. The game may be ongoing
+and the viewed position need not be at the end of the line: this is analysis,
+not an active playing snapshot. Keyboard coordinate input remains available;
+own-turn ticks remain disabled. The standard-variant, stable-board, numeric
+route, and focus/input guards are preserved. Fog eligibility is unchanged.
+
+A bridge-to-adapter/content regression reproduces rejection before the fix and
+checks keyboard input, no ticks, malformed/other routes, unsupported modes and
+variants, board IDs, and rejection of an active analysis snapshot. All 73 tests
+pass; changed scripts pass syntax checks and `git diff --check` passes.
+Safari daily-analysis runtime acceptance remains pending; verify entering and
+leaving native analysis, coordinates in both orientations, and promotion/focus
+behavior before signing the release candidate.

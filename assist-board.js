@@ -8,8 +8,10 @@
         typeof input.active !== "boolean" || !Number.isSafeInteger(input.session) || input.session < 1 ||
         ![null, "white", "black"].includes(input.side)) return null;
     const bot = input.context === "bot" && path === "/play/computer" && board.id === "board-play-computer";
-    const analysis = input.context === "analysis" && board.id === "board-analysis-board" &&
-      (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path));
+    const analysis = input.context === "analysis" && (
+      board.id === "board-analysis-board" &&
+        (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path)) ||
+      input.active === false && board.id === "board-single" && /^\/game\/daily\/\d+\/?$/.test(path));
     const human = input.context === "human" && board.id === "board-single" &&
       (/^\/play\/(?:online|daily)(?:\/|$)/.test(path) || /^\/game\/(?:(?:live|daily)\/)?\d+\/?$/.test(path));
     const review = input.context === "review" && input.active === false && board.id === "board-single" &&
