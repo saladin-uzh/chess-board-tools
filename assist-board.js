@@ -11,7 +11,7 @@
     const analysis = input.context === "analysis" && board.id === "board-analysis-board" &&
       (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path));
     const human = input.context === "human" && board.id === "board-single" &&
-      (/^\/play\/(?:online|daily)(?:\/|$)/.test(path) || /^\/game\/(?:live|daily)\/\d+\/?$/.test(path));
+      (/^\/play\/(?:online|daily)(?:\/|$)/.test(path) || /^\/game\/(?:(?:live|daily)\/)?\d+\/?$/.test(path));
     const review = input.context === "review" && input.active === false && board.id === "board-single" &&
       /^\/game\/(?:live|daily)\/\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(input.result);
     if (!bot && !analysis && !review && !human) return null;

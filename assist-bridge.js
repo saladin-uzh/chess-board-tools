@@ -17,7 +17,7 @@
       const review = board.id === "board-single" && mode === "observing" &&
         /^\/game\/(?:live|daily)\/\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(game.getResult());
       const human = board.id === "board-single" && mode === "playing" &&
-        (/^\/play\/(?:online|daily)(?:\/|$)/.test(path) || /^\/game\/(?:live|daily)\/\d+\/?$/.test(path));
+        (/^\/play\/(?:online|daily)(?:\/|$)/.test(path) || /^\/game\/(?:(?:live|daily)\/)?\d+\/?$/.test(path));
       if ((bot || analysis || review || human) && game.getVariant() === "chess") {
         if (!sessions.has(game)) sessions.set(game, ++sequence);
         const side = game.getPlayingAs();
