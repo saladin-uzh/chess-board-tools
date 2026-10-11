@@ -53,7 +53,9 @@
     if (next !== board) { clear(); identity = null; board = next; }
     const rect = board?.getBoundingClientRect();
     const geometryValid = rect?.width > 0 && rect?.height > 0 && Math.abs(rect.width - rect.height) <= 1;
-    const snapshot = board && geometryValid ? read(board) : null;
+    const timerBoard = candidates.find(element =>
+      ["board-single", "board-play-computer", "board-analysis-board"].includes(element.id));
+    const snapshot = timerBoard ? read(timerBoard) : null;
     const coordinates = board && geometryValid ? readCoordinates(board) : null;
     const nextIdentity = coordinates ? `${location.pathname}:${coordinates.session}:${snapshot?.context}:${snapshot?.active}:${coordinates.fen}:${coordinates.flipped}` : null;
     if (!coordinates?.stable) clear();

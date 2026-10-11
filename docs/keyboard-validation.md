@@ -94,3 +94,6 @@ extension installed remains unverified.
 
 Multi-board regression: skip hidden/zero-size boards, prefer the primary board,
 follow pointer interaction or board focus, and recover when that board disappears.
+
+The timer keeps its own primary game board when coordinate input follows a
+secondary board; a regression checks cues at 10 and 20 seconds after selection.

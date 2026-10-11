@@ -122,7 +122,7 @@ function harness({ realTimer = false } = {}) {
     remove() { this.removed = true; }
     querySelector() { return this.picker; }
   }
-  board = new Element();
+  board = new Element(); board.id = 'board-single';
   const document = { activeElement: null, visibilityState: 'visible', body: { append() {} },
     querySelectorAll: () => candidates || [board],
     querySelector: selector => selector.startsWith('wc-') ? board : selector.startsWith('div.confirm-') ? confirmation : null,
@@ -134,7 +134,7 @@ function harness({ realTimer = false } = {}) {
     clearTimeout: id => timeouts.delete(id), setInterval: fn => { const id = ++serial; intervals.set(id, fn); return id; }, clearInterval: id => intervals.delete(id),
     addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
     chrome: { storage: { local: { get: async () => ({ boardAssistPreferences: { keyboard: true } }) }, onChanged: { addListener: fn => { changed = fn; } } } },
-    ChessBoardAssist: { read: () => current, readCoordinates: () => current, clickSquare: (b, square) => { clickedBoards.push(b); clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
+    ChessBoardAssist: { read: b => b.id === 'secondary' ? null : current, readCoordinates: () => current, clickSquare: (b, square) => { clickedBoards.push(b); clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
     ChessAssistTimer: { createTurnTimer: () => ({ reset() { timerResets.push(true); }, update(...args) { timerCalls.push(args); return false; } }), createAudio: () => ({ unlock() { unlocks.push(now); }, close() {}, tick() { ticks.push(now); } }) },
   });
   run(c, 'settings.js');
@@ -151,7 +151,7 @@ function harness({ realTimer = false } = {}) {
     dispatch, advance(ms) { now += ms; for (const [id, t] of timeouts) if (t.due <= now) { timeouts.delete(id); t.fn(); } },
     poll() { for (const fn of intervals.values()) fn(); },
     confirm(value = true) { confirmation = value ? new Element() : null; },
-    state(value) { current = value; }, replace() { board = new Element(); },
+    state(value) { current = value; }, replace() { board = new Element(); board.id = 'board-single'; },
     change(value, area = 'local') { changed({ boardAssistPreferences: { newValue: value } }, area); },
     picker(piece) { const p = new Element(); p.piece = piece; const picker = new Element(); picker.querySelectorAll = () => [p]; board.picker = picker; },
   };
@@ -682,4 +682,16 @@ test('coordinate control skips hidden boards and follows the interacted or focus
   app.key('c'); app.key('4'); assert.equal(app.clickedBoards.at(-1), primary);
   app.document.activeElement = null;
   app.boards([hidden, primary]); app.key('d'); app.key('5'); assert.equal(app.clickedBoards.at(-1), primary);
+});
+
+test('secondary coordinate board selection preserves primary own-turn ticks', async () => {
+  const app = harness({ realTimer: true }); await flush();
+  const primary = app.board;
+  const secondary = Object.assign(Object.create(Object.getPrototypeOf(primary)), primary, { id: 'secondary', style: {} });
+  app.boards([secondary, primary]); app.state(snapshot); app.change({ keyboard: true, ticking: true });
+  app.advance(9000); app.dispatch('pointerdown', { composedPath: () => [secondary] });
+  app.key('b'); app.key('2'); assert.equal(app.clickedBoards.at(-1), secondary);
+  app.advance(1000); app.poll(); assert.deepEqual(app.ticks, [10000]);
+  app.document.activeElement = { closest: selector => selector === 'wc-chess-board' ? secondary : null };
+  app.advance(10000); app.poll(); assert.deepEqual(app.ticks, [10000, 20000]);
 });
