@@ -120,6 +120,10 @@ Fog is supported on `/play/computer`, standalone `/analysis`, and completed
 mode on `/game/daily/*` or `/analysis/game/daily/*`. It stays unavailable during
 active human play, in classrooms, variants, incomplete state, and unsupported pages.
 
+Squares unseen by either side use a darker tint: their remaining transparency is
+half that of ordinary fog. Thin diagonal stripes distinguish these squares from
+ordinary fog. Square highlights stay below pieces; arrows stay above fog.
+
 Clear squares are the union of your pieces' occupied squares and movement
 destinations, except that pawns reveal their two forward capture diagonals
 regardless of occupancy or side to move, without revealing forward movement
