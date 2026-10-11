@@ -321,6 +321,15 @@ test('MAIN bridge reads full FEN only in verified modes and rejects unfinished i
   variant = 'chess';
   ctx.location.pathname = '/analysis/game/live/123'; board.id = 'board-analysis-board'; mode = 'analysis';
   handler({ target: board }); assert.equal(response, null);
+  ctx.location.pathname = '/analysis/game/daily/123';
+  handler({ target: board }); assert.equal(response.context, 'analysis');
+  ctx.location.pathname = '/game/daily/123'; board.id = 'board-single';
+  handler({ target: board }); assert.equal(response.context, 'analysis');
+  mode = 'playing'; handler({ target: board }); assert.equal(response, null);
+  mode = 'observing'; handler({ target: board }); assert.equal(response, null);
+  mode = 'analysis'; ctx.location.pathname = '/game/live/123';
+  handler({ target: board }); assert.equal(response, null);
+  ctx.location.pathname = '/analysis/game/live/123'; board.id = 'board-analysis-board';
   result = '1-0'; handler({ target: board }); assert.equal(response.context, 'analysis');
   ctx.location.pathname = '/analysis/game/computer/123/analysis';
   handler({ target: board }); assert.equal(response.context, 'analysis');
@@ -463,4 +472,18 @@ test('fog adapter accepts completed review and rejects unfinished review or mism
   assert.equal(validate({ ...input, result: undefined }), null);
   assert.equal(validate({ ...input, stable: false }), null);
   assert.equal(validate(input, '/play/online'), null);
+});
+
+test('fog adapter accepts daily analysis on the native game board only on daily routes', () => {
+  const input = { context: 'analysis', result: '*', stable: true, flipped: false,
+    side: 'black', selected: null, fen: fen({ a7: 'P' }) };
+  const board = { id: 'board-single', isConnected: true };
+  const validate = (path, value = input) => context.ChessFogBoard.validateSnapshot(JSON.stringify(value), board, path, 'auto');
+  assert.equal(validate('/game/daily/123').side, 'black');
+  assert.equal(validate('/game/daily/123/').side, 'black');
+  for (const path of ['/game/live/123', '/play/daily', '/game/daily/123/review', '/analysis']) {
+    assert.equal(validate(path), null);
+  }
+  assert.equal(validate('/game/daily/123', { ...input, context: 'human' }), null);
+  assert.equal(validate('/game/daily/123', { ...input, context: 'review' }), null);
 });
