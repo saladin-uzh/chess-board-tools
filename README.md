@@ -116,9 +116,9 @@ the board and follows board flips. Manual White/Black perspectives stay fixed.
 Fog is supported on `/play/computer`, standalone `/analysis`, and completed
 `/analysis/game/live/*`, `/analysis/game/daily/*`, or
 `/analysis/game/computer/*` games, plus completed `/game/live/*` and
-`/game/daily/*` reviews. It stays unavailable for active human games,
-classrooms, variants, incomplete state, and unsupported pages. Active human-game use
-is outside this release under [Chess.com's Fair Play Policy](https://www.chess.com/legal/fair-play).
+`/game/daily/*` reviews. Ongoing daily games also support fog while in analysis
+mode on `/game/daily/*` or `/analysis/game/daily/*`. It stays unavailable during
+active human play, in classrooms, variants, incomplete state, and unsupported pages.
 
 Clear squares are the union of your pieces' occupied squares and movement
 destinations, except that pawns reveal their two forward capture diagonals

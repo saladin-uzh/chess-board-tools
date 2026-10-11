@@ -11,7 +11,10 @@
       const path = location.pathname;
       const mode = game?.getMode()?.name;
       const bot = path === "/play/computer" && board.id === "board-play-computer" && mode === "playing";
-      const analysis = board.id === "board-analysis-board" && mode === "analysis" &&
+      const dailyAnalysis = mode === "analysis" && (
+        board.id === "board-single" && /^\/game\/daily\/\d+\/?$/.test(path) ||
+        board.id === "board-analysis-board" && /^\/analysis\/game\/daily\/\d+(?:\/analysis)?\/?$/.test(path));
+      const analysis = dailyAnalysis || board.id === "board-analysis-board" && mode === "analysis" &&
         (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(game.getResult()));
       const review = board.id === "board-single" && mode === "observing" &&
         /^\/game\/(?:live|daily)\/\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(game.getResult());
