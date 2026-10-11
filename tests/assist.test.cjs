@@ -131,7 +131,7 @@ function harness({ realTimer = false } = {}) {
     clearTimeout: id => timeouts.delete(id), setInterval: fn => { const id = ++serial; intervals.set(id, fn); return id; }, clearInterval: id => intervals.delete(id),
     addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
     chrome: { storage: { local: { get: async () => ({ boardAssistPreferences: { keyboard: true } }) }, onChanged: { addListener: fn => { changed = fn; } } } },
-    ChessBoardAssist: { read: () => current, clickSquare: (b, square) => { clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
+    ChessBoardAssist: { read: () => current, readCoordinates: () => current, clickSquare: (b, square) => { clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
     ChessAssistTimer: { createTurnTimer: () => ({ reset() { timerResets.push(true); }, update(...args) { timerCalls.push(args); return false; } }), createAudio: () => ({ unlock() { unlocks.push(now); }, close() {}, tick() { ticks.push(now); } }) },
   });
   run(c, 'settings.js');
@@ -287,11 +287,11 @@ test('bridge and adapter recognize direct human game URLs and keep live-state gu
   location.pathname = '/game/123/analysis'; assert.equal(read(), null);
 });
 
-test('human keyboard actions require an active stable snapshot', async () => {
+test('human keyboard actions require a stable snapshot regardless of active state', async () => {
   const app = harness(); await flush();
   app.state({ ...snapshot, context: 'human' });
   app.key('b'); app.key('2'); assert.deepEqual(app.clicks, ['b2']);
-  for (const change of [{ active: false }, { stable: false }]) {
+  for (const change of [{ stable: false }]) {
     app.state({ ...snapshot, context: 'human', ...change });
     assert.equal(app.key('b').prevented, undefined);
     app.key('3'); assert.deepEqual(app.clicks, ['b2']);
@@ -614,4 +614,53 @@ test('mode and active-state transitions clear buffered files and square indicato
       assert.deepEqual(app.clicks, []);
     }
   }
+});
+
+test('coordinate input works across routes, modes and variants without enabling spectator ticks', async () => {
+  const handlers = {}; let raw, flipped = false, stable = true;
+  class Element {
+    constructor() { this.tagName = 'WC-CHESS-BOARD'; this.id = 'board-other'; this.isConnected = true; }
+    dispatchEvent(event) { raw = event.detail; }
+  }
+  const board = new Element();
+  // Coordinate input does not require playing mode, ownership or standard-chess APIs.
+  board.game = { getFEN: () => 'variant position', getOptions: () => ({ flipped }),
+    isDragging: () => !stable, isAnimating: () => false };
+  const location = { pathname: '/game/186049589091' };
+  const c = vm.createContext({ HTMLElement: Element, location,
+    document: { addEventListener: (type, fn) => { handlers[type] = fn; } },
+    CustomEvent: class { constructor(type, options) { this.type = type; Object.assign(this, options); } } });
+  run(c, 'assist-bridge.js'); run(c, 'assist-board.js');
+  const app = harness({ realTimer: true }); await flush(); app.change({ keyboard: true, ticking: true });
+  for (const route of ['/game/186049589091', '/live/game/123', '/analysis/classroom', '/puzzles', '/variants', '/']) {
+    location.pathname = route;
+    for (flipped of [false, true]) {
+      handlers['chess-coordinate-request']({ type: 'chess-coordinate-request', target: board });
+      const coordinates = c.ChessBoardAssist.validateCoordinates(raw, board);
+      assert.equal(coordinates.flipped, flipped);
+      app.state(coordinates); app.key('b'); app.key('2'); app.key('b'); app.key('3');
+      assert.deepEqual(app.clicks.slice(-2), ['b2', 'b3']);
+      app.advance(10000); app.poll(); assert.deepEqual(app.ticks, []);
+    }
+  }
+  const count = app.clicks.length;
+  app.document.activeElement = { isContentEditable: true }; app.key('a'); app.key('1');
+  assert.equal(app.clicks.length, count);
+  app.document.activeElement = null; app.change({ keyboard: false }); app.key('a'); app.key('1');
+  assert.equal(app.clicks.length, count);
+  stable = false; handlers['chess-coordinate-request']({ type: 'chess-coordinate-request', target: board });
+  assert.equal(c.ChessBoardAssist.validateCoordinates(raw, board).stable, false);
+  for (const value of [null, { session: 0 }, { session: 1, fen: '', stable: true, flipped: false },
+    { session: 1, fen: 'position', stable: true, flipped: 'false' }]) {
+    assert.equal(c.ChessBoardAssist.validateCoordinates(JSON.stringify(value), board), null);
+  }
+  board.isConnected = false; assert.equal(c.ChessBoardAssist.validateCoordinates(raw, board), null);
+});
+
+test('coordinate scripts load on all Chess.com routes without expanding fog injection', () => {
+  const manifest = JSON.parse(source('manifest.json'));
+  for (const file of ['assist-bridge.js', 'assist-content.js']) {
+    assert.deepEqual(manifest.content_scripts.find(entry => entry.js.includes(file)).matches, ['https://www.chess.com/*']);
+  }
+  assert.equal(manifest.content_scripts.find(entry => entry.js.includes('fog-bridge.js')).matches.includes('https://www.chess.com/*'), false);
 });

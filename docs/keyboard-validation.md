@@ -75,3 +75,19 @@ pass; changed scripts pass syntax checks and `git diff --check` passes.
 Safari daily-analysis runtime acceptance remains pending; verify entering and
 leaving native analysis, coordinates in both orientations, and promotion/focus
 behavior before signing the release candidate.
+
+## Coordinate input on all routes
+
+Coordinate input now has an independent read-only snapshot containing only
+session, position, orientation and board stability. It does not require a
+particular route, board ID, mode, result, variant or player color. The assist
+scripts load on every Chess.com route. Move confirmation and fog injection
+scopes are unchanged; own-turn timing still uses the restricted game snapshot.
+
+Regression tests cover arbitrary routes and board IDs, absent mode/ownership
+APIs, both orientations, coordinate clicks without spectator ticks, preference
+and focus guards, malformed snapshots and disconnected boards. Existing timer,
+promotion, geometry and lifecycle regressions remain included.
+
+Safari was not modified or reloaded. Browser execution with the changed
+extension installed remains unverified.

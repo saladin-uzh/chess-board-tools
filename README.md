@@ -85,9 +85,9 @@ When the host promotion picker opens, `q/r/b/n` choose queen/rook/bishop/knight;
 coordinate entry pauses. Chess.com validates moves and retains its normal
 confirmation flow. All keyboard actions pause while an input has focus.
 
-Board control supports standard human games, bots, analysis, and completed
-game reviews. Unknown modes
-and unavailable APIs disable it. Clicks use the host pointer path; Chess.com
+Board control works on Chess.com chessboards on every route, including
+ongoing games you watch, analysis, puzzles, and variants. It requires the host
+board position/orientation APIs and a stable, visible board. Clicks use the host pointer path; Chess.com
 may report them as synthetic events. The extension does not hide or bypass
 those checks.
 
@@ -99,7 +99,8 @@ feature or loading a page midway through a turn starts timing from that point.
 
 ## Supported pages
 
-The content script runs only on:
+Keyboard board control loads on `https://www.chess.com/*`. Move confirmation
+shortcuts retain their existing routes:
 
 - `https://www.chess.com/play/*`
 - `https://www.chess.com/game/*`

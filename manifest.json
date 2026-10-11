@@ -72,11 +72,7 @@
     },
     {
       "matches": [
-        "https://www.chess.com/play/*",
-        "https://www.chess.com/game/*",
-        "https://www.chess.com/analysis",
-        "https://www.chess.com/analysis?*",
-        "https://www.chess.com/analysis/game/*"
+        "https://www.chess.com/*"
       ],
       "js": [
         "assist-bridge.js"
@@ -86,11 +82,7 @@
     },
     {
       "matches": [
-        "https://www.chess.com/play/*",
-        "https://www.chess.com/game/*",
-        "https://www.chess.com/analysis",
-        "https://www.chess.com/analysis?*",
-        "https://www.chess.com/analysis/game/*"
+        "https://www.chess.com/*"
       ],
       "js": [
         "settings.js",
