@@ -65,6 +65,7 @@
     }
     notice?.remove(); notice = null;
     const masks = visibility(snapshot.position, snapshot.side, snapshot.selected);
+    const opponent = visibility(snapshot.position, snapshot.side === "white" ? "black" : "white");
     if (!overlay) {
       overlay = document.createElement("div");
       overlay.className = "chess-fog-overlay";
@@ -77,6 +78,7 @@
       const square = snapshot.flipped ? Math.floor(view / 8) * 8 + 7 - view % 8 : (7 - Math.floor(view / 8)) * 8 + view % 8;
       const cell = overlay.children[view];
       cell.classList.toggle("chess-fog-hidden", !masks.union[square]);
+      cell.classList.toggle("chess-fog-unseen", !masks.union[square] && !opponent.union[square]);
       cell.classList.toggle("chess-fog-selected", masks.selected?.[square] === true);
     }
     status = `Fog active for ${snapshot.side}.`;

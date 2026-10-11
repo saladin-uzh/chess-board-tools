@@ -487,3 +487,45 @@ test('fog adapter accepts daily analysis on the native game board only on daily 
   assert.equal(validate('/game/daily/123', { ...input, context: 'human' }), null);
   assert.equal(validate('/game/daily/123', { ...input, context: 'review' }), null);
 });
+
+
+test('overlay darkens only squares unseen by both sides and recomputes on perspective, rotation and position changes', async () => {
+  const app = controller();
+  app.snapshot = { position: parseFEN(fen({ b2: 'P', g7: 'p' })), side: 'white', selected: null, flipped: false };
+  app.loading.resolve({ fogPreferences: { enabled: true, perspective: 'white' } }); await flush(); app.tick();
+  const overlay = app.board.children[0];
+  const cell = square => {
+    const logical = index(square);
+    const view = app.snapshot.flipped ? Math.floor(logical / 8) * 8 + 7 - logical % 8 : (7 - Math.floor(logical / 8)) * 8 + logical % 8;
+    return overlay.children[view].classList;
+  };
+  assert.equal(cell('d4').contains('chess-fog-unseen'), true);
+  assert.equal(cell('f6').contains('chess-fog-hidden'), true);
+  assert.equal(cell('f6').contains('chess-fog-unseen'), false);
+  assert.equal(cell('a3').contains('chess-fog-hidden'), false);
+  assert.equal(cell('a3').contains('chess-fog-unseen'), false);
+  app.snapshot = { ...app.snapshot, side: 'black', flipped: true }; app.tick();
+  assert.equal(cell('d4').contains('chess-fog-unseen'), true);
+  assert.equal(cell('a3').contains('chess-fog-hidden'), true);
+  assert.equal(cell('a3').contains('chess-fog-unseen'), false);
+  assert.equal(cell('f6').contains('chess-fog-hidden'), false);
+  app.snapshot = { ...app.snapshot, position: parseFEN(fen({ b2: 'P', d5: 'p' })) }; app.tick();
+  assert.equal(cell('c4').contains('chess-fog-unseen'), false);
+  assert.equal(cell('f6').contains('chess-fog-unseen'), true);
+});
+
+test('screenshot position keeps g7, h6, g4 and h4 darker than ordinary fog', async () => {
+  const app = controller();
+  app.snapshot = { position: parseFEN('4r3/4kp1N/r3p1p1/q1p1P3/p1n1QP2/B3b2N/P3K1PP/3R4 w - - 0 1'),
+    side: 'white', selected: null, flipped: false };
+  app.loading.resolve({ fogPreferences: { enabled: true, perspective: 'white' } }); await flush(); app.tick();
+  const cells = app.board.children[0].children;
+  const cell = square => cells[(7 - Math.floor(index(square) / 8)) * 8 + index(square) % 8].classList;
+  for (const square of ['g7', 'h6', 'g4', 'h4']) {
+    assert.equal(cell(square).contains('chess-fog-hidden'), true, square);
+    assert.equal(cell(square).contains('chess-fog-unseen'), true, square);
+  }
+  assert.equal(cell('e8').contains('chess-fog-hidden'), true);
+  assert.equal(cell('e8').contains('chess-fog-unseen'), false);
+  assert.equal(cell('d1').contains('chess-fog-hidden'), false);
+});
