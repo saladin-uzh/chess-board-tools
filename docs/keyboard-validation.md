@@ -91,3 +91,6 @@ promotion, geometry and lifecycle regressions remain included.
 
 Safari was not modified or reloaded. Browser execution with the changed
 extension installed remains unverified.
+
+Multi-board regression: skip hidden/zero-size boards, prefer the primary board,
+follow pointer interaction or board focus, and recover when that board disappears.

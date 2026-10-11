@@ -7,6 +7,7 @@
   let preferences = normalizeAssist(null), revision = 0;
   let lastVisibility = document.visibilityState;
   let confirmationButton = null, confirmationOwner = null;
+  let preferredBoard = null;
   let board = null, identity = null, file = null, bufferTimer = null, pollTimer = null, indicator = null;
   let filePreview = null, squareIndicator = null;
   function clearBuffer() {
@@ -40,7 +41,15 @@
     return clickable(picker) ? picker : null;
   }
   function update() {
-    const next = document.querySelector("wc-chess-board");
+    const candidates = [...document.querySelectorAll("wc-chess-board")].filter(element => {
+      const rect = element.getBoundingClientRect();
+      return clickable(element) && Math.abs(rect.width - rect.height) <= 1;
+    });
+    const focusedBoard = document.activeElement?.closest?.("wc-chess-board");
+    const next = candidates.find(element => element === focusedBoard) ||
+      candidates.find(element => element === preferredBoard) ||
+      candidates.find(element => ["board-single", "board-play-computer", "board-analysis-board"].includes(element.id)) ||
+      candidates[0] || null;
     if (next !== board) { clear(); identity = null; board = next; }
     const rect = board?.getBoundingClientRect();
     const geometryValid = rect?.width > 0 && rect?.height > 0 && Math.abs(rect.width - rect.height) <= 1;
@@ -131,6 +140,10 @@
       !["Escape", "Control", "Alt", "AltGraph", "Meta", "Shift", "OS", "Super", "Hyper", "Fn", "FnLock"].includes(event.key);
     if (pointer || key) audio.unlock();
   };
+  addEventListener("pointerdown", event => {
+    const selected = event.composedPath?.().find(element => element?.tagName === "WC-CHESS-BOARD");
+    if (selected) { preferredBoard = selected; clear(); }
+  }, true);
   addEventListener("pointerdown", unlock, true);
   addEventListener("pointerup", unlock, true);
   addEventListener("keydown", unlock, true);

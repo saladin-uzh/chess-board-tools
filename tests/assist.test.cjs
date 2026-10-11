@@ -110,9 +110,11 @@ test('audio waits for gesture, releases nodes and tolerates blocked or missing a
 
 function harness({ realTimer = false } = {}) {
   const listeners = {}, docListeners = {}, timeouts = new Map(), intervals = new Map(), clicks = [], timerCalls = [], timerResets = [], ticks = [], unlocks = [];
+  let candidates = null;
+  const clickedBoards = [];
   let now = 0, serial = 0, changed, current = { ...snapshot, context: 'analysis', active: false, side: null }, board, confirmation;
   class Element {
-    constructor() { this.isConnected = true; this.style = {}; this.picker = null; }
+    constructor() { this.tagName = "WC-CHESS-BOARD"; this.isConnected = true; this.style = {}; this.picker = null; }
     getBoundingClientRect() { return { left: 0, top: 0, width: 800, height: 800 }; }
     append(child) { (this.children ??= []).push(child); }
     getAttribute() { return null; }
@@ -122,6 +124,7 @@ function harness({ realTimer = false } = {}) {
   }
   board = new Element();
   const document = { activeElement: null, visibilityState: 'visible', body: { append() {} },
+    querySelectorAll: () => candidates || [board],
     querySelector: selector => selector.startsWith('wc-') ? board : selector.startsWith('div.confirm-') ? confirmation : null,
     createElement: () => new Element(), addEventListener: (type, fn) => { docListeners[type] = fn; } };
   const c = vm.createContext({ document, navigator: { userActivation: { isActive: true } }, location: { pathname: '/analysis' },
@@ -131,7 +134,7 @@ function harness({ realTimer = false } = {}) {
     clearTimeout: id => timeouts.delete(id), setInterval: fn => { const id = ++serial; intervals.set(id, fn); return id; }, clearInterval: id => intervals.delete(id),
     addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
     chrome: { storage: { local: { get: async () => ({ boardAssistPreferences: { keyboard: true } }) }, onChanged: { addListener: fn => { changed = fn; } } } },
-    ChessBoardAssist: { read: () => current, readCoordinates: () => current, clickSquare: (b, square) => { clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
+    ChessBoardAssist: { read: () => current, readCoordinates: () => current, clickSquare: (b, square) => { clickedBoards.push(b); clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
     ChessAssistTimer: { createTurnTimer: () => ({ reset() { timerResets.push(true); }, update(...args) { timerCalls.push(args); return false; } }), createAudio: () => ({ unlock() { unlocks.push(now); }, close() {}, tick() { ticks.push(now); } }) },
   });
   run(c, 'settings.js');
@@ -142,7 +145,7 @@ function harness({ realTimer = false } = {}) {
   }
   run(c, 'assist-content.js');
   function dispatch(type, event = {}) { event.type = type; for (const fn of listeners[type] || []) fn(event); }
-  return { document, get board() { return board; }, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
+  return { document, get board() { return board; }, clickedBoards, boards(value) { candidates = value; }, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
     key(key, extra = {}) { const e = { key, code: key === 'Escape' ? 'Escape' : '', target: {}, preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...extra }; dispatch('keydown', e); return e; },
     activation(value) { c.navigator = value; },
     dispatch, advance(ms) { now += ms; for (const [id, t] of timeouts) if (t.due <= now) { timeouts.delete(id); t.fn(); } },
@@ -663,4 +666,20 @@ test('coordinate scripts load on all Chess.com routes without expanding fog inje
     assert.deepEqual(manifest.content_scripts.find(entry => entry.js.includes(file)).matches, ['https://www.chess.com/*']);
   }
   assert.equal(manifest.content_scripts.find(entry => entry.js.includes('fog-bridge.js')).matches.includes('https://www.chess.com/*'), false);
+});
+
+test('coordinate control skips hidden boards and follows the interacted or focused board', async () => {
+  const app = harness(); await flush();
+  const primary = app.board; primary.id = 'board-single';
+  const secondary = Object.assign(Object.create(Object.getPrototypeOf(primary)), primary, { id: 'secondary', style: {} });
+  const hidden = Object.assign(Object.create(Object.getPrototypeOf(primary)), primary, { id: 'hidden', style: {},
+    getBoundingClientRect: () => ({ left: 0, top: 0, width: 0, height: 0 }) });
+  app.boards([hidden, secondary, primary]);
+  app.key('b'); app.key('2'); assert.equal(app.clickedBoards.at(-1), primary);
+  app.dispatch('pointerdown', { composedPath: () => [secondary] });
+  app.key('b'); app.key('3'); assert.equal(app.clickedBoards.at(-1), secondary);
+  app.document.activeElement = { closest: selector => selector === 'wc-chess-board' ? primary : null };
+  app.key('c'); app.key('4'); assert.equal(app.clickedBoards.at(-1), primary);
+  app.document.activeElement = null;
+  app.boards([hidden, primary]); app.key('d'); app.key('5'); assert.equal(app.clickedBoards.at(-1), primary);
 });
