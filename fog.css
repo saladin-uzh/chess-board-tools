@@ -27,7 +27,7 @@ wc-chess-board:has(> .chess-fog-overlay) > .highlight {
   z-index: 1;
 }
 wc-chess-board:has(> .chess-fog-overlay) > .piece {
-  z-index: 2;
+  z-index: 6;
 }
 wc-chess-board:has(> .chess-fog-overlay) > svg.arrows {
   z-index: 7;
