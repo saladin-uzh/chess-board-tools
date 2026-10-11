@@ -3,12 +3,22 @@
   // Read-only MAIN-world bridge, independent of fog's restricted contexts.
   const sessions = new WeakMap();
   let sequence = 0;
-  document.addEventListener("chess-assist-request", event => {
+  function respond(event) {
     const board = event.target;
     if (!(board instanceof HTMLElement) || board.tagName !== "WC-CHESS-BOARD") return;
     let snapshot = null;
     try {
       const game = board.game;
+      if (event.type === "chess-coordinate-request") {
+        if (!sessions.has(game)) sessions.set(game, ++sequence);
+        snapshot = {
+          session: sessions.get(game),
+          fen: game.getFEN(),
+          flipped: game.getOptions().flipped,
+          stable: game.isDragging() === false && game.isAnimating() === false,
+        };
+        return;
+      }
       const mode = game.getMode().name;
       const path = location.pathname;
       const bot = path === "/play/computer" && board.id === "board-play-computer" && mode === "playing";
@@ -38,6 +48,11 @@
         };
       }
     } catch { /* Unknown host APIs disable helpers rather than guessing. */ }
-    board.dispatchEvent(new CustomEvent("chess-assist-snapshot", { detail: JSON.stringify(snapshot) }));
-  });
+    finally {
+      const type = event.type === "chess-coordinate-request" ? "chess-coordinate-snapshot" : "chess-assist-snapshot";
+      board.dispatchEvent(new CustomEvent(type, { detail: JSON.stringify(snapshot) }));
+    }
+  }
+  document.addEventListener("chess-assist-request", respond);
+  document.addEventListener("chess-coordinate-request", respond);
 })();

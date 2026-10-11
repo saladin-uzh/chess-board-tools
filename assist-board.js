@@ -29,6 +29,23 @@
       [...rank].reduce((size, char) => size + (/[1-8]/.test(char) ? Number(char) : 1), 0) !== 8)) return null;
     return { ...input, turn: fields[1] === "w" ? "white" : "black" };
   }
+  function validateCoordinates(raw, board) {
+    if (typeof raw !== "string" || raw.length > 700 || !board?.isConnected) return null;
+    let input;
+    try { input = JSON.parse(raw); } catch { return null; }
+    if (!input || !Number.isSafeInteger(input.session) || input.session < 1 ||
+        typeof input.flipped !== "boolean" || typeof input.stable !== "boolean" ||
+        typeof input.fen !== "string" || !input.fen.length || input.fen.length > 600) return null;
+    return { session: input.session, flipped: input.flipped, stable: input.stable, fen: input.fen };
+  }
+  function readCoordinates(board) {
+    let raw = null;
+    const receive = event => { if (event.target === board) raw = event.detail; };
+    board.addEventListener("chess-coordinate-snapshot", receive);
+    try { board.dispatchEvent(new Event("chess-coordinate-request", { bubbles: true })); }
+    finally { board.removeEventListener("chess-coordinate-snapshot", receive); }
+    return validateCoordinates(raw, board);
+  }
   function read(board) {
     let raw = null;
     const receive = event => { if (event.target === board) raw = event.detail; };
@@ -63,5 +80,5 @@
     pointerClick(element, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
     return true;
   }
-  globalThis.ChessBoardAssist = Object.freeze({ read, validate, point, clickSquare, clickPromotion });
+  globalThis.ChessBoardAssist = Object.freeze({ read, readCoordinates, validate, validateCoordinates, point, clickSquare, clickPromotion });
 })();

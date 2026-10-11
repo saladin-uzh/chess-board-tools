@@ -1,12 +1,13 @@
 (() => {
   "use strict";
   const { ASSIST_STORAGE_KEY, normalizeAssist, hasInputFocus } = globalThis.ChessConfirmMoveSettings;
-  const { read, clickSquare, clickPromotion } = globalThis.ChessBoardAssist;
+  const { read, readCoordinates, clickSquare, clickPromotion } = globalThis.ChessBoardAssist;
   const { createTurnTimer, createAudio } = globalThis.ChessAssistTimer;
   const turnTimer = createTurnTimer(), audio = createAudio();
   let preferences = normalizeAssist(null), revision = 0;
   let lastVisibility = document.visibilityState;
   let confirmationButton = null, confirmationOwner = null;
+  let preferredBoard = null;
   let board = null, identity = null, file = null, bufferTimer = null, pollTimer = null, indicator = null;
   let filePreview = null, squareIndicator = null;
   function clearBuffer() {
@@ -40,13 +41,24 @@
     return clickable(picker) ? picker : null;
   }
   function update() {
-    const next = document.querySelector("wc-chess-board#board-play-computer, wc-chess-board#board-analysis-board, wc-chess-board#board-single");
+    const candidates = [...document.querySelectorAll("wc-chess-board")].filter(element => {
+      const rect = element.getBoundingClientRect();
+      return clickable(element) && Math.abs(rect.width - rect.height) <= 1;
+    });
+    const focusedBoard = document.activeElement?.closest?.("wc-chess-board");
+    const next = candidates.find(element => element === focusedBoard) ||
+      candidates.find(element => element === preferredBoard) ||
+      candidates.find(element => ["board-single", "board-play-computer", "board-analysis-board"].includes(element.id)) ||
+      candidates[0] || null;
     if (next !== board) { clear(); identity = null; board = next; }
     const rect = board?.getBoundingClientRect();
     const geometryValid = rect?.width > 0 && rect?.height > 0 && Math.abs(rect.width - rect.height) <= 1;
-    const snapshot = board && geometryValid ? read(board) : null;
-    const nextIdentity = snapshot ? `${location.pathname}:${snapshot.session}:${snapshot.context}:${snapshot.active}:${snapshot.fen}:${snapshot.flipped}` : null;
-    if (!snapshot?.stable) clear();
+    const timerBoard = candidates.find(element =>
+      ["board-single", "board-play-computer", "board-analysis-board"].includes(element.id));
+    const snapshot = timerBoard ? read(timerBoard) : null;
+    const coordinates = board && geometryValid ? readCoordinates(board) : null;
+    const nextIdentity = coordinates ? `${location.pathname}:${coordinates.session}:${snapshot?.context}:${snapshot?.active}:${coordinates.fen}:${coordinates.flipped}` : null;
+    if (!coordinates?.stable) clear();
     if (nextIdentity !== identity) { clear(); identity = nextIdentity; }
     const button = document.querySelector("div.confirm-move-buttons .cc-button-primary");
     const owner = snapshot?.side ? `${snapshot.session}:${snapshot.side}` : null;
@@ -58,7 +70,7 @@
     const resumed = lastVisibility !== "visible" && visible;
     lastVisibility = document.visibilityState;
     if (preferences.ticking && turnTimer.update(snapshot, performance.now(), visible && !resumed, pending)) audio.tick();
-    return snapshot;
+    return coordinates;
   }
   function consume(event) { event.preventDefault(); event.stopImmediatePropagation(); }
   function handleKeydown(event) {
@@ -67,7 +79,7 @@
     if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
     if (event.code === "Escape") { clear(); return; }
     const snapshot = update();
-    if (!snapshot?.stable || (!["analysis", "review"].includes(snapshot.context) && !snapshot.active)) { clear(); return; }
+    if (!snapshot?.stable) { clear(); return; }
     const picker = promotion();
     const key = event.key?.toLowerCase();
     if (picker) {
@@ -130,6 +142,10 @@
       !["Escape", "Control", "Alt", "AltGraph", "Meta", "Shift", "OS", "Super", "Hyper", "Fn", "FnLock"].includes(event.key);
     if (pointer || key) audio.unlock();
   };
+  addEventListener("pointerdown", event => {
+    const selected = event.composedPath?.().find(element => element?.tagName === "WC-CHESS-BOARD");
+    if (selected) { preferredBoard = selected; clear(); }
+  }, true);
   addEventListener("pointerdown", unlock, true);
   addEventListener("pointerup", unlock, true);
   addEventListener("keydown", unlock, true);

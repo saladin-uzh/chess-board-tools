@@ -110,9 +110,11 @@ test('audio waits for gesture, releases nodes and tolerates blocked or missing a
 
 function harness({ realTimer = false } = {}) {
   const listeners = {}, docListeners = {}, timeouts = new Map(), intervals = new Map(), clicks = [], timerCalls = [], timerResets = [], ticks = [], unlocks = [];
+  let candidates = null;
+  const clickedBoards = [];
   let now = 0, serial = 0, changed, current = { ...snapshot, context: 'analysis', active: false, side: null }, board, confirmation;
   class Element {
-    constructor() { this.isConnected = true; this.style = {}; this.picker = null; }
+    constructor() { this.tagName = "WC-CHESS-BOARD"; this.isConnected = true; this.style = {}; this.picker = null; }
     getBoundingClientRect() { return { left: 0, top: 0, width: 800, height: 800 }; }
     append(child) { (this.children ??= []).push(child); }
     getAttribute() { return null; }
@@ -120,8 +122,9 @@ function harness({ realTimer = false } = {}) {
     remove() { this.removed = true; }
     querySelector() { return this.picker; }
   }
-  board = new Element();
+  board = new Element(); board.id = 'board-single';
   const document = { activeElement: null, visibilityState: 'visible', body: { append() {} },
+    querySelectorAll: () => candidates || [board],
     querySelector: selector => selector.startsWith('wc-') ? board : selector.startsWith('div.confirm-') ? confirmation : null,
     createElement: () => new Element(), addEventListener: (type, fn) => { docListeners[type] = fn; } };
   const c = vm.createContext({ document, navigator: { userActivation: { isActive: true } }, location: { pathname: '/analysis' },
@@ -131,7 +134,7 @@ function harness({ realTimer = false } = {}) {
     clearTimeout: id => timeouts.delete(id), setInterval: fn => { const id = ++serial; intervals.set(id, fn); return id; }, clearInterval: id => intervals.delete(id),
     addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
     chrome: { storage: { local: { get: async () => ({ boardAssistPreferences: { keyboard: true } }) }, onChanged: { addListener: fn => { changed = fn; } } } },
-    ChessBoardAssist: { read: () => current, clickSquare: (b, square) => { clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
+    ChessBoardAssist: { read: b => b.id === 'secondary' ? null : current, readCoordinates: () => current, clickSquare: (b, square) => { clickedBoards.push(b); clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
     ChessAssistTimer: { createTurnTimer: () => ({ reset() { timerResets.push(true); }, update(...args) { timerCalls.push(args); return false; } }), createAudio: () => ({ unlock() { unlocks.push(now); }, close() {}, tick() { ticks.push(now); } }) },
   });
   run(c, 'settings.js');
@@ -142,13 +145,13 @@ function harness({ realTimer = false } = {}) {
   }
   run(c, 'assist-content.js');
   function dispatch(type, event = {}) { event.type = type; for (const fn of listeners[type] || []) fn(event); }
-  return { document, get board() { return board; }, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
+  return { document, get board() { return board; }, clickedBoards, boards(value) { candidates = value; }, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
     key(key, extra = {}) { const e = { key, code: key === 'Escape' ? 'Escape' : '', target: {}, preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...extra }; dispatch('keydown', e); return e; },
     activation(value) { c.navigator = value; },
     dispatch, advance(ms) { now += ms; for (const [id, t] of timeouts) if (t.due <= now) { timeouts.delete(id); t.fn(); } },
     poll() { for (const fn of intervals.values()) fn(); },
     confirm(value = true) { confirmation = value ? new Element() : null; },
-    state(value) { current = value; }, replace() { board = new Element(); },
+    state(value) { current = value; }, replace() { board = new Element(); board.id = 'board-single'; },
     change(value, area = 'local') { changed({ boardAssistPreferences: { newValue: value } }, area); },
     picker(piece) { const p = new Element(); p.piece = piece; const picker = new Element(); picker.querySelectorAll = () => [p]; board.picker = picker; },
   };
@@ -287,11 +290,11 @@ test('bridge and adapter recognize direct human game URLs and keep live-state gu
   location.pathname = '/game/123/analysis'; assert.equal(read(), null);
 });
 
-test('human keyboard actions require an active stable snapshot', async () => {
+test('human keyboard actions require a stable snapshot regardless of active state', async () => {
   const app = harness(); await flush();
   app.state({ ...snapshot, context: 'human' });
   app.key('b'); app.key('2'); assert.deepEqual(app.clicks, ['b2']);
-  for (const change of [{ active: false }, { stable: false }]) {
+  for (const change of [{ stable: false }]) {
     app.state({ ...snapshot, context: 'human', ...change });
     assert.equal(app.key('b').prevented, undefined);
     app.key('3'); assert.deepEqual(app.clicks, ['b2']);
@@ -614,4 +617,81 @@ test('mode and active-state transitions clear buffered files and square indicato
       assert.deepEqual(app.clicks, []);
     }
   }
+});
+
+test('coordinate input works across routes, modes and variants without enabling spectator ticks', async () => {
+  const handlers = {}; let raw, flipped = false, stable = true;
+  class Element {
+    constructor() { this.tagName = 'WC-CHESS-BOARD'; this.id = 'board-other'; this.isConnected = true; }
+    dispatchEvent(event) { raw = event.detail; }
+  }
+  const board = new Element();
+  // Coordinate input does not require playing mode, ownership or standard-chess APIs.
+  board.game = { getFEN: () => 'variant position', getOptions: () => ({ flipped }),
+    isDragging: () => !stable, isAnimating: () => false };
+  const location = { pathname: '/game/186049589091' };
+  const c = vm.createContext({ HTMLElement: Element, location,
+    document: { addEventListener: (type, fn) => { handlers[type] = fn; } },
+    CustomEvent: class { constructor(type, options) { this.type = type; Object.assign(this, options); } } });
+  run(c, 'assist-bridge.js'); run(c, 'assist-board.js');
+  const app = harness({ realTimer: true }); await flush(); app.change({ keyboard: true, ticking: true });
+  for (const route of ['/game/186049589091', '/live/game/123', '/analysis/classroom', '/puzzles', '/variants', '/']) {
+    location.pathname = route;
+    for (flipped of [false, true]) {
+      handlers['chess-coordinate-request']({ type: 'chess-coordinate-request', target: board });
+      const coordinates = c.ChessBoardAssist.validateCoordinates(raw, board);
+      assert.equal(coordinates.flipped, flipped);
+      app.state(coordinates); app.key('b'); app.key('2'); app.key('b'); app.key('3');
+      assert.deepEqual(app.clicks.slice(-2), ['b2', 'b3']);
+      app.advance(10000); app.poll(); assert.deepEqual(app.ticks, []);
+    }
+  }
+  const count = app.clicks.length;
+  app.document.activeElement = { isContentEditable: true }; app.key('a'); app.key('1');
+  assert.equal(app.clicks.length, count);
+  app.document.activeElement = null; app.change({ keyboard: false }); app.key('a'); app.key('1');
+  assert.equal(app.clicks.length, count);
+  stable = false; handlers['chess-coordinate-request']({ type: 'chess-coordinate-request', target: board });
+  assert.equal(c.ChessBoardAssist.validateCoordinates(raw, board).stable, false);
+  for (const value of [null, { session: 0 }, { session: 1, fen: '', stable: true, flipped: false },
+    { session: 1, fen: 'position', stable: true, flipped: 'false' }]) {
+    assert.equal(c.ChessBoardAssist.validateCoordinates(JSON.stringify(value), board), null);
+  }
+  board.isConnected = false; assert.equal(c.ChessBoardAssist.validateCoordinates(raw, board), null);
+});
+
+test('coordinate scripts load on all Chess.com routes without expanding fog injection', () => {
+  const manifest = JSON.parse(source('manifest.json'));
+  for (const file of ['assist-bridge.js', 'assist-content.js']) {
+    assert.deepEqual(manifest.content_scripts.find(entry => entry.js.includes(file)).matches, ['https://www.chess.com/*']);
+  }
+  assert.equal(manifest.content_scripts.find(entry => entry.js.includes('fog-bridge.js')).matches.includes('https://www.chess.com/*'), false);
+});
+
+test('coordinate control skips hidden boards and follows the interacted or focused board', async () => {
+  const app = harness(); await flush();
+  const primary = app.board; primary.id = 'board-single';
+  const secondary = Object.assign(Object.create(Object.getPrototypeOf(primary)), primary, { id: 'secondary', style: {} });
+  const hidden = Object.assign(Object.create(Object.getPrototypeOf(primary)), primary, { id: 'hidden', style: {},
+    getBoundingClientRect: () => ({ left: 0, top: 0, width: 0, height: 0 }) });
+  app.boards([hidden, secondary, primary]);
+  app.key('b'); app.key('2'); assert.equal(app.clickedBoards.at(-1), primary);
+  app.dispatch('pointerdown', { composedPath: () => [secondary] });
+  app.key('b'); app.key('3'); assert.equal(app.clickedBoards.at(-1), secondary);
+  app.document.activeElement = { closest: selector => selector === 'wc-chess-board' ? primary : null };
+  app.key('c'); app.key('4'); assert.equal(app.clickedBoards.at(-1), primary);
+  app.document.activeElement = null;
+  app.boards([hidden, primary]); app.key('d'); app.key('5'); assert.equal(app.clickedBoards.at(-1), primary);
+});
+
+test('secondary coordinate board selection preserves primary own-turn ticks', async () => {
+  const app = harness({ realTimer: true }); await flush();
+  const primary = app.board;
+  const secondary = Object.assign(Object.create(Object.getPrototypeOf(primary)), primary, { id: 'secondary', style: {} });
+  app.boards([secondary, primary]); app.state(snapshot); app.change({ keyboard: true, ticking: true });
+  app.advance(9000); app.dispatch('pointerdown', { composedPath: () => [secondary] });
+  app.key('b'); app.key('2'); assert.equal(app.clickedBoards.at(-1), secondary);
+  app.advance(1000); app.poll(); assert.deepEqual(app.ticks, [10000]);
+  app.document.activeElement = { closest: selector => selector === 'wc-chess-board' ? secondary : null };
+  app.advance(10000); app.poll(); assert.deepEqual(app.ticks, [10000, 20000]);
 });
