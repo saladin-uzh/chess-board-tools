@@ -830,3 +830,20 @@ test('secondary coordinate board selection preserves primary own-turn ticks', as
   app.document.activeElement = { closest: selector => selector === 'wc-chess-board' ? secondary : null };
   app.advance(10000); app.poll(); assert.deepEqual(app.ticks, [10000, 20000]);
 });
+
+test('changing frequency choices with equal durations starts a fresh interval', async () => {
+  const app = harness({ realTimer: true }); await flush();
+  app.state({ ...snapshot, initialSeconds: 60, incrementSeconds: 2 });
+  app.change({ ticking: true, tickMode: 'auto' });
+  app.advance(1999);
+  app.change({ ticking: true, tickMode: 'amount', tickFrequency: 2 });
+  app.advance(1); app.poll(); assert.deepEqual(app.ticks, []);
+  app.advance(1999); app.poll(); assert.deepEqual(app.ticks, [3999]);
+  app.advance(1999);
+  app.change({ ticking: true, tickMode: 'increment' });
+  app.advance(1); app.poll(); assert.deepEqual(app.ticks, [3999]);
+  app.advance(1999); app.poll(); assert.deepEqual(app.ticks, [3999, 7998]);
+  app.advance(1999);
+  app.change({ ticking: true, tickMode: 'increment', tickVolume: 100 });
+  app.advance(1); app.poll(); assert.deepEqual(app.ticks, [3999, 7998, 9998]);
+});

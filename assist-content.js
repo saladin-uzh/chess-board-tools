@@ -119,7 +119,8 @@
   }
   function apply(value) {
     const next = normalizeAssist(value);
-    if (next.ticking !== preferences.ticking) turnTimer.reset();
+    if (next.ticking !== preferences.ticking || next.tickMode !== preferences.tickMode ||
+        next.tickFrequency !== preferences.tickFrequency) turnTimer.reset();
     preferences = next;
     clear();
     clearInterval(pollTimer); pollTimer = null;
