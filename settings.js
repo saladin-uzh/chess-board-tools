@@ -29,8 +29,17 @@
     { code: "Control", label: "Ctrl" },
   ];
   const ASSIST_STORAGE_KEY = "boardAssistPreferences";
+  const TICK_FREQUENCIES = Object.freeze([2, 5, 10, 15, 20, 30]);
   function normalizeAssist(value) {
-    return { keyboard: value?.keyboard === true, ticking: value?.ticking === true };
+    const tickMode = ["auto", "increment", "amount"].includes(value?.tickMode) ? value.tickMode : "auto";
+    return {
+      keyboard: value?.keyboard === true,
+      ticking: value?.ticking === true,
+      tickMode,
+      tickFrequency: tickMode === "amount" && TICK_FREQUENCIES.includes(value?.tickFrequency) ? value.tickFrequency : 10,
+      tickVolume: typeof value?.tickVolume === "number" && Number.isFinite(value.tickVolume) &&
+        value.tickVolume >= 0 && value.tickVolume <= 100 ? value.tickVolume : 50,
+    };
   }
 
   function normalizeKeybindings(value) {
@@ -78,6 +87,7 @@
     CONFIRM_KEYS,
     CANCEL_KEYS,
     ASSIST_STORAGE_KEY,
+    TICK_FREQUENCIES,
     normalizeAssist,
     normalizeKeybindings,
   });

@@ -41,7 +41,24 @@
         </label>
         <p>Squares: b then 2. Promotion: q/r/b/n. Pauses in input fields.</p>
         <label class="field fog-toggle" for="ticking-enabled">
-          <span>Tick every 10 seconds of my turn</span><input id="ticking-enabled" type="checkbox" disabled>
+          <span>Tick during my turn</span><input id="ticking-enabled" type="checkbox" disabled>
+        </label>
+        <label class="field" for="tick-frequency">
+          <span>Tick frequency</span>
+          <select id="tick-frequency" disabled>
+            <option value="auto">Auto</option>
+            <option value="increment">Increment</option>
+            <option value="2">2 seconds</option>
+            <option value="5">5 seconds</option>
+            <option value="10">10 seconds</option>
+            <option value="15">15 seconds</option>
+            <option value="20">20 seconds</option>
+            <option value="30">30 seconds</option>
+          </select>
+        </label>
+        <label class="field" for="tick-volume">
+          <span>Tick volume <output id="tick-volume-value" for="tick-volume">50%</output></span>
+          <input id="tick-volume" type="range" min="0" max="100" step="1" value="50" disabled>
         </label>
         <p>Visible game tabs only; interact to enable audio.</p>
         <p class="status" id="assist-save-status" role="status" aria-live="polite"></p>

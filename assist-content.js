@@ -72,7 +72,7 @@
     const visible = document.visibilityState === "visible";
     const resumed = lastVisibility !== "visible" && visible;
     lastVisibility = document.visibilityState;
-    if (preferences.ticking && turnTimer.update(snapshot, performance.now(), visible && !resumed, pending)) audio.tick();
+    if (preferences.ticking && turnTimer.update(snapshot, performance.now(), visible && !resumed, pending, preferences)) audio.tick(preferences.tickVolume);
     return coordinates;
   }
   function consume(event) { event.preventDefault(); event.stopImmediatePropagation(); }

@@ -74,8 +74,7 @@ inside buttons and other interactive controls are also ignored.
 
 ## Board control and thinking ticks
 
-The popup has separate **Keyboard board control** and **Tick every 10 seconds
-of my turn** switches. Both start disabled and use local preferences.
+The popup has separate **Keyboard board control** and **Tick during my turn** switches. Both start disabled and use local preferences.
 
 Type coordinates sequentially: `b`, `2` selects b2; `b`, `3` clicks b3.
 Coordinates stay algebraic when flipped. A letter immediately highlights its
@@ -95,8 +94,18 @@ board position/orientation APIs and a stable, visible board. Clicks use the host
 may report them as synthetic events. The extension does not hide or bypass
 those checks.
 
-Ticks occur at 10, 20, 30… seconds of your own turn in an active game, including
-pending confirmation. Each new turn resets the timer. Unknown player color and
+Ticks follow the selected frequency during your own turn in an active game,
+including pending confirmation. The single frequency selector offers:
+
+- **Auto** (default): `ceil(initial seconds / 120)`, bounded to 2–30 seconds.
+- **Increment**: every increment interval; no increment falls back to Auto.
+- **2, 5, 10, 15, 20 or 30 seconds**: a fixed interval.
+
+Unavailable initial time falls back to 10 seconds. Volume defaults to 50%,
+with a range of 0–100%; 0% mutes ticks. Changing frequency starts a fresh
+interval; changing volume preserves the current schedule. Puzzles do not tick.
+
+Each new turn resets the timer. Unknown player color and
 analysis disable sound. First click or press a key in the game tab to unlock
 audio. Hidden tabs stay silent; missed ticks never accumulate. Enabling the
 feature or loading a page midway through a turn starts timing from that point.

@@ -20,6 +20,10 @@
     const review = input.context === "review" && input.active === false && board.id === "board-single" &&
       /^\/game\/(?:(?:live|daily)\/)?\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(input.result);
     if (!bot && !analysis && !review && !human) return null;
+    for (const field of ["initialSeconds", "incrementSeconds"]) {
+      if (input[field] !== undefined && input[field] !== null &&
+          (typeof input[field] !== "number" || !Number.isFinite(input[field]) || input[field] < 0)) return null;
+    }
     if (input.premoveCount !== undefined && (!Number.isSafeInteger(input.premoveCount) || input.premoveCount < 0)) return null;
     if (typeof input.fen !== "string" || input.fen.length > 160) return null;
     const fields = input.fen.split(" ");
