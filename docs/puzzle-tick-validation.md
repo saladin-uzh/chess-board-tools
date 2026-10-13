@@ -89,8 +89,9 @@ remain an explicit manual choice. No guessing of the initial clock time is used.
 
 ## Remaining runtime checks
 
-- Battle: navigation to `/puzzles/battle` went to `/home` on this test account;
-  no active Battle board was available. Automated route exclusions pass.
+- Battle: the bare route redirected to `/home`. The user subsequently verified
+  keyboard controls on `/puzzles/battle/<id>` and the expected absence of the overlay.
+  Automated competitive-route exclusions pass.
 - Physical standalone left/right Ctrl: unsupported by the automation API;
   dispatched-key coverage in the installed controller passed.
 - Native human-game confirmation/cancellation panel and active human-game
@@ -110,7 +111,27 @@ Audio probes, event recorders and changed preferences were removed/restored.
 The temporary Latin input source was restored, and the bot preset returned to
 No Timer without starting another game. Disposable bot fixtures were ended.
 
-The user created and pushed the first three signed commits; draft PR #21
-contains those commits. Two local follow-up commits separate the unknown-time Auto policy
-from the runtime report. Its signing and push remain reserved for the user.
+The user created and pushed the five signed commits through `24457e4`; draft
+PR #21 includes the unknown-time Auto policy and initial runtime report.
 No tag, merge or store publication has been performed.
+
+
+## Popup layout and naming follow-up — 2026-10-13
+
+- Renamed the feature to **Piece Vision Overlay** in the popup, manifest,
+  README, site and store preparation text. Historical branch/file identifiers
+  and references to Chess.com’s original Fog of War rules remain unchanged.
+- Tick frequency and volume share a row; section spacing is reduced without
+  clipping content or hiding overflow. Safari's native popup showed the complete
+  privacy footer without scrolling after the authorized extension Reload.
+- Safari rendered the final popup at 360 px width and 597.25 px content height
+  with all three `Saved.` statuses and the two-line unavailable message. The
+  privacy footer ended at 589.25 px. Status text was set only in the disposable
+  popup document to measure layout; this is not a save-interaction test.
+- Learning had one overlay, 26 hidden squares and opacity 0.55 in the installed
+  extension. The user confirmed its visible appearance and subsequently reported
+  that the overlay was visible in Rated too. No new puzzle code change was required;
+  the cause of the earlier intermittent absence was not established.
+- Native popup saving, light appearance and physical touch/pen remain deferred.
+  The user will check active human-game clock metadata and confirmation/cancel
+  controls in a subsequent game. Remaining matrix checks above still apply.
