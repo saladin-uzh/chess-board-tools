@@ -14,7 +14,7 @@ Primary category: Utilities.
 
 Chess Board Tools brings keyboard controls and optional board helpers to supported Chess.com boards in Safari.
 
-Enter coordinates with the keyboard, customize move confirmation/cancellation shortcuts, and choose optional sound cues every 10 seconds of your turn. Practice with Piece Vision Overlay against bots, in standalone analysis, and in completed standard-game reviews. Fog is unavailable in active human games and unsupported positions. Optional helpers start disabled.
+Enter coordinates with the keyboard, customize move confirmation/cancellation shortcuts, and configure optional turn sound cues with Auto timing, the clock increment, or fixed 2–30-second intervals and adjustable volume. Auto stays silent without a known time control. Practice with Piece Vision Overlay against bots, in standalone analysis, and in completed standard-game reviews. Fog is unavailable in active human games and unsupported positions. Optional helpers start disabled.
 
 The settings popup follows the system's light or dark appearance. Open the containing app for instructions on enabling the extension and granting access to Chess.com.
 
