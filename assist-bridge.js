@@ -21,7 +21,7 @@
       }
       const mode = game.getMode().name;
       const path = location.pathname;
-      const bot = path === "/play/computer" && board.id === "board-play-computer" && mode === "playing";
+      const bot = /^\/play\/computer(?:\/[^/]+)?\/?$/.test(path) && board.id === "board-play-computer" && mode === "playing";
       const analysis = mode === "analysis" && (
         board.id === "board-analysis-board" &&
           (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path)) ||

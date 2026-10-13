@@ -866,3 +866,45 @@ test('premove cancellation follows the primary game while coordinates follow a s
   assert.equal(app.cancelPremoves(), false);
   assert.deepEqual(app.cancelledBoards, [primary]);
 });
+
+
+test('bot bridges and adapters support named bot routes while retaining board and mode guards', () => {
+  const routes = ['/play/computer', '/play/computer/', '/play/computer/Loch-Chess-Monster-BOT', '/play/computer/Loch-Chess-Monster-BOT/'];
+  for (const prefix of ['assist', 'fog']) {
+    let listener, raw, mode = 'playing';
+    class Element {
+      constructor() { this.tagName = 'WC-CHESS-BOARD'; this.id = 'board-play-computer'; this.isConnected = true; }
+      dispatchEvent(event) { raw = event.detail; }
+      querySelector() { return null; }
+    }
+    const board = new Element();
+    board.game = {
+      getMode: () => ({ name: mode }), getPlayingAs: () => 1, getVariant: () => 'chess',
+      getFEN: () => snapshot.fen, getOptions: () => ({ flipped: false }), getResult: () => '*',
+      isAtEndOfLine: () => true, isDragging: () => false, isAnimating: () => false,
+    };
+    const location = { pathname: routes[0] };
+    const c = vm.createContext({ HTMLElement: Element, location,
+      document: { addEventListener: (type, fn) => { listener = fn; } },
+      CustomEvent: class { constructor(type, options) { Object.assign(this, options); } } });
+    if (prefix === 'fog') run(c, 'fog-visibility.js');
+    run(c, prefix + '-bridge.js'); run(c, prefix + '-board.js');
+    const validate = () => prefix === 'fog'
+      ? c.ChessFogBoard.validateSnapshot(raw, board, location.pathname, 'auto')
+      : c.ChessBoardAssist.validate(raw, board, location.pathname);
+    for (const route of routes) {
+      location.pathname = route; listener({ target: board });
+      assert.equal(JSON.parse(raw).context, 'bot'); assert.ok(validate(), prefix + ': ' + route);
+    }
+    mode = 'observing'; listener({ target: board }); assert.equal(raw, 'null');
+    mode = 'playing'; board.id = 'secondary'; listener({ target: board }); assert.equal(raw, 'null');
+    board.id = 'board-play-computer';
+    for (const route of ['/play/computer-other', '/play/computer/bot/other', '/play/online']) {
+      location.pathname = route; listener({ target: board }); assert.equal(raw, 'null');
+    }
+  }
+  const manifest = JSON.parse(source('manifest.json'));
+  for (const entry of manifest.content_scripts.filter(entry => entry.js.includes('fog-bridge.js') || entry.js.includes('fog-content.js'))) {
+    assert.ok(entry.matches.includes('https://www.chess.com/play/computer/*'));
+  }
+});

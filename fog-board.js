@@ -7,7 +7,7 @@
     let input;
     try { input = JSON.parse(raw); } catch { return null; }
     if (!input || typeof input !== "object" || input.stable !== true || typeof input.flipped !== "boolean") return null;
-    const bot = input.context === "bot" && path === "/play/computer" && board.id === "board-play-computer";
+    const bot = input.context === "bot" && /^\/play\/computer(?:\/[^/]+)?\/?$/.test(path) && board.id === "board-play-computer";
     const puzzle = input.context === "puzzle" && (
       board.id === "board-primary" && /^\/puzzles\/(?:rated|learning)\/?$/.test(path) ||
       board.id === "board-board" && /^\/daily\/?$/.test(path));

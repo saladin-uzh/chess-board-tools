@@ -13,7 +13,7 @@
       const puzzle = ["playing", "analysis"].includes(mode) && (
         board.id === "board-primary" && /^\/puzzles\/(?:rated|learning)\/?$/.test(path) ||
         board.id === "board-board" && /^\/daily\/?$/.test(path));
-      const bot = path === "/play/computer" && board.id === "board-play-computer" && mode === "playing";
+      const bot = /^\/play\/computer(?:\/[^/]+)?\/?$/.test(path) && board.id === "board-play-computer" && mode === "playing";
       const dailyAnalysis = mode === "analysis" && (
         board.id === "board-single" && /^\/game\/daily\/\d+\/?$/.test(path) ||
         board.id === "board-analysis-board" && /^\/analysis\/game\/daily\/\d+(?:\/analysis)?\/?$/.test(path));

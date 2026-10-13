@@ -7,7 +7,7 @@
     if (!input || typeof input.stable !== "boolean" || typeof input.flipped !== "boolean" ||
         typeof input.active !== "boolean" || !Number.isSafeInteger(input.session) || input.session < 1 ||
         ![null, "white", "black"].includes(input.side)) return null;
-    const bot = input.context === "bot" && path === "/play/computer" && board.id === "board-play-computer";
+    const bot = input.context === "bot" && /^\/play\/computer(?:\/[^/]+)?\/?$/.test(path) && board.id === "board-play-computer";
     const analysis = input.context === "analysis" && (
       board.id === "board-analysis-board" &&
         (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path)) ||
