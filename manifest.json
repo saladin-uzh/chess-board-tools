@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Chess Board Tools",
   "version": "1.1.3",
-  "description": "Keyboard controls, move confirmation shortcuts, turn sound cues, and optional fog of war for supported Chess.com boards.",
+  "description": "Keyboard controls, move confirmation shortcuts, turn sound cues, and optional Piece Vision Overlay for supported Chess.com boards.",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
@@ -33,14 +33,7 @@
     },
     {
       "matches": [
-        "https://www.chess.com/play/computer",
-        "https://www.chess.com/analysis",
-        "https://www.chess.com/analysis?*",
-        "https://www.chess.com/analysis/game/live/*",
-        "https://www.chess.com/analysis/game/daily/*",
-        "https://www.chess.com/analysis/game/computer/*",
-        "https://www.chess.com/game/live/*",
-        "https://www.chess.com/game/daily/*"
+        "https://www.chess.com/*"
       ],
       "js": [
         "fog-bridge.js"
@@ -50,14 +43,7 @@
     },
     {
       "matches": [
-        "https://www.chess.com/play/computer",
-        "https://www.chess.com/analysis",
-        "https://www.chess.com/analysis?*",
-        "https://www.chess.com/analysis/game/live/*",
-        "https://www.chess.com/analysis/game/daily/*",
-        "https://www.chess.com/analysis/game/computer/*",
-        "https://www.chess.com/game/live/*",
-        "https://www.chess.com/game/daily/*"
+        "https://www.chess.com/*"
       ],
       "js": [
         "settings.js",

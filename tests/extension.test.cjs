@@ -49,6 +49,7 @@ function contentHarness() {
   const buttons = new Element();
   buttons.querySelectorAll = () => [confirm, cancel];
   const context = vm.createContext({
+    ChessAssistInput: { clear() {}, cancelPremoves: () => false },
     HTMLElement: Element,
     console: { info() {} },
     document: {
@@ -74,7 +75,7 @@ function contentHarness() {
     storage, confirm, cancel,
     change: (value, area = "sync") =>
       storageListener({ keybindings: { newValue: value } }, area),
-    listeners, document: context.document,
+    listeners, document: context.document, assist: context.ChessAssistInput,
     key(code, key, overrides = {}, type = "keydown") {
       const event = {
         code, key, target: {},
@@ -155,6 +156,33 @@ test("initial storage loading cannot trigger the opposite move action", async ()
   assert.equal(app.key("Space", " ").prevented, true);
   assert.equal(app.confirm.clicks, 0);
   assert.equal(app.cancel.clicks, 1);
+});
+
+test("cancel shortcuts clear premoves without a confirmation panel, including standalone Ctrl", async () => {
+  for (const code of ['Escape', 'Space', 'Control']) {
+    const app = contentHarness(); let clears = 0, cancels = 0;
+    app.document.querySelector = () => null;
+    app.assist.clear = () => { clears++; };
+    app.assist.cancelPremoves = () => { cancels++; return true; };
+    app.storage.resolve({ keybindings: { confirmKeyCode: 'Enter', cancelKeyCode: code } }); await flush();
+    let event;
+    if (code === 'Control') { app.key('ControlLeft', 'Control'); event = app.key('ControlLeft', 'Control', {}, 'keyup'); }
+    else event = app.key(code, code);
+    assert.equal(event.prevented, true); assert.equal(cancels, 1); assert.equal(clears, 1);
+    assert.equal(app.confirm.clicks, 0); assert.equal(app.cancel.clicks, 0);
+    app.assist.cancelPremoves = () => false;
+    assert.equal(app.key('Escape', 'Escape').prevented, undefined);
+  }
+});
+
+test("premove cancellation preserves focus, modifier and repeat guards", async () => {
+  const app = contentHarness(); let cancels = 0;
+  app.document.querySelector = () => null;
+  app.assist.cancelPremoves = () => { cancels++; return true; };
+  app.storage.resolve({}); await flush();
+  for (const flag of ['repeat', 'metaKey', 'ctrlKey', 'altKey', 'shiftKey']) app.key('Escape', 'Escape', { [flag]: true });
+  app.document.activeElement = { isContentEditable: true }; app.key('Escape', 'Escape');
+  assert.equal(cancels, 0);
 });
 
 test("removed keys normalize to defaults without activating letters", async () => {

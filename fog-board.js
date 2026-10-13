@@ -7,14 +7,17 @@
     let input;
     try { input = JSON.parse(raw); } catch { return null; }
     if (!input || typeof input !== "object" || input.stable !== true || typeof input.flipped !== "boolean") return null;
-    const bot = input.context === "bot" && path === "/play/computer" && board.id === "board-play-computer";
+    const bot = input.context === "bot" && /^\/play\/computer(?:\/[^/]+)?\/?$/.test(path) && board.id === "board-play-computer";
+    const puzzle = input.context === "puzzle" && (
+      board.id === "board-primary" && /^\/puzzles\/(?:rated|learning)\/?$/.test(path) ||
+      board.id === "board-board" && /^\/daily\/?$/.test(path));
     const analysis = input.context === "analysis" && (
       board.id === "board-single" && /^\/game\/daily\/\d+\/?$/.test(path) ||
       board.id === "board-analysis-board" &&
-        (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path)));
+        (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/(?:analysis|review))?\/?$/.test(path)));
     const review = input.context === "review" && board.id === "board-single" &&
       /^\/game\/(?:live|daily)\/\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(input.result);
-    if (!bot && !analysis && !review) return null;
+    if (!bot && !analysis && !review && !puzzle) return null;
     const position = parseFEN(input.fen);
     if (!position || !(input.selected === null || Number.isInteger(input.selected) && input.selected >= 0 && input.selected < 64)) return null;
     const side = perspective === "auto" ? (["white", "black"].includes(input.side) ? input.side : input.flipped ? "black" : "white") : perspective;

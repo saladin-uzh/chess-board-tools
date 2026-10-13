@@ -1,13 +1,13 @@
 (() => {
   "use strict";
   const { ASSIST_STORAGE_KEY, normalizeAssist, hasInputFocus } = globalThis.ChessConfirmMoveSettings;
-  const { read, readCoordinates, clickSquare, clickPromotion } = globalThis.ChessBoardAssist;
+  const { read, readCoordinates, clickSquare, clickPromotion, cancelPremoves } = globalThis.ChessBoardAssist;
   const { createTurnTimer, createAudio } = globalThis.ChessAssistTimer;
   const turnTimer = createTurnTimer(), audio = createAudio();
   let preferences = normalizeAssist(null), revision = 0;
   let lastVisibility = document.visibilityState;
   let confirmationButton = null, confirmationOwner = null;
-  let preferredBoard = null;
+  let preferredBoard = null, timerBoard = null;
   let board = null, identity = null, file = null, bufferTimer = null, pollTimer = null, indicator = null;
   let filePreview = null, squareIndicator = null;
   function clearBuffer() {
@@ -29,7 +29,10 @@
     board.append(region);
     return region;
   }
-  globalThis.ChessAssistInput = Object.freeze({ clear });
+  globalThis.ChessAssistInput = Object.freeze({ clear, cancelPremoves() {
+    update();
+    return timerBoard ? cancelPremoves(timerBoard, read(timerBoard)) : false;
+  } });
   function clickable(element) {
     const rect = element?.getBoundingClientRect();
     const style = element && getComputedStyle(element);
@@ -53,7 +56,7 @@
     if (next !== board) { clear(); identity = null; board = next; }
     const rect = board?.getBoundingClientRect();
     const geometryValid = rect?.width > 0 && rect?.height > 0 && Math.abs(rect.width - rect.height) <= 1;
-    const timerBoard = candidates.find(element =>
+    timerBoard = candidates.find(element =>
       ["board-single", "board-play-computer", "board-analysis-board"].includes(element.id));
     const snapshot = timerBoard ? read(timerBoard) : null;
     const coordinates = board && geometryValid ? readCoordinates(board) : null;
@@ -69,7 +72,7 @@
     const visible = document.visibilityState === "visible";
     const resumed = lastVisibility !== "visible" && visible;
     lastVisibility = document.visibilityState;
-    if (preferences.ticking && turnTimer.update(snapshot, performance.now(), visible && !resumed, pending)) audio.tick();
+    if (preferences.ticking && turnTimer.update(snapshot, performance.now(), visible && !resumed, pending, preferences)) audio.tick(preferences.tickVolume);
     return coordinates;
   }
   function consume(event) { event.preventDefault(); event.stopImmediatePropagation(); }
@@ -90,6 +93,7 @@
       return;
     }
     if (/^[a-h]$/.test(key || "")) {
+      if (file === key) { clearBuffer(); consume(event); return; }
       clearBuffer(); file = key;
       const column = key.charCodeAt(0) - 97;
       filePreview = showRegion("chess-assist-file", snapshot.flipped ? 7 - column : column);
@@ -115,7 +119,8 @@
   }
   function apply(value) {
     const next = normalizeAssist(value);
-    if (next.ticking !== preferences.ticking) turnTimer.reset();
+    if (next.ticking !== preferences.ticking || next.tickMode !== preferences.tickMode ||
+        next.tickFrequency !== preferences.tickFrequency) turnTimer.reset();
     preferences = next;
     clear();
     clearInterval(pollTimer); pollTimer = null;

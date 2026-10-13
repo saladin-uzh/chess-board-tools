@@ -9,7 +9,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const context = vm.createContext({});
 for (const file of ['settings.js', 'assist-board.js', 'assist-timer.js']) run(context, file);
-const snapshot = { session: 1, context: 'bot', fen: '7k/8/8/8/8/8/P7/7K w - - 0 1', side: 'white', turn: 'white', active: true, stable: true, flipped: false };
+const snapshot = { session: 1, context: 'bot', fen: '7k/8/8/8/8/8/P7/7K w - - 0 1', side: 'white', turn: 'white', active: true, stable: true, flipped: false, initialSeconds: 1200 };
 
 test('allowed action keys, old values and duplicate migration', () => {
   const s = context.ChessConfirmMoveSettings;
@@ -21,7 +21,7 @@ test('allowed action keys, old values and duplicate migration', () => {
     assert.deepEqual(plain(s.normalizeKeybindings(input)), { confirmKeyCode: 'Space', cancelKeyCode: 'Escape' });
   }
   assert.deepEqual(plain(s.normalizeKeybindings({ confirmKeyCode: 'Enter', cancelKeyCode: 'KeyS' })), { confirmKeyCode: 'Enter', cancelKeyCode: 'Escape' });
-  assert.deepEqual(plain(s.normalizeAssist({ keyboard: 'true', ticking: 1 })), { keyboard: false, ticking: false });
+  assert.deepEqual(plain(s.normalizeAssist({ keyboard: 'true', ticking: 1 })), { keyboard: false, ticking: false, tickMode: 'auto', tickFrequency: 10, tickVolume: 50 });
 });
 
 test('adapter rejects unknown contexts, malformed state and transient boards', () => {
@@ -111,7 +111,7 @@ test('audio waits for gesture, releases nodes and tolerates blocked or missing a
 function harness({ realTimer = false } = {}) {
   const listeners = {}, docListeners = {}, timeouts = new Map(), intervals = new Map(), clicks = [], timerCalls = [], timerResets = [], ticks = [], unlocks = [];
   let candidates = null;
-  const clickedBoards = [];
+  const clickedBoards = [], cancelledBoards = [];
   let now = 0, serial = 0, changed, current = { ...snapshot, context: 'analysis', active: false, side: null }, board, confirmation;
   class Element {
     constructor() { this.tagName = "WC-CHESS-BOARD"; this.isConnected = true; this.style = {}; this.picker = null; }
@@ -134,7 +134,7 @@ function harness({ realTimer = false } = {}) {
     clearTimeout: id => timeouts.delete(id), setInterval: fn => { const id = ++serial; intervals.set(id, fn); return id; }, clearInterval: id => intervals.delete(id),
     addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
     chrome: { storage: { local: { get: async () => ({ boardAssistPreferences: { keyboard: true } }) }, onChanged: { addListener: fn => { changed = fn; } } } },
-    ChessBoardAssist: { read: b => b.id === 'secondary' ? null : current, readCoordinates: () => current, clickSquare: (b, square) => { clickedBoards.push(b); clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
+    ChessBoardAssist: { cancelPremoves: (b, state) => { if (!state?.active || !state?.stable || !state?.premoveCount) return false; cancelledBoards.push(b); return true; }, read: b => b.id === 'secondary' ? null : current, readCoordinates: () => current, clickSquare: (b, square) => { clickedBoards.push(b); clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
     ChessAssistTimer: { createTurnTimer: () => ({ reset() { timerResets.push(true); }, update(...args) { timerCalls.push(args); return false; } }), createAudio: () => ({ unlock() { unlocks.push(now); }, close() {}, tick() { ticks.push(now); } }) },
   });
   run(c, 'settings.js');
@@ -145,7 +145,7 @@ function harness({ realTimer = false } = {}) {
   }
   run(c, 'assist-content.js');
   function dispatch(type, event = {}) { event.type = type; for (const fn of listeners[type] || []) fn(event); }
-  return { document, get board() { return board; }, clickedBoards, boards(value) { candidates = value; }, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
+  return { document, get board() { return board; }, clickedBoards, cancelledBoards, cancelPremoves: () => c.ChessAssistInput.cancelPremoves(), boards(value) { candidates = value; }, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
     key(key, extra = {}) { const e = { key, code: key === 'Escape' ? 'Escape' : '', target: {}, preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...extra }; dispatch('keydown', e); return e; },
     activation(value) { c.navigator = value; },
     dispatch, advance(ms) { now += ms; for (const [id, t] of timeouts) if (t.due <= now) { timeouts.delete(id); t.fn(); } },
@@ -186,6 +186,129 @@ test('promotion keys select host pieces and suspend coordinate input', async () 
   }
 });
 
+test('a repeated file key cancels only the file buffer and keeps the selected piece', async () => {
+  const app = harness(); await flush();
+  app.key('b'); app.key('2');
+  const selected = app.board.children.find(child => child.className === 'chess-assist-square');
+  app.key('c'); assert.equal(app.key('c').prevented, true); app.key('4');
+  assert.deepEqual(app.clicks, ['b2']); assert.equal(selected.removed, undefined);
+  app.key('c'); app.key('d'); app.key('4');
+  assert.deepEqual(app.clicks, ['b2', 'd4']);
+  app.key('b'); app.key('b', { repeat: true }); app.key('3');
+  assert.equal(app.clicks.at(-1), 'b3');
+});
+
+test('tick settings migrate old records and reject invalid values', () => {
+  const normalize = value => plain(context.ChessConfirmMoveSettings.normalizeAssist(value));
+  assert.deepEqual(normalize({ keyboard: true, ticking: true }), {
+    keyboard: true, ticking: true, tickMode: 'auto', tickFrequency: 10, tickVolume: 50,
+  });
+  for (const input of [{ tickMode: 'bad', tickVolume: NaN }, { tickVolume: -1 }, { tickVolume: 101 }, { tickVolume: '50' }]) {
+    assert.equal(normalize(input).tickVolume, 50);
+  }
+  for (const seconds of [2, 5, 10, 15, 20, 30]) assert.equal(normalize({ tickMode: 'amount', tickFrequency: seconds }).tickFrequency, seconds);
+  assert.equal(normalize({ tickMode: 'amount', tickFrequency: 3 }).tickFrequency, 10);
+  assert.equal(normalize({ tickVolume: 0 }).tickVolume, 0);
+});
+
+test('tick frequency uses initial time, ceil, increment fallback and fixed amounts', () => {
+  const { frequency } = context.ChessAssistTimer;
+  for (const [initialSeconds, expected] of [[60, 2], [300, 3], [1800, 15], [5400, 30]]) {
+    assert.equal(frequency({ initialSeconds, incrementSeconds: 10 }, { tickMode: 'auto' }), expected);
+  }
+  assert.equal(frequency({ initialSeconds: 300, incrementSeconds: 2 }, { tickMode: 'increment' }), 2);
+  assert.equal(frequency({ initialSeconds: 300, incrementSeconds: 0 }, { tickMode: 'increment' }), 3);
+  assert.equal(frequency({ initialSeconds: 300 }, { tickMode: 'increment' }), 3);
+  assert.equal(frequency({ incrementSeconds: 45 }, { tickMode: 'increment' }), 45);
+  assert.equal(frequency(null, { tickMode: 'auto' }), null);
+  assert.equal(frequency({ initialSeconds: null, incrementSeconds: 0 }, { tickMode: 'increment' }), null);
+  for (const tickFrequency of [2, 5, 10, 15, 20, 30]) assert.equal(frequency(null, { tickMode: 'amount', tickFrequency }), tickFrequency);
+});
+
+test('frequency changes restart deadlines while volume changes preserve the current turn', () => {
+  const timer = context.ChessAssistTimer.createTurnTimer();
+  const state = { ...snapshot, initialSeconds: 300, incrementSeconds: 2 };
+  const auto = { tickMode: 'auto', tickVolume: 50 };
+  assert.equal(timer.update(state, 0, true, false, auto), false);
+  assert.equal(timer.update(state, 2999, true, false, auto), false);
+  assert.equal(timer.update(state, 3000, true, false, { ...auto, tickVolume: 0 }), true);
+  assert.equal(timer.update(state, 4000, true, false, { tickMode: 'increment' }), false);
+  assert.equal(timer.update(state, 5999, true, false, { tickMode: 'increment' }), false);
+  assert.equal(timer.update(state, 6000, true, false, { tickMode: 'increment' }), true);
+  assert.equal(timer.update(state, 20000, false, false, { tickMode: 'increment' }), false);
+  assert.equal(timer.update(state, 20001, true, false, { tickMode: 'increment' }), false);
+  assert.equal(timer.update(state, 22000, true, false, { tickMode: 'increment' }), true);
+});
+
+test('Auto stays silent without initial time and resumes with a fresh interval when time becomes available', () => {
+  const timer = context.ChessAssistTimer.createTurnTimer();
+  const unknown = { ...snapshot, initialSeconds: null, incrementSeconds: null };
+  const auto = { tickMode: 'auto' };
+  assert.equal(timer.update(unknown, 0, true, false, auto), false);
+  assert.equal(timer.update(unknown, 30000, true, true, auto), false);
+  assert.equal(timer.update(snapshot, 31000, true, false, auto), false);
+  assert.equal(timer.update(snapshot, 41000, true, false, auto), true);
+  assert.equal(timer.update(unknown, 42000, true, false, auto), false);
+  assert.equal(timer.update(snapshot, 100000, true, false, auto), false);
+  assert.equal(timer.update(snapshot, 110000, true, false, auto), true);
+  const amount = { tickMode: 'amount', tickFrequency: 2 };
+  assert.equal(timer.update(unknown, 120000, true, false, amount), false);
+  assert.equal(timer.update(unknown, 122000, true, false, amount), true);
+});
+
+test('audio volume defaults to 50 percent, supports mute and bounds peak gain', () => {
+  const peaks = []; let nodes = 0;
+  class Audio {
+    constructor() { this.state = 'running'; this.currentTime = 0; }
+    createOscillator() { nodes++; return { frequency: {}, connect() {}, disconnect() {}, start() {}, stop() { this.onended(); } }; }
+    createGain() { return { gain: { setValueAtTime() {}, linearRampToValueAtTime(value) { peaks.push(value); }, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
+  }
+  const c = vm.createContext({ AudioContext: Audio }); run(c, 'assist-timer.js');
+  const audio = c.ChessAssistTimer.createAudio(); audio.unlock();
+  audio.tick(); audio.tick(100); audio.tick(0); audio.tick(-1); audio.tick(NaN);
+  assert.deepEqual(peaks, [0.1, 0.2]); assert.equal(nodes, 2);
+});
+
+test('premove cancellation dispatches native right pointer events only for owned active games with a queue', () => {
+  const events = [];
+  const c = vm.createContext({ document: { dispatchEvent: e => events.push(e) },
+    PointerEvent: class { constructor(type, options) { this.type = type; Object.assign(this, options); } } });
+  run(c, 'assist-board.js');
+  const board = { isConnected: true, getBoundingClientRect: () => ({ left: 10, top: 20, width: 800, height: 800 }),
+    dispatchEvent: e => events.push(e) };
+  const queued = { ...snapshot, context: 'human', turn: 'black', premoveCount: 3 };
+  assert.equal(c.ChessBoardAssist.cancelPremoves(board, queued), true);
+  assert.deepEqual(events.map(e => [e.type, e.button, e.buttons]), [['pointerdown', 2, 2], ['pointerup', 2, 0]]);
+  assert.equal(events[0].clientX, 410); assert.equal(events[0].clientY, 420);
+  for (const change of [{ premoveCount: 0 }, { side: null }, { active: false }, { stable: false }, { context: 'puzzle' }, { context: 'analysis' }]) {
+    assert.equal(c.ChessBoardAssist.cancelPremoves(board, { ...queued, ...change }), false);
+  }
+  assert.equal(events.length, 2);
+});
+
+test('bridge reads clock milliseconds and premove count without mutating game state', () => {
+  let listener, raw;
+  const game = { getMode: () => ({ name: 'playing' }), getVariant: () => 'chess', getPlayingAs: () => 1,
+    getFEN: () => snapshot.fen, getOptions: () => ({ flipped: false }), getResult: () => '*',
+    isAtEndOfLine: () => true, isDragging: () => false, isAnimating: () => false,
+    timeControl: { get: () => ({ baseTime: 300000, increment: 2000 }) }, premoves: { getQueue: () => [{}, {}] } };
+  class Element { constructor() { this.tagName = 'WC-CHESS-BOARD'; this.id = 'board-single'; this.game = game; this.isConnected = true; } dispatchEvent(e) { raw = e.detail; } }
+  const c = vm.createContext({ HTMLElement: Element, location: { pathname: '/play/online' },
+    document: { addEventListener: (type, fn) => { if (type === 'chess-assist-request') listener = fn; } },
+    CustomEvent: class { constructor(type, options) { Object.assign(this, options); } } });
+  run(c, 'assist-bridge.js'); run(c, 'assist-board.js'); const board = new Element();
+  listener({ type: 'chess-assist-request', target: board });
+  let result = c.ChessBoardAssist.validate(raw, board, '/play/online');
+  assert.equal(result.initialSeconds, 300); assert.equal(result.incrementSeconds, 2); assert.equal(result.premoveCount, 2);
+  game.timeControl.get = () => { throw Error('Unavailable'); };
+  listener({ type: 'chess-assist-request', target: board });
+  result = c.ChessBoardAssist.validate(raw, board, '/play/online');
+  assert.equal(result.initialSeconds, null); assert.equal(result.premoveCount, 2);
+  for (const change of [{ initialSeconds: -1 }, { incrementSeconds: '2' }, { premoveCount: 1.5 }]) {
+    assert.equal(c.ChessBoardAssist.validate(JSON.stringify({ ...result, ...change }), board, '/play/online'), null);
+  }
+});
+
 function deferred() {
   let resolve, reject;
   const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
@@ -194,7 +317,7 @@ function deferred() {
 function popupHarness() {
   const load = deferred(), save = deferred(), writes = [], elements = {};
   let changed;
-  for (const id of ['keyboard-enabled', 'ticking-enabled', 'assist-save-status']) {
+  for (const id of ['keyboard-enabled', 'ticking-enabled', 'tick-frequency', 'tick-volume', 'tick-volume-value', 'assist-save-status']) {
     elements['#' + id] = { disabled: true, checked: false, addEventListener(type, fn) { this[type] = fn; } };
   }
   const c = vm.createContext({ document: { querySelector: id => elements[id] }, chrome: { storage: {
@@ -202,7 +325,7 @@ function popupHarness() {
     onChanged: { addListener: fn => { changed = fn; } },
   } } });
   run(c, 'settings.js'); run(c, 'assist-popup.js');
-  return { load, save, writes, keyboard: elements['#keyboard-enabled'], ticking: elements['#ticking-enabled'], status: elements['#assist-save-status'],
+  return { load, save, writes, keyboard: elements['#keyboard-enabled'], ticking: elements['#ticking-enabled'], status: elements['#assist-save-status'], frequency: elements['#tick-frequency'], volume: elements['#tick-volume'], volumeValue: elements['#tick-volume-value'],
     change: (value, area = 'local') => changed({ boardAssistPreferences: { newValue: value } }, area) };
 }
 
@@ -217,7 +340,7 @@ test('helper popup protects delayed reads/saves and keeps separate local prefere
   app.change({ keyboard: true, ticking: false });
   app.save.resolve(); await pending;
   assert.equal(app.keyboard.checked, true); assert.equal(app.ticking.checked, false);
-  assert.deepEqual(app.writes, [{ boardAssistPreferences: { keyboard: false, ticking: true } }]);
+  assert.deepEqual(app.writes, [{ boardAssistPreferences: { keyboard: false, ticking: true, tickMode: 'auto', tickFrequency: 10, tickVolume: 50 } }]);
   app.change({ keyboard: false, ticking: true }, 'sync'); assert.equal(app.keyboard.checked, true);
 });
 
@@ -227,6 +350,18 @@ test('helper popup recovers from load and save failures', async () => {
   app.keyboard.checked = true; const pending = app.keyboard.change();
   app.save.reject(Error('Save failed')); await pending;
   assert.equal(app.keyboard.checked, false); assert.match(app.status.textContent, /Could not save/);
+});
+
+test('single frequency select and volume slider persist local tick preferences', async () => {
+  const app = popupHarness(); app.load.resolve({ boardAssistPreferences: { ticking: true } }); await flush();
+  assert.equal(app.frequency.value, 'auto'); assert.equal(app.volume.value, '50');
+  app.frequency.value = '5'; app.volume.value = '0'; app.volume.input();
+  assert.equal(app.volumeValue.textContent, '0%');
+  const pending = app.frequency.change(); assert.equal(app.volume.disabled, true);
+  app.save.resolve(); await pending;
+  assert.deepEqual(app.writes[0].boardAssistPreferences, { keyboard: false, ticking: true, tickMode: 'amount', tickFrequency: 5, tickVolume: 0 });
+  app.change({ ticking: true, tickMode: 'increment', tickVolume: 100 });
+  assert.equal(app.frequency.value, 'increment'); assert.equal(app.volumeValue.textContent, '100%');
 });
 
 test('bridge snapshots are read-only, identify game replacement and reject unsupported modes', () => {
@@ -635,7 +770,7 @@ test('coordinate input works across routes, modes and variants without enabling 
     CustomEvent: class { constructor(type, options) { this.type = type; Object.assign(this, options); } } });
   run(c, 'assist-bridge.js'); run(c, 'assist-board.js');
   const app = harness({ realTimer: true }); await flush(); app.change({ keyboard: true, ticking: true });
-  for (const route of ['/game/186049589091', '/live/game/123', '/analysis/classroom', '/puzzles', '/variants', '/']) {
+  for (const route of ['/game/186049589091', '/live/game/123', '/analysis/classroom', '/puzzles/rush', '/puzzles/battle', '/puzzles/rated', '/daily', '/puzzles/learning', '/variants', '/']) {
     location.pathname = route;
     for (flipped of [false, true]) {
       handlers['chess-coordinate-request']({ type: 'chess-coordinate-request', target: board });
@@ -660,12 +795,12 @@ test('coordinate input works across routes, modes and variants without enabling 
   board.isConnected = false; assert.equal(c.ChessBoardAssist.validateCoordinates(raw, board), null);
 });
 
-test('coordinate scripts load on all Chess.com routes without expanding fog injection', () => {
+test('coordinate and fog scripts load before SPA navigation on Chess.com', () => {
   const manifest = JSON.parse(source('manifest.json'));
   for (const file of ['assist-bridge.js', 'assist-content.js']) {
     assert.deepEqual(manifest.content_scripts.find(entry => entry.js.includes(file)).matches, ['https://www.chess.com/*']);
   }
-  assert.equal(manifest.content_scripts.find(entry => entry.js.includes('fog-bridge.js')).matches.includes('https://www.chess.com/*'), false);
+  assert.deepEqual(manifest.content_scripts.find(entry => entry.js.includes('fog-bridge.js')).matches, ['https://www.chess.com/*']);
 });
 
 test('coordinate control skips hidden boards and follows the interacted or focused board', async () => {
@@ -694,4 +829,123 @@ test('secondary coordinate board selection preserves primary own-turn ticks', as
   app.advance(1000); app.poll(); assert.deepEqual(app.ticks, [10000]);
   app.document.activeElement = { closest: selector => selector === 'wc-chess-board' ? secondary : null };
   app.advance(10000); app.poll(); assert.deepEqual(app.ticks, [10000, 20000]);
+});
+
+
+test('changing frequency choices with equal durations starts a fresh interval', async () => {
+  const app = harness({ realTimer: true }); await flush();
+  app.state({ ...snapshot, initialSeconds: 60, incrementSeconds: 2 });
+  app.change({ ticking: true, tickMode: 'auto' });
+  app.advance(1999);
+  app.change({ ticking: true, tickMode: 'amount', tickFrequency: 2 });
+  app.advance(1); app.poll(); assert.deepEqual(app.ticks, []);
+  app.advance(1999); app.poll(); assert.deepEqual(app.ticks, [3999]);
+  app.advance(1999);
+  app.change({ ticking: true, tickMode: 'increment' });
+  app.advance(1); app.poll(); assert.deepEqual(app.ticks, [3999]);
+  app.advance(1999); app.poll(); assert.deepEqual(app.ticks, [3999, 7998]);
+  app.advance(1999);
+  app.change({ ticking: true, tickMode: 'increment', tickVolume: 100 });
+  app.advance(1); app.poll(); assert.deepEqual(app.ticks, [3999, 7998, 9998]);
+});
+
+test('premove cancellation follows the primary game while coordinates follow a secondary board', async () => {
+  const app = harness(); await flush();
+  const primary = app.board;
+  const secondary = Object.assign(Object.create(Object.getPrototypeOf(primary)), primary, { id: 'secondary', style: {} });
+  app.boards([secondary, primary]);
+  app.state({ ...snapshot, context: 'human', turn: 'black', premoveCount: 2 });
+  app.dispatch('pointerdown', { composedPath: () => [secondary] });
+  app.key('b'); app.key('2'); assert.equal(app.clickedBoards.at(-1), secondary);
+  app.document.activeElement = { closest: () => secondary };
+  assert.equal(app.cancelPremoves(), true);
+  assert.deepEqual(app.cancelledBoards, [primary]);
+  app.state({ ...snapshot, active: false, premoveCount: 2 });
+  assert.equal(app.cancelPremoves(), false);
+  app.boards([secondary]);
+  assert.equal(app.cancelPremoves(), false);
+  assert.deepEqual(app.cancelledBoards, [primary]);
+});
+
+
+test('bot bridges and adapters support named bot routes while retaining board and mode guards', () => {
+  const routes = ['/play/computer', '/play/computer/', '/play/computer/Loch-Chess-Monster-BOT', '/play/computer/Loch-Chess-Monster-BOT/'];
+  for (const prefix of ['assist', 'fog']) {
+    let listener, raw, mode = 'playing';
+    class Element {
+      constructor() { this.tagName = 'WC-CHESS-BOARD'; this.id = 'board-play-computer'; this.isConnected = true; }
+      dispatchEvent(event) { raw = event.detail; }
+      querySelector() { return null; }
+    }
+    const board = new Element();
+    board.game = {
+      getMode: () => ({ name: mode }), getPlayingAs: () => 1, getVariant: () => 'chess',
+      getFEN: () => snapshot.fen, getOptions: () => ({ flipped: false }), getResult: () => '*',
+      isAtEndOfLine: () => true, isDragging: () => false, isAnimating: () => false,
+    };
+    const location = { pathname: routes[0] };
+    const c = vm.createContext({ HTMLElement: Element, location,
+      document: { addEventListener: (type, fn) => { listener = fn; } },
+      CustomEvent: class { constructor(type, options) { Object.assign(this, options); } } });
+    if (prefix === 'fog') run(c, 'fog-visibility.js');
+    run(c, prefix + '-bridge.js'); run(c, prefix + '-board.js');
+    const validate = () => prefix === 'fog'
+      ? c.ChessFogBoard.validateSnapshot(raw, board, location.pathname, 'auto')
+      : c.ChessBoardAssist.validate(raw, board, location.pathname);
+    for (const route of routes) {
+      location.pathname = route; listener({ target: board });
+      assert.equal(JSON.parse(raw).context, 'bot'); assert.ok(validate(), prefix + ': ' + route);
+    }
+    mode = 'observing'; listener({ target: board }); assert.equal(raw, 'null');
+    mode = 'playing'; board.id = 'secondary'; listener({ target: board }); assert.equal(raw, 'null');
+    board.id = 'board-play-computer';
+    for (const route of ['/play/computer-other', '/play/computer/bot/other', '/play/online']) {
+      location.pathname = route; listener({ target: board }); assert.equal(raw, 'null');
+    }
+  }
+  const manifest = JSON.parse(source('manifest.json'));
+  for (const entry of manifest.content_scripts.filter(entry => entry.js.includes('fog-bridge.js') || entry.js.includes('fog-content.js'))) {
+    assert.deepEqual(entry.matches, ['https://www.chess.com/*']);
+  }
+});
+
+
+test('completed Game Review routes support read-only board snapshots without enabling ticks', () => {
+  for (const prefix of ['assist', 'fog']) {
+    let listener, raw, result = '1-0';
+    class Element {
+      constructor() { this.tagName = 'WC-CHESS-BOARD'; this.id = 'board-analysis-board'; this.isConnected = true; }
+      dispatchEvent(event) { raw = event.detail; }
+      querySelector() { return null; }
+    }
+    const board = new Element();
+    board.game = {
+      getMode: () => ({ name: 'analysis' }), getPlayingAs: () => null, getVariant: () => 'chess',
+      getFEN: () => snapshot.fen, getOptions: () => ({ flipped: false }), getResult: () => result,
+      isAtEndOfLine: () => true, isDragging: () => false, isAnimating: () => false,
+    };
+    const location = { pathname: '/analysis/game/computer/2328646154/review' };
+    const c = vm.createContext({ HTMLElement: Element, location,
+      document: { addEventListener: (type, fn) => { listener = fn; } },
+      CustomEvent: class { constructor(type, options) { Object.assign(this, options); } } });
+    if (prefix === 'fog') run(c, 'fog-visibility.js');
+    run(c, prefix + '-bridge.js'); run(c, prefix + '-board.js');
+    for (const kind of ['computer', 'live', 'daily']) {
+      location.pathname = '/analysis/game/' + kind + '/2328646154/review';
+      listener({ target: board });
+      assert.equal(JSON.parse(raw).context, 'analysis');
+      if (prefix === 'fog') assert.ok(c.ChessFogBoard.validateSnapshot(raw, board, location.pathname, 'auto'));
+      else {
+        const state = c.ChessBoardAssist.validate(raw, board, location.pathname);
+        assert.equal(state.active, false);
+        assert.equal(context.ChessAssistTimer.createTurnTimer().update(state, 10000, true), false);
+      }
+    }
+    location.pathname = '/analysis/game/computer/2328646154/review/other';
+    listener({ target: board }); assert.equal(raw, 'null');
+    if (prefix === 'fog') {
+      location.pathname = '/analysis/game/computer/2328646154/review'; result = '*';
+      listener({ target: board }); assert.equal(raw, 'null');
+    }
+  }
 });

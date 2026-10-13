@@ -45,7 +45,10 @@
   function update() {
     frame = null;
     if (!preferences.enabled) { detach(); status = "Fog is disabled."; return; }
-    const next = document.querySelector("wc-chess-board#board-play-computer, wc-chess-board#board-analysis-board, wc-chess-board#board-single");
+    const selector = /^\/puzzles\/(?:rated|learning)\/?$/.test(location.pathname) ? "wc-chess-board#board-primary"
+      : /^\/daily\/?$/.test(location.pathname) ? "wc-chess-board#board-board"
+      : "wc-chess-board#board-play-computer, wc-chess-board#board-analysis-board, wc-chess-board#board-single";
+    const next = document.querySelector(selector);
     if (next !== board) attach(next);
     const snapshot = board ? read(board, preferences.perspective) : null;
     const rect = board?.getBoundingClientRect();

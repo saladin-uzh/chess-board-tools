@@ -21,10 +21,10 @@
       }
       const mode = game.getMode().name;
       const path = location.pathname;
-      const bot = path === "/play/computer" && board.id === "board-play-computer" && mode === "playing";
+      const bot = /^\/play\/computer(?:\/[^/]+)?\/?$/.test(path) && board.id === "board-play-computer" && mode === "playing";
       const analysis = mode === "analysis" && (
         board.id === "board-analysis-board" &&
-          (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path)) ||
+          (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/(?:analysis|review))?\/?$/.test(path)) ||
         board.id === "board-single" && (
           /^\/game\/daily\/\d+\/?$/.test(path) ||
           /^\/game\/(?:live\/)?\d+\/?$/.test(path) &&
@@ -36,6 +36,9 @@
       if ((bot || analysis || review || human) && game.getVariant() === "chess") {
         if (!sessions.has(game)) sessions.set(game, ++sequence);
         const side = game.getPlayingAs();
+        let timeControl = null, premoveCount = 0;
+        try { timeControl = game.timeControl?.get?.(); } catch { /* Clock metadata is optional. */ }
+        try { premoveCount = game.premoves?.getQueue?.().length || 0; } catch { /* Unknown queues cannot be cancelled. */ }
         snapshot = {
           context: review ? "review" : analysis ? "analysis" : bot ? "bot" : "human",
           session: sessions.get(game),
@@ -45,6 +48,9 @@
           flipped: game.getOptions().flipped,
           active: mode === "playing" && game.getResult() === "*" && game.isAtEndOfLine() === true,
           stable: game.isDragging() === false && game.isAnimating() === false,
+          initialSeconds: Number.isFinite(timeControl?.baseTime) && timeControl.baseTime > 0 ? timeControl.baseTime / 1000 : null,
+          incrementSeconds: Number.isFinite(timeControl?.increment) && timeControl.increment >= 0 ? timeControl.increment / 1000 : null,
+          premoveCount,
         };
       }
     } catch { /* Unknown host APIs disable helpers rather than guessing. */ }

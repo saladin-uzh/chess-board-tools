@@ -219,7 +219,7 @@ test('adapter rejects unsupported, transient, incomplete and disconnected snapsh
   const analysisBoard = { id: 'board-analysis-board', isConnected: true };
   const analysisSnapshot = { ...snapshot, context: 'analysis', side: null };
   assert.equal(validate(analysisSnapshot, analysisBoard, '/analysis/game/computer/123/analysis', 'white').side, 'white');
-  assert.equal(validate(analysisSnapshot, analysisBoard, '/analysis/game/computer/123/review', 'white'), null);
+  assert.equal(validate(analysisSnapshot, analysisBoard, '/analysis/game/computer/123/review', 'white').side, 'white');
   assert.equal(context.ChessFogBoard.validateSnapshot('{', board, '/play/computer', 'white'), null);
 });
 
@@ -335,13 +335,56 @@ test('MAIN bridge reads full FEN only in verified modes and rejects unfinished i
   handler({ target: board }); assert.equal(response.context, 'analysis');
   result = '*'; handler({ target: board }); assert.equal(response, null);
   result = '0-1';
-  ctx.location.pathname = '/analysis/game/computer/123/review'; handler({ target: board }); assert.equal(response, null);
+  ctx.location.pathname = '/analysis/game/computer/123/review'; handler({ target: board }); assert.equal(response.context, 'analysis');
   ctx.location.pathname = '/analysis/classroom'; handler({ target: board }); assert.equal(response, null);
   ctx.location.pathname = '/game/live/123'; board.id = 'board-single'; mode = 'observing';
   handler({ target: board }); assert.equal(response.context, 'review');
   result = '*'; handler({ target: board }); assert.equal(response, null);
   result = '1-0'; mode = 'playing'; handler({ target: board }); assert.equal(response, null);
   ctx.location.pathname = '/play/online'; mode = 'playing'; handler({ target: board }); assert.equal(response, null);
+});
+
+test('puzzle bridge and adapter allow only Rated, Learning and Daily on their native boards', () => {
+  let handler, response, reads = 0, mode = 'playing', variant = 'chess', flipped = false;
+  class Element {}
+  const board = new Element(); board.tagName = 'WC-CHESS-BOARD'; board.isConnected = true;
+  board.querySelector = () => null;
+  board.dispatchEvent = event => { response = event.detail; };
+  board.game = { getMode: () => ({ name: mode }), getVariant: () => variant, getPlayingAs: () => flipped ? 2 : 1, getResult: () => '*',
+    getFEN: () => { reads++; return fen({ b2: 'P' }); }, getOptions: () => ({ flipped }),
+    isDragging: () => false, isAnimating: () => false };
+  const location = { pathname: '' };
+  const c = vm.createContext({ HTMLElement: Element, location,
+    CustomEvent: class { constructor(type, options) { this.detail = options.detail; } },
+    document: { addEventListener: (type, fn) => { handler = fn; } } });
+  run(c, 'fog-bridge.js'); run(c, 'fog-visibility.js'); run(c, 'fog-board.js');
+  const validate = () => c.ChessFogBoard.validateSnapshot(response, board, location.pathname, 'auto');
+  for (const [route, id] of [['/puzzles/rated', 'board-primary'], ['/puzzles/learning', 'board-primary'], ['/daily', 'board-board']]) {
+    for (flipped of [false, true]) for (mode of ['playing', 'analysis', 'passive-observing']) {
+      location.pathname = route; board.id = id; handler({ target: board });
+      assert.equal(JSON.parse(response).context, 'puzzle'); assert.equal(validate().side, flipped ? 'black' : 'white');
+    }
+  }
+  const validRaw = response;
+  const count = reads;
+  for (const route of ['/puzzles/rush', '/puzzles/rush/', '/puzzles/battle', '/puzzles/battle/123', '/puzzles', '/daily-other', '/play/online']) {
+    location.pathname = route; board.id = 'board-primary'; handler({ target: board });
+    assert.equal(response, 'null');
+    assert.equal(c.ChessFogBoard.validateSnapshot(validRaw, board, route, 'auto'), null);
+  }
+  assert.equal(reads, count);
+  location.pathname = '/puzzles/rated'; board.id = 'board-other'; handler({ target: board }); assert.equal(response, 'null');
+  board.id = 'board-primary'; variant = 'chess960'; handler({ target: board }); assert.equal(response, 'null');
+  variant = 'chess'; mode = 'observing'; handler({ target: board }); assert.equal(response, 'null');
+});
+
+test('both fog worlds inject on puzzle routes for SPA transitions while retaining runtime exclusions', () => {
+  const manifest = JSON.parse(source('manifest.json'));
+  for (const file of ['fog-bridge.js', 'fog-content.js']) {
+    const matches = manifest.content_scripts.find(entry => entry.js.includes(file)).matches;
+    assert.deepEqual(matches, ['https://www.chess.com/*']);
+  }
+  assert.deepEqual(manifest.permissions, ['storage']);
 });
 
 function controller() {
@@ -376,6 +419,7 @@ function controller() {
   let current = new Element(); current.id = 'board-analysis-board';
   let snapshot = { position: parseFEN(fen({ b2: 'P' })), side: 'white', selected: index('b2'), flipped: false };
   const ctx = vm.createContext({
+    location: { pathname: '/analysis' },
     document: { querySelector: () => current, createElement: () => new Element() },
     MutationObserver: Observer, ResizeObserver: Observer,
     requestAnimationFrame: fn => { const id = ++counter; frames.set(id, fn); return id; },

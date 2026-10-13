@@ -14,11 +14,11 @@ Primary category: Utilities.
 
 Chess Board Tools brings keyboard controls and optional board helpers to supported Chess.com boards in Safari.
 
-Enter coordinates with the keyboard, customize move confirmation/cancellation shortcuts, and choose optional sound cues every 10 seconds of your turn. Practice with semi-transparent fog against bots, in standalone analysis, and in completed standard-game reviews. Fog is unavailable in active human games and unsupported positions. Optional helpers start disabled.
+Enter coordinates with the keyboard, customize move confirmation/cancellation shortcuts, and configure optional turn sound cues with Auto timing, the clock increment, or fixed 2–30-second intervals and adjustable volume. Auto stays silent without a known time control. Practice with Piece Vision Overlay against bots, in standalone analysis, and in completed standard-game reviews. Fog is unavailable in active human games and unsupported positions. Optional helpers start disabled.
 
 The settings popup follows the system's light or dark appearance. Open the containing app for instructions on enabling the extension and granting access to Chess.com.
 
-Chess.com validates moves and keeps its normal confirmation flow. Shortcuts require visible enabled site buttons. Keyboard actions pause in input fields. Sound needs interaction with the game tab, stays silent in hidden tabs, and is disabled in analysis. Fog shows piece visibility, including pawn capture diagonals rather than forward moves, without legal-move advice.
+Chess.com validates moves and keeps its normal confirmation flow. Confirmation requires a visible enabled site button. Cancellation also clears queued premoves during the opponent’s turn without a Cancel button. Keyboard actions pause in input fields. Sound needs interaction with the game tab, stays silent in hidden tabs, and is disabled in analysis. Fog shows piece visibility, including pawn capture diagonals rather than forward moves, without legal-move advice.
 
 No engine evaluations, recommended moves, or automated play. No ads, purchases, or subscriptions. The extension code sends no external network requests or telemetry and stores no game history. Preferences stay in Safari's local extension storage; Chrome Sync is a feature of the Chrome edition and is not promised in Safari.
 

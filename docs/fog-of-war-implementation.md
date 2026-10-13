@@ -1,4 +1,4 @@
-# Fog of War implementation preparation
+# Piece Vision Overlay implementation preparation
 
 ## Starting point
 
@@ -62,7 +62,7 @@ Modules follow the existing IIFE/global namespace conventions.
 | `fog-content.js` | Overlay lifecycle, rendering, scoped observers, batched updates, settings changes, and cleanup. |
 | `fog.css` | Board-aligned tint and selected-piece visibility outline; pointer-transparent rendering and reduced-motion behavior. |
 | `settings.js` | Add a separate validated fog preference schema/key; preserve existing keybinding normalization and storage semantics. |
-| `popup.html`, `fog-popup.js`, `popup.css` | Small Fog of War section with enable switch, opacity, and perspective; race-safe loading/saving and incoming preference changes. |
+| `popup.html`, `fog-popup.js`, `popup.css` | Small Piece Vision Overlay section with enable switch, opacity, and perspective; race-safe loading/saving and incoming preference changes. |
 | `manifest.json` | Register verified supported URL patterns and script/style load order once integration is ready. |
 
 Retain plain JavaScript and existing IIFE/global namespace conventions. Use

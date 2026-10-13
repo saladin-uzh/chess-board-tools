@@ -10,20 +10,23 @@
       const game = board.game;
       const path = location.pathname;
       const mode = game?.getMode()?.name;
-      const bot = path === "/play/computer" && board.id === "board-play-computer" && mode === "playing";
+      const puzzle = ["playing", "analysis", "passive-observing"].includes(mode) && (
+        board.id === "board-primary" && /^\/puzzles\/(?:rated|learning)\/?$/.test(path) ||
+        board.id === "board-board" && /^\/daily\/?$/.test(path));
+      const bot = /^\/play\/computer(?:\/[^/]+)?\/?$/.test(path) && board.id === "board-play-computer" && mode === "playing";
       const dailyAnalysis = mode === "analysis" && (
         board.id === "board-single" && /^\/game\/daily\/\d+\/?$/.test(path) ||
-        board.id === "board-analysis-board" && /^\/analysis\/game\/daily\/\d+(?:\/analysis)?\/?$/.test(path));
+        board.id === "board-analysis-board" && /^\/analysis\/game\/daily\/\d+(?:\/(?:analysis|review))?\/?$/.test(path));
       const analysis = dailyAnalysis || board.id === "board-analysis-board" && mode === "analysis" &&
-        (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(game.getResult()));
+        (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/(?:analysis|review))?\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(game.getResult()));
       const review = board.id === "board-single" && mode === "observing" &&
         /^\/game\/(?:live|daily)\/\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(game.getResult());
-      if ((bot || analysis || review) && game.getVariant() === "chess") {
+      if ((bot || analysis || review || puzzle) && game.getVariant() === "chess") {
         const selected = board.querySelector(".highlight.growing-circle");
         const square = selected?.className.match(/\bsquare-([1-8])([1-8])\b/);
         const playingAs = game.getPlayingAs();
         snapshot = {
-          context: review ? "review" : bot ? "bot" : "analysis",
+          context: puzzle ? "puzzle" : review ? "review" : bot ? "bot" : "analysis",
           result: game.getResult(),
           fen: game.getFEN(),
           flipped: game.getOptions().flipped,

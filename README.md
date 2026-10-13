@@ -6,8 +6,8 @@
 
 A browser extension for Chess.com with keyboard board controls, configurable
 move confirmation shortcuts, and optional sound cues during your turn.
-Semi-transparent fog of war is available against bots, in analysis, and in
-completed game reviews.
+Piece Vision Overlay is available against bots, in analysis, and in
+completed game reviews, and Rated, Daily and Learning puzzles.
 
 ## Install locally
 
@@ -65,19 +65,22 @@ Ctrl means either Control key pressed and released alone. Ctrl combinations
 such as Ctrl+C are ignored. Shortcuts activate after settings load; popup
 controls are disabled while loading or saving.
 
-The extension handles a shortcut only when its visible, enabled confirmation
-or cancellation button is present. All extension keyboard actions pause while
+Confirmation requires a visible, enabled confirmation button. Cancellation
+uses the visible Cancel button, or clears all queued premoves on your active
+game board, including during the opponent’s turn. It works with keyboard
+board control disabled. All extension keyboard actions pause while
 an input, textarea, select, editable element, or textbox has focus. Events
 inside buttons and other interactive controls are also ignored.
 
 ## Board control and thinking ticks
 
-The popup has separate **Keyboard board control** and **Tick every 10 seconds
-of my turn** switches. Both start disabled and use local preferences.
+The popup has separate **Keyboard board control** and **Tick during my turn** switches. Both start disabled and use local preferences.
 
 Type coordinates sequentially: `b`, `2` selects b2; `b`, `3` clicks b3.
 Coordinates stay algebraic when flipped. A letter immediately highlights its
-file; the following digit outlines the chosen square above fog. The square
+file; pressing the same letter again cancels the file selection without
+deselecting the piece already selected on the board. A different letter replaces
+the file selection. The following digit outlines the chosen square above fog. The square
 outline clears on position or lifecycle changes. An incomplete letter appears beside
 the board and clears after five seconds, Escape, focus changes, scrolling,
 position changes, or board replacement. Use Latin `a–h` in your active layout.
@@ -91,8 +94,20 @@ board position/orientation APIs and a stable, visible board. Clicks use the host
 may report them as synthetic events. The extension does not hide or bypass
 those checks.
 
-Ticks occur at 10, 20, 30… seconds of your own turn in an active game, including
-pending confirmation. Each new turn resets the timer. Unknown player color and
+Ticks follow the selected frequency during your own turn in an active game,
+including pending confirmation. The single frequency selector offers:
+
+- **Auto** (default): `ceil(initial seconds / 120)`, bounded to 2–30 seconds.
+- **Increment**: every increment interval; no increment falls back to Auto.
+- **2, 5, 10, 15, 20 or 30 seconds**: a fixed interval.
+
+Auto stays silent when initial time is unavailable, including No Timer games;
+Increment does the same when it falls back to Auto. Fixed intervals still work.
+Volume defaults to 50%,
+with a range of 0–100%; 0% mutes ticks. Changing frequency starts a fresh
+interval; changing volume preserves the current schedule. Puzzles do not tick.
+
+Each new turn resets the timer. Unknown player color and
 analysis disable sound. First click or press a key in the game tab to unlock
 audio. Hidden tabs stay silent; missed ticks never accumulate. Enabling the
 feature or loading a page midway through a turn starts timing from that point.
@@ -107,9 +122,9 @@ shortcuts retain their existing routes:
 - `https://www.chess.com/analysis`
 - `https://www.chess.com/analysis/game/*`
 
-## Semi-transparent Fog of War
+## Piece Vision Overlay
 
-In the popup, enable **Semi-transparent Fog of War**, choose opacity (20–80%,
+In the popup, enable **Piece Vision Overlay**, choose opacity (20–80%,
 default 55%), and select Auto, White, or Black. It starts disabled. Auto follows
 your player color when available; otherwise it uses the side at the bottom of
 the board and follows board flips. Manual White/Black perspectives stay fixed.
@@ -119,7 +134,9 @@ Fog is supported on `/play/computer`, standalone `/analysis`, and completed
 `/analysis/game/computer/*` games, plus completed `/game/live/*` and
 `/game/daily/*` reviews. Ongoing daily games also support fog while in analysis
 mode on `/game/daily/*` or `/analysis/game/daily/*`. It stays unavailable during
-active human play, in classrooms, variants, incomplete state, and unsupported pages.
+active human play, in classrooms, variants, incomplete state, and unsupported pages. Fog also
+works in `/puzzles/rated`, `/daily` and `/puzzles/learning`; it is unavailable
+in Puzzle Rush and Puzzle Battle.
 
 Squares unseen by either side use a darker tint: their remaining transparency is
 half that of ordinary fog. Thin diagonal stripes distinguish these squares from
