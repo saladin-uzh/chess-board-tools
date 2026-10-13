@@ -111,7 +111,7 @@ test('audio waits for gesture, releases nodes and tolerates blocked or missing a
 function harness({ realTimer = false } = {}) {
   const listeners = {}, docListeners = {}, timeouts = new Map(), intervals = new Map(), clicks = [], timerCalls = [], timerResets = [], ticks = [], unlocks = [];
   let candidates = null;
-  const clickedBoards = [];
+  const clickedBoards = [], cancelledBoards = [];
   let now = 0, serial = 0, changed, current = { ...snapshot, context: 'analysis', active: false, side: null }, board, confirmation;
   class Element {
     constructor() { this.tagName = "WC-CHESS-BOARD"; this.isConnected = true; this.style = {}; this.picker = null; }
@@ -134,7 +134,7 @@ function harness({ realTimer = false } = {}) {
     clearTimeout: id => timeouts.delete(id), setInterval: fn => { const id = ++serial; intervals.set(id, fn); return id; }, clearInterval: id => intervals.delete(id),
     addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
     chrome: { storage: { local: { get: async () => ({ boardAssistPreferences: { keyboard: true } }) }, onChanged: { addListener: fn => { changed = fn; } } } },
-    ChessBoardAssist: { read: b => b.id === 'secondary' ? null : current, readCoordinates: () => current, clickSquare: (b, square) => { clickedBoards.push(b); clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
+    ChessBoardAssist: { cancelPremoves: (b, state) => { if (!state?.active || !state?.stable || !state?.premoveCount) return false; cancelledBoards.push(b); return true; }, read: b => b.id === 'secondary' ? null : current, readCoordinates: () => current, clickSquare: (b, square) => { clickedBoards.push(b); clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
     ChessAssistTimer: { createTurnTimer: () => ({ reset() { timerResets.push(true); }, update(...args) { timerCalls.push(args); return false; } }), createAudio: () => ({ unlock() { unlocks.push(now); }, close() {}, tick() { ticks.push(now); } }) },
   });
   run(c, 'settings.js');
@@ -145,7 +145,7 @@ function harness({ realTimer = false } = {}) {
   }
   run(c, 'assist-content.js');
   function dispatch(type, event = {}) { event.type = type; for (const fn of listeners[type] || []) fn(event); }
-  return { document, get board() { return board; }, clickedBoards, boards(value) { candidates = value; }, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
+  return { document, get board() { return board; }, clickedBoards, cancelledBoards, cancelPremoves: () => c.ChessAssistInput.cancelPremoves(), boards(value) { candidates = value; }, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
     key(key, extra = {}) { const e = { key, code: key === 'Escape' ? 'Escape' : '', target: {}, preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...extra }; dispatch('keydown', e); return e; },
     activation(value) { c.navigator = value; },
     dispatch, advance(ms) { now += ms; for (const [id, t] of timeouts) if (t.due <= now) { timeouts.delete(id); t.fn(); } },
@@ -831,6 +831,7 @@ test('secondary coordinate board selection preserves primary own-turn ticks', as
   app.advance(10000); app.poll(); assert.deepEqual(app.ticks, [10000, 20000]);
 });
 
+
 test('changing frequency choices with equal durations starts a fresh interval', async () => {
   const app = harness({ realTimer: true }); await flush();
   app.state({ ...snapshot, initialSeconds: 60, incrementSeconds: 2 });
@@ -846,4 +847,22 @@ test('changing frequency choices with equal durations starts a fresh interval', 
   app.advance(1999);
   app.change({ ticking: true, tickMode: 'increment', tickVolume: 100 });
   app.advance(1); app.poll(); assert.deepEqual(app.ticks, [3999, 7998, 9998]);
+});
+
+test('premove cancellation follows the primary game while coordinates follow a secondary board', async () => {
+  const app = harness(); await flush();
+  const primary = app.board;
+  const secondary = Object.assign(Object.create(Object.getPrototypeOf(primary)), primary, { id: 'secondary', style: {} });
+  app.boards([secondary, primary]);
+  app.state({ ...snapshot, context: 'human', turn: 'black', premoveCount: 2 });
+  app.dispatch('pointerdown', { composedPath: () => [secondary] });
+  app.key('b'); app.key('2'); assert.equal(app.clickedBoards.at(-1), secondary);
+  app.document.activeElement = { closest: () => secondary };
+  assert.equal(app.cancelPremoves(), true);
+  assert.deepEqual(app.cancelledBoards, [primary]);
+  app.state({ ...snapshot, active: false, premoveCount: 2 });
+  assert.equal(app.cancelPremoves(), false);
+  app.boards([secondary]);
+  assert.equal(app.cancelPremoves(), false);
+  assert.deepEqual(app.cancelledBoards, [primary]);
 });

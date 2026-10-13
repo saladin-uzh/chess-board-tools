@@ -7,7 +7,7 @@
   let preferences = normalizeAssist(null), revision = 0;
   let lastVisibility = document.visibilityState;
   let confirmationButton = null, confirmationOwner = null;
-  let preferredBoard = null;
+  let preferredBoard = null, timerBoard = null;
   let board = null, identity = null, file = null, bufferTimer = null, pollTimer = null, indicator = null;
   let filePreview = null, squareIndicator = null;
   function clearBuffer() {
@@ -31,7 +31,7 @@
   }
   globalThis.ChessAssistInput = Object.freeze({ clear, cancelPremoves() {
     update();
-    return board ? cancelPremoves(board, read(board)) : false;
+    return timerBoard ? cancelPremoves(timerBoard, read(timerBoard)) : false;
   } });
   function clickable(element) {
     const rect = element?.getBoundingClientRect();
@@ -56,7 +56,7 @@
     if (next !== board) { clear(); identity = null; board = next; }
     const rect = board?.getBoundingClientRect();
     const geometryValid = rect?.width > 0 && rect?.height > 0 && Math.abs(rect.width - rect.height) <= 1;
-    const timerBoard = candidates.find(element =>
+    timerBoard = candidates.find(element =>
       ["board-single", "board-play-computer", "board-analysis-board"].includes(element.id));
     const snapshot = timerBoard ? read(timerBoard) : null;
     const coordinates = board && geometryValid ? readCoordinates(board) : null;
