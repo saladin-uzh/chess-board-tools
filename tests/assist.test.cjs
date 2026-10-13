@@ -695,3 +695,33 @@ test('secondary coordinate board selection preserves primary own-turn ticks', as
   app.document.activeElement = { closest: selector => selector === 'wc-chess-board' ? secondary : null };
   app.advance(10000); app.poll(); assert.deepEqual(app.ticks, [10000, 20000]);
 });
+
+test('a repeated file key cancels only the file buffer and keeps the selected piece', async () => {
+  const app = harness(); await flush();
+  app.key('b'); app.key('2');
+  const selected = app.board.children.find(child => child.className === 'chess-assist-square');
+  app.key('c'); assert.equal(app.key('c').prevented, true); app.key('4');
+  assert.deepEqual(app.clicks, ['b2']); assert.equal(selected.removed, undefined);
+  app.key('c'); app.key('d'); app.key('4');
+  assert.deepEqual(app.clicks, ['b2', 'd4']);
+  app.key('b'); app.key('b', { repeat: true }); app.key('3');
+  assert.equal(app.clicks.at(-1), 'b3');
+});
+
+
+test('premove cancellation dispatches native right pointer events only for owned active games with a queue', () => {
+  const events = [];
+  const c = vm.createContext({ document: { dispatchEvent: e => events.push(e) },
+    PointerEvent: class { constructor(type, options) { this.type = type; Object.assign(this, options); } } });
+  run(c, 'assist-board.js');
+  const board = { isConnected: true, getBoundingClientRect: () => ({ left: 10, top: 20, width: 800, height: 800 }),
+    dispatchEvent: e => events.push(e) };
+  const queued = { ...snapshot, context: 'human', turn: 'black', premoveCount: 3 };
+  assert.equal(c.ChessBoardAssist.cancelPremoves(board, queued), true);
+  assert.deepEqual(events.map(e => [e.type, e.button, e.buttons]), [['pointerdown', 2, 2], ['pointerup', 2, 0]]);
+  assert.equal(events[0].clientX, 410); assert.equal(events[0].clientY, 420);
+  for (const change of [{ premoveCount: 0 }, { side: null }, { active: false }, { stable: false }, { context: 'puzzle' }, { context: 'analysis' }]) {
+    assert.equal(c.ChessBoardAssist.cancelPremoves(board, { ...queued, ...change }), false);
+  }
+  assert.equal(events.length, 2);
+});

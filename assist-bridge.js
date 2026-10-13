@@ -36,6 +36,8 @@
       if ((bot || analysis || review || human) && game.getVariant() === "chess") {
         if (!sessions.has(game)) sessions.set(game, ++sequence);
         const side = game.getPlayingAs();
+        let premoveCount = 0;
+        try { premoveCount = game.premoves?.getQueue?.().length || 0; } catch { /* Unknown queues cannot be cancelled. */ }
         snapshot = {
           context: review ? "review" : analysis ? "analysis" : bot ? "bot" : "human",
           session: sessions.get(game),
@@ -45,6 +47,7 @@
           flipped: game.getOptions().flipped,
           active: mode === "playing" && game.getResult() === "*" && game.isAtEndOfLine() === true,
           stable: game.isDragging() === false && game.isAnimating() === false,
+          premoveCount,
         };
       }
     } catch { /* Unknown host APIs disable helpers rather than guessing. */ }

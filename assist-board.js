@@ -20,6 +20,7 @@
     const review = input.context === "review" && input.active === false && board.id === "board-single" &&
       /^\/game\/(?:(?:live|daily)\/)?\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(input.result);
     if (!bot && !analysis && !review && !human) return null;
+    if (input.premoveCount !== undefined && (!Number.isSafeInteger(input.premoveCount) || input.premoveCount < 0)) return null;
     if (typeof input.fen !== "string" || input.fen.length > 160) return null;
     const fields = input.fen.split(" ");
     if (fields.length !== 6 || !/^[wb]$/.test(fields[1]) || !/^(?:-|K?Q?k?q?)$/.test(fields[2]) ||
@@ -80,5 +81,17 @@
     pointerClick(element, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
     return true;
   }
-  globalThis.ChessBoardAssist = Object.freeze({ read, readCoordinates, validate, validateCoordinates, point, clickSquare, clickPromotion });
+  function cancelPremoves(board, snapshot) {
+    if (!board?.isConnected || !snapshot?.active || !snapshot.stable || !snapshot.side ||
+        !["human", "bot"].includes(snapshot.context) || !(snapshot.premoveCount > 0)) return false;
+    const rect = board.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+    const options = { bubbles: true, composed: true, pointerId: 1, pointerType: "mouse", isPrimary: true,
+      button: 2, buttons: 2, clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 };
+    // The host's PointerdownRight pipeline cancels its entire premove queue.
+    board.dispatchEvent(new PointerEvent("pointerdown", options));
+    document.dispatchEvent(new PointerEvent("pointerup", { ...options, buttons: 0 }));
+    return true;
+  }
+  globalThis.ChessBoardAssist = Object.freeze({ read, readCoordinates, validate, validateCoordinates, point, clickSquare, clickPromotion, cancelPremoves });
 })();

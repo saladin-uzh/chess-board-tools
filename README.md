@@ -65,8 +65,10 @@ Ctrl means either Control key pressed and released alone. Ctrl combinations
 such as Ctrl+C are ignored. Shortcuts activate after settings load; popup
 controls are disabled while loading or saving.
 
-The extension handles a shortcut only when its visible, enabled confirmation
-or cancellation button is present. All extension keyboard actions pause while
+Confirmation requires a visible, enabled confirmation button. Cancellation
+uses the visible Cancel button, or clears all queued premoves on your active
+game board, including during the opponent’s turn. It works with keyboard
+board control disabled. All extension keyboard actions pause while
 an input, textarea, select, editable element, or textbox has focus. Events
 inside buttons and other interactive controls are also ignored.
 
@@ -77,7 +79,9 @@ of my turn** switches. Both start disabled and use local preferences.
 
 Type coordinates sequentially: `b`, `2` selects b2; `b`, `3` clicks b3.
 Coordinates stay algebraic when flipped. A letter immediately highlights its
-file; the following digit outlines the chosen square above fog. The square
+file; pressing the same letter again cancels the file selection without
+deselecting the piece already selected on the board. A different letter replaces
+the file selection. The following digit outlines the chosen square above fog. The square
 outline clears on position or lifecycle changes. An incomplete letter appears beside
 the board and clears after five seconds, Escape, focus changes, scrolling,
 position changes, or board replacement. Use Latin `a–h` in your active layout.

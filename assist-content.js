@@ -1,7 +1,7 @@
 (() => {
   "use strict";
   const { ASSIST_STORAGE_KEY, normalizeAssist, hasInputFocus } = globalThis.ChessConfirmMoveSettings;
-  const { read, readCoordinates, clickSquare, clickPromotion } = globalThis.ChessBoardAssist;
+  const { read, readCoordinates, clickSquare, clickPromotion, cancelPremoves } = globalThis.ChessBoardAssist;
   const { createTurnTimer, createAudio } = globalThis.ChessAssistTimer;
   const turnTimer = createTurnTimer(), audio = createAudio();
   let preferences = normalizeAssist(null), revision = 0;
@@ -29,7 +29,10 @@
     board.append(region);
     return region;
   }
-  globalThis.ChessAssistInput = Object.freeze({ clear });
+  globalThis.ChessAssistInput = Object.freeze({ clear, cancelPremoves() {
+    update();
+    return board ? cancelPremoves(board, read(board)) : false;
+  } });
   function clickable(element) {
     const rect = element?.getBoundingClientRect();
     const style = element && getComputedStyle(element);
@@ -90,6 +93,7 @@
       return;
     }
     if (/^[a-h]$/.test(key || "")) {
+      if (file === key) { clearBuffer(); consume(event); return; }
       clearBuffer(); file = key;
       const column = key.charCodeAt(0) - 97;
       filePreview = showRegion("chess-assist-file", snapshot.flipped ? 7 - column : column);
