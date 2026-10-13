@@ -5,7 +5,7 @@
     if (preferences?.tickMode === "increment" && snapshot?.incrementSeconds > 0) return snapshot.incrementSeconds;
     const time = snapshot?.initialSeconds;
     return typeof time === "number" && Number.isFinite(time) && time > 0
-      ? Math.min(30, Math.max(2, Math.ceil(time / 120))) : 10;
+      ? Math.min(30, Math.max(2, Math.ceil(time / 120))) : null;
   }
   function createTurnTimer() {
     let key = null, session = null, side = null, start = 0, bucket = 0, unavailable = false, interval = 10000;
@@ -22,7 +22,9 @@
         if (!snapshot.active || !snapshot.side || snapshot.context === "analysis" ||
             (!samePendingTurn && !startingPendingTurn && snapshot.side !== snapshot.turn)) { this.reset(); return false; }
         const next = samePendingTurn ? key : `${snapshot.session}:${snapshot.side}:${snapshot.fen}`;
-        const nextInterval = frequency(snapshot, preferences) * 1000;
+        const seconds = frequency(snapshot, preferences);
+        if (seconds === null) { this.reset(); return false; }
+        const nextInterval = seconds * 1000;
         const wasUnavailable = unavailable;
         unavailable = false;
         if (next !== key || nextInterval !== interval) {

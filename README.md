@@ -101,7 +101,9 @@ including pending confirmation. The single frequency selector offers:
 - **Increment**: every increment interval; no increment falls back to Auto.
 - **2, 5, 10, 15, 20 or 30 seconds**: a fixed interval.
 
-Unavailable initial time falls back to 10 seconds. Volume defaults to 50%,
+Auto stays silent when initial time is unavailable, including No Timer games;
+Increment does the same when it falls back to Auto. Fixed intervals still work.
+Volume defaults to 50%,
 with a range of 0–100%; 0% mutes ticks. Changing frequency starts a fresh
 interval; changing volume preserves the current schedule. Puzzles do not tick.
 

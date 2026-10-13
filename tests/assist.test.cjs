@@ -9,7 +9,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const context = vm.createContext({});
 for (const file of ['settings.js', 'assist-board.js', 'assist-timer.js']) run(context, file);
-const snapshot = { session: 1, context: 'bot', fen: '7k/8/8/8/8/8/P7/7K w - - 0 1', side: 'white', turn: 'white', active: true, stable: true, flipped: false };
+const snapshot = { session: 1, context: 'bot', fen: '7k/8/8/8/8/8/P7/7K w - - 0 1', side: 'white', turn: 'white', active: true, stable: true, flipped: false, initialSeconds: 1200 };
 
 test('allowed action keys, old values and duplicate migration', () => {
   const s = context.ChessConfirmMoveSettings;
@@ -220,7 +220,8 @@ test('tick frequency uses initial time, ceil, increment fallback and fixed amoun
   assert.equal(frequency({ initialSeconds: 300, incrementSeconds: 0 }, { tickMode: 'increment' }), 3);
   assert.equal(frequency({ initialSeconds: 300 }, { tickMode: 'increment' }), 3);
   assert.equal(frequency({ incrementSeconds: 45 }, { tickMode: 'increment' }), 45);
-  assert.equal(frequency(null, { tickMode: 'auto' }), 10);
+  assert.equal(frequency(null, { tickMode: 'auto' }), null);
+  assert.equal(frequency({ initialSeconds: null, incrementSeconds: 0 }, { tickMode: 'increment' }), null);
   for (const tickFrequency of [2, 5, 10, 15, 20, 30]) assert.equal(frequency(null, { tickMode: 'amount', tickFrequency }), tickFrequency);
 });
 
@@ -237,6 +238,22 @@ test('frequency changes restart deadlines while volume changes preserve the curr
   assert.equal(timer.update(state, 20000, false, false, { tickMode: 'increment' }), false);
   assert.equal(timer.update(state, 20001, true, false, { tickMode: 'increment' }), false);
   assert.equal(timer.update(state, 22000, true, false, { tickMode: 'increment' }), true);
+});
+
+test('Auto stays silent without initial time and resumes with a fresh interval when time becomes available', () => {
+  const timer = context.ChessAssistTimer.createTurnTimer();
+  const unknown = { ...snapshot, initialSeconds: null, incrementSeconds: null };
+  const auto = { tickMode: 'auto' };
+  assert.equal(timer.update(unknown, 0, true, false, auto), false);
+  assert.equal(timer.update(unknown, 30000, true, true, auto), false);
+  assert.equal(timer.update(snapshot, 31000, true, false, auto), false);
+  assert.equal(timer.update(snapshot, 41000, true, false, auto), true);
+  assert.equal(timer.update(unknown, 42000, true, false, auto), false);
+  assert.equal(timer.update(snapshot, 100000, true, false, auto), false);
+  assert.equal(timer.update(snapshot, 110000, true, false, auto), true);
+  const amount = { tickMode: 'amount', tickFrequency: 2 };
+  assert.equal(timer.update(unknown, 120000, true, false, amount), false);
+  assert.equal(timer.update(unknown, 122000, true, false, amount), true);
 });
 
 test('audio volume defaults to 50 percent, supports mute and bounds peak gain', () => {
