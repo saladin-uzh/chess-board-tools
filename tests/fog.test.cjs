@@ -344,6 +344,51 @@ test('MAIN bridge reads full FEN only in verified modes and rejects unfinished i
   ctx.location.pathname = '/play/online'; mode = 'playing'; handler({ target: board }); assert.equal(response, null);
 });
 
+test('puzzle bridge and adapter allow only Rated, Learning and Daily on their native boards', () => {
+  let handler, response, reads = 0, mode = 'playing', variant = 'chess', flipped = false;
+  class Element {}
+  const board = new Element(); board.tagName = 'WC-CHESS-BOARD'; board.isConnected = true;
+  board.querySelector = () => null;
+  board.dispatchEvent = event => { response = event.detail; };
+  board.game = { getMode: () => ({ name: mode }), getVariant: () => variant, getPlayingAs: () => flipped ? 2 : 1, getResult: () => '*',
+    getFEN: () => { reads++; return fen({ b2: 'P' }); }, getOptions: () => ({ flipped }),
+    isDragging: () => false, isAnimating: () => false };
+  const location = { pathname: '' };
+  const c = vm.createContext({ HTMLElement: Element, location,
+    CustomEvent: class { constructor(type, options) { this.detail = options.detail; } },
+    document: { addEventListener: (type, fn) => { handler = fn; } } });
+  run(c, 'fog-bridge.js'); run(c, 'fog-visibility.js'); run(c, 'fog-board.js');
+  const validate = () => c.ChessFogBoard.validateSnapshot(response, board, location.pathname, 'auto');
+  for (const [route, id] of [['/puzzles/rated', 'board-primary'], ['/puzzles/learning', 'board-primary'], ['/daily', 'board-board']]) {
+    for (flipped of [false, true]) for (mode of ['playing', 'analysis']) {
+      location.pathname = route; board.id = id; handler({ target: board });
+      assert.equal(JSON.parse(response).context, 'puzzle'); assert.equal(validate().side, flipped ? 'black' : 'white');
+    }
+  }
+  const validRaw = response;
+  const count = reads;
+  for (const route of ['/puzzles/rush', '/puzzles/rush/', '/puzzles/battle', '/puzzles/battle/123', '/puzzles', '/daily-other', '/play/online']) {
+    location.pathname = route; board.id = 'board-primary'; handler({ target: board });
+    assert.equal(response, 'null');
+    assert.equal(c.ChessFogBoard.validateSnapshot(validRaw, board, route, 'auto'), null);
+  }
+  assert.equal(reads, count);
+  location.pathname = '/puzzles/rated'; board.id = 'board-other'; handler({ target: board }); assert.equal(response, 'null');
+  board.id = 'board-primary'; variant = 'chess960'; handler({ target: board }); assert.equal(response, 'null');
+  variant = 'chess'; mode = 'observing'; handler({ target: board }); assert.equal(response, 'null');
+});
+
+test('both fog worlds inject on puzzle routes for SPA transitions while retaining runtime exclusions', () => {
+  const manifest = JSON.parse(source('manifest.json'));
+  for (const file of ['fog-bridge.js', 'fog-content.js']) {
+    const matches = manifest.content_scripts.find(entry => entry.js.includes(file)).matches;
+    assert.ok(matches.includes('https://www.chess.com/puzzles/*'));
+    assert.ok(matches.includes('https://www.chess.com/daily'));
+    assert.ok(matches.includes('https://www.chess.com/daily?*'));
+  }
+  assert.deepEqual(manifest.permissions, ['storage']);
+});
+
 function controller() {
   const loading = deferred();
   let storageChange, messageListener;
@@ -376,6 +421,7 @@ function controller() {
   let current = new Element(); current.id = 'board-analysis-board';
   let snapshot = { position: parseFEN(fen({ b2: 'P' })), side: 'white', selected: index('b2'), flipped: false };
   const ctx = vm.createContext({
+    location: { pathname: '/analysis' },
     document: { querySelector: () => current, createElement: () => new Element() },
     MutationObserver: Observer, ResizeObserver: Observer,
     requestAnimationFrame: fn => { const id = ++counter; frames.set(id, fn); return id; },

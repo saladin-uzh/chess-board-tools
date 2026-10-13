@@ -40,7 +40,11 @@
         "https://www.chess.com/analysis/game/daily/*",
         "https://www.chess.com/analysis/game/computer/*",
         "https://www.chess.com/game/live/*",
-        "https://www.chess.com/game/daily/*"
+        "https://www.chess.com/game/daily/*",
+        "https://www.chess.com/puzzles/*",
+        "https://www.chess.com/daily",
+        "https://www.chess.com/daily?*",
+        "https://www.chess.com/daily/*"
       ],
       "js": [
         "fog-bridge.js"
@@ -57,7 +61,11 @@
         "https://www.chess.com/analysis/game/daily/*",
         "https://www.chess.com/analysis/game/computer/*",
         "https://www.chess.com/game/live/*",
-        "https://www.chess.com/game/daily/*"
+        "https://www.chess.com/game/daily/*",
+        "https://www.chess.com/puzzles/*",
+        "https://www.chess.com/daily",
+        "https://www.chess.com/daily?*",
+        "https://www.chess.com/daily/*"
       ],
       "js": [
         "settings.js",

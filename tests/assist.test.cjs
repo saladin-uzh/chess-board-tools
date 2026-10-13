@@ -635,7 +635,7 @@ test('coordinate input works across routes, modes and variants without enabling 
     CustomEvent: class { constructor(type, options) { this.type = type; Object.assign(this, options); } } });
   run(c, 'assist-bridge.js'); run(c, 'assist-board.js');
   const app = harness({ realTimer: true }); await flush(); app.change({ keyboard: true, ticking: true });
-  for (const route of ['/game/186049589091', '/live/game/123', '/analysis/classroom', '/puzzles', '/variants', '/']) {
+  for (const route of ['/game/186049589091', '/live/game/123', '/analysis/classroom', '/puzzles/rush', '/puzzles/battle', '/puzzles/rated', '/daily', '/puzzles/learning', '/variants', '/']) {
     location.pathname = route;
     for (flipped of [false, true]) {
       handlers['chess-coordinate-request']({ type: 'chess-coordinate-request', target: board });

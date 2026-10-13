@@ -7,7 +7,7 @@
 A browser extension for Chess.com with keyboard board controls, configurable
 move confirmation shortcuts, and optional sound cues during your turn.
 Semi-transparent fog of war is available against bots, in analysis, and in
-completed game reviews.
+completed game reviews, and Rated, Daily and Learning puzzles.
 
 ## Install locally
 
@@ -123,7 +123,9 @@ Fog is supported on `/play/computer`, standalone `/analysis`, and completed
 `/analysis/game/computer/*` games, plus completed `/game/live/*` and
 `/game/daily/*` reviews. Ongoing daily games also support fog while in analysis
 mode on `/game/daily/*` or `/analysis/game/daily/*`. It stays unavailable during
-active human play, in classrooms, variants, incomplete state, and unsupported pages.
+active human play, in classrooms, variants, incomplete state, and unsupported pages. Fog also
+works in `/puzzles/rated`, `/daily` and `/puzzles/learning`; it is unavailable
+in Puzzle Rush and Puzzle Battle.
 
 Squares unseen by either side use a darker tint: their remaining transparency is
 half that of ordinary fog. Thin diagonal stripes distinguish these squares from

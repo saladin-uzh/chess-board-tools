@@ -10,6 +10,9 @@
       const game = board.game;
       const path = location.pathname;
       const mode = game?.getMode()?.name;
+      const puzzle = ["playing", "analysis"].includes(mode) && (
+        board.id === "board-primary" && /^\/puzzles\/(?:rated|learning)\/?$/.test(path) ||
+        board.id === "board-board" && /^\/daily\/?$/.test(path));
       const bot = path === "/play/computer" && board.id === "board-play-computer" && mode === "playing";
       const dailyAnalysis = mode === "analysis" && (
         board.id === "board-single" && /^\/game\/daily\/\d+\/?$/.test(path) ||
@@ -18,12 +21,12 @@
         (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(game.getResult()));
       const review = board.id === "board-single" && mode === "observing" &&
         /^\/game\/(?:live|daily)\/\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(game.getResult());
-      if ((bot || analysis || review) && game.getVariant() === "chess") {
+      if ((bot || analysis || review || puzzle) && game.getVariant() === "chess") {
         const selected = board.querySelector(".highlight.growing-circle");
         const square = selected?.className.match(/\bsquare-([1-8])([1-8])\b/);
         const playingAs = game.getPlayingAs();
         snapshot = {
-          context: review ? "review" : bot ? "bot" : "analysis",
+          context: puzzle ? "puzzle" : review ? "review" : bot ? "bot" : "analysis",
           result: game.getResult(),
           fen: game.getFEN(),
           flipped: game.getOptions().flipped,
