@@ -2,7 +2,7 @@
 
 Name: Chess Board Tools
 
-Short description (manifest): Keyboard controls, move confirmation shortcuts, turn sound cues, and optional fog of war for supported Chess.com boards.
+Short description (manifest): Keyboard controls, move confirmation shortcuts, turn sound cues, and optional Piece Vision Overlay for supported Chess.com boards.
 
 ## Full description
 
@@ -11,7 +11,7 @@ Use your keyboard on supported Chess.com boards and customize optional board hel
 • Confirm or cancel pending moves with configurable shortcuts (Space/Escape by default). Shortcuts act only when the matching Chess.com button is visible and enabled.
 • Enable keyboard board control and enter coordinates one character at a time: b, 2, then b, 3. Select promotion pieces with q/r/b/n. Keyboard actions pause in input fields and interactive controls.
 • Enable a quiet tick every 10 seconds of your turn. Sound requires interaction with the game tab, stays silent in hidden tabs, and is disabled in analysis.
-• Practice with semi-transparent fog of war against bots, in standalone analysis, and in completed standard-game reviews. Choose opacity from 20–80% and Auto, White, or Black perspective. Fog is unavailable in active human games, variants, and unsupported or incomplete board states. Pawns reveal capture diagonals rather than forward moves. Visibility does not guarantee legal moves.
+• Practice with Piece Vision Overlay against bots, in standalone analysis, and in completed standard-game reviews. Choose opacity from 20–80% and Auto, White, or Black perspective. Fog is unavailable in active human games, variants, and unsupported or incomplete board states. Pawns reveal capture diagonals rather than forward moves. Visibility does not guarantee legal moves.
 • The settings popup follows your browser/system light or dark appearance.
 
 Optional helpers start disabled. Chess.com remains responsible for move validation and its confirmation flow. The extension provides no engine evaluations, recommended moves, or automated play. Its keyboard clicks use the site's normal pointer path; it does not hide synthetic events or bypass checks.

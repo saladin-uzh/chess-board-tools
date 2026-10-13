@@ -1,4 +1,4 @@
-# Semi-transparent Fog of War overlay
+# Piece Vision Overlay
 
 Status: implemented on the feature branch; final browser validation and review in progress.
 
@@ -145,7 +145,7 @@ disabled and is not included in the repository.
    and SPA navigation, clean up observers, and avoid observing the overlay's own
    changes in a loop. If position or side cannot be trusted, remove the mask and
    show an unavailable state rather than leaving incorrect fog visible.
-5. **Add popup settings.** Extend the existing popup with a small Fog of War
+5. **Add popup settings.** Extend the existing popup with a small Piece Vision Overlay
    section. Validate and synchronize local display preferences across open tabs;
    prevent initialization/write races and observe incoming settings changes.
    Do not couple fog preferences to the existing keybindings pair.

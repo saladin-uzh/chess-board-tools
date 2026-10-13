@@ -6,7 +6,7 @@
 
 A browser extension for Chess.com with keyboard board controls, configurable
 move confirmation shortcuts, and optional sound cues during your turn.
-Semi-transparent fog of war is available against bots, in analysis, and in
+Piece Vision Overlay is available against bots, in analysis, and in
 completed game reviews, and Rated, Daily and Learning puzzles.
 
 ## Install locally
@@ -122,9 +122,9 @@ shortcuts retain their existing routes:
 - `https://www.chess.com/analysis`
 - `https://www.chess.com/analysis/game/*`
 
-## Semi-transparent Fog of War
+## Piece Vision Overlay
 
-In the popup, enable **Semi-transparent Fog of War**, choose opacity (20–80%,
+In the popup, enable **Piece Vision Overlay**, choose opacity (20–80%,
 default 55%), and select Auto, White, or Black. It starts disabled. Auto follows
 your player color when available; otherwise it uses the side at the bottom of
 the board and follows board flips. Manual White/Black perspectives stay fixed.
