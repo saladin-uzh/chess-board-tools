@@ -33,20 +33,7 @@
     },
     {
       "matches": [
-        "https://www.chess.com/play/computer",
-        "https://www.chess.com/play/computer?*",
-        "https://www.chess.com/play/computer/*",
-        "https://www.chess.com/analysis",
-        "https://www.chess.com/analysis?*",
-        "https://www.chess.com/analysis/game/live/*",
-        "https://www.chess.com/analysis/game/daily/*",
-        "https://www.chess.com/analysis/game/computer/*",
-        "https://www.chess.com/game/live/*",
-        "https://www.chess.com/game/daily/*",
-        "https://www.chess.com/puzzles/*",
-        "https://www.chess.com/daily",
-        "https://www.chess.com/daily?*",
-        "https://www.chess.com/daily/*"
+        "https://www.chess.com/*"
       ],
       "js": [
         "fog-bridge.js"
@@ -56,20 +43,7 @@
     },
     {
       "matches": [
-        "https://www.chess.com/play/computer",
-        "https://www.chess.com/play/computer?*",
-        "https://www.chess.com/play/computer/*",
-        "https://www.chess.com/analysis",
-        "https://www.chess.com/analysis?*",
-        "https://www.chess.com/analysis/game/live/*",
-        "https://www.chess.com/analysis/game/daily/*",
-        "https://www.chess.com/analysis/game/computer/*",
-        "https://www.chess.com/game/live/*",
-        "https://www.chess.com/game/daily/*",
-        "https://www.chess.com/puzzles/*",
-        "https://www.chess.com/daily",
-        "https://www.chess.com/daily?*",
-        "https://www.chess.com/daily/*"
+        "https://www.chess.com/*"
       ],
       "js": [
         "settings.js",

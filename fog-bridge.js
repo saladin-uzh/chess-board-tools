@@ -10,7 +10,7 @@
       const game = board.game;
       const path = location.pathname;
       const mode = game?.getMode()?.name;
-      const puzzle = ["playing", "analysis"].includes(mode) && (
+      const puzzle = ["playing", "analysis", "passive-observing"].includes(mode) && (
         board.id === "board-primary" && /^\/puzzles\/(?:rated|learning)\/?$/.test(path) ||
         board.id === "board-board" && /^\/daily\/?$/.test(path));
       const bot = /^\/play\/computer(?:\/[^/]+)?\/?$/.test(path) && board.id === "board-play-computer" && mode === "playing";

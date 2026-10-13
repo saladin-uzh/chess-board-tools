@@ -360,7 +360,7 @@ test('puzzle bridge and adapter allow only Rated, Learning and Daily on their na
   run(c, 'fog-bridge.js'); run(c, 'fog-visibility.js'); run(c, 'fog-board.js');
   const validate = () => c.ChessFogBoard.validateSnapshot(response, board, location.pathname, 'auto');
   for (const [route, id] of [['/puzzles/rated', 'board-primary'], ['/puzzles/learning', 'board-primary'], ['/daily', 'board-board']]) {
-    for (flipped of [false, true]) for (mode of ['playing', 'analysis']) {
+    for (flipped of [false, true]) for (mode of ['playing', 'analysis', 'passive-observing']) {
       location.pathname = route; board.id = id; handler({ target: board });
       assert.equal(JSON.parse(response).context, 'puzzle'); assert.equal(validate().side, flipped ? 'black' : 'white');
     }
@@ -382,9 +382,7 @@ test('both fog worlds inject on puzzle routes for SPA transitions while retainin
   const manifest = JSON.parse(source('manifest.json'));
   for (const file of ['fog-bridge.js', 'fog-content.js']) {
     const matches = manifest.content_scripts.find(entry => entry.js.includes(file)).matches;
-    assert.ok(matches.includes('https://www.chess.com/puzzles/*'));
-    assert.ok(matches.includes('https://www.chess.com/daily'));
-    assert.ok(matches.includes('https://www.chess.com/daily?*'));
+    assert.deepEqual(matches, ['https://www.chess.com/*']);
   }
   assert.deepEqual(manifest.permissions, ['storage']);
 });

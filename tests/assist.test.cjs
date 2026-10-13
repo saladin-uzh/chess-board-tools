@@ -795,12 +795,12 @@ test('coordinate input works across routes, modes and variants without enabling 
   board.isConnected = false; assert.equal(c.ChessBoardAssist.validateCoordinates(raw, board), null);
 });
 
-test('coordinate scripts load on all Chess.com routes without expanding fog injection', () => {
+test('coordinate and fog scripts load before SPA navigation on Chess.com', () => {
   const manifest = JSON.parse(source('manifest.json'));
   for (const file of ['assist-bridge.js', 'assist-content.js']) {
     assert.deepEqual(manifest.content_scripts.find(entry => entry.js.includes(file)).matches, ['https://www.chess.com/*']);
   }
-  assert.equal(manifest.content_scripts.find(entry => entry.js.includes('fog-bridge.js')).matches.includes('https://www.chess.com/*'), false);
+  assert.deepEqual(manifest.content_scripts.find(entry => entry.js.includes('fog-bridge.js')).matches, ['https://www.chess.com/*']);
 });
 
 test('coordinate control skips hidden boards and follows the interacted or focused board', async () => {
@@ -905,7 +905,7 @@ test('bot bridges and adapters support named bot routes while retaining board an
   }
   const manifest = JSON.parse(source('manifest.json'));
   for (const entry of manifest.content_scripts.filter(entry => entry.js.includes('fog-bridge.js') || entry.js.includes('fog-content.js'))) {
-    assert.ok(entry.matches.includes('https://www.chess.com/play/computer/*'));
+    assert.deepEqual(entry.matches, ['https://www.chess.com/*']);
   }
 });
 
