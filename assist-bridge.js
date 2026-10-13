@@ -24,7 +24,7 @@
       const bot = /^\/play\/computer(?:\/[^/]+)?\/?$/.test(path) && board.id === "board-play-computer" && mode === "playing";
       const analysis = mode === "analysis" && (
         board.id === "board-analysis-board" &&
-          (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path)) ||
+          (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/(?:analysis|review))?\/?$/.test(path)) ||
         board.id === "board-single" && (
           /^\/game\/daily\/\d+\/?$/.test(path) ||
           /^\/game\/(?:live\/)?\d+\/?$/.test(path) &&

@@ -10,7 +10,7 @@
     const bot = input.context === "bot" && /^\/play\/computer(?:\/[^/]+)?\/?$/.test(path) && board.id === "board-play-computer";
     const analysis = input.context === "analysis" && (
       board.id === "board-analysis-board" &&
-        (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path)) ||
+        (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/(?:analysis|review))?\/?$/.test(path)) ||
       input.active === false && board.id === "board-single" && (
           /^\/game\/daily\/\d+\/?$/.test(path) ||
           /^\/game\/(?:live\/)?\d+\/?$/.test(path) &&

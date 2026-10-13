@@ -219,7 +219,7 @@ test('adapter rejects unsupported, transient, incomplete and disconnected snapsh
   const analysisBoard = { id: 'board-analysis-board', isConnected: true };
   const analysisSnapshot = { ...snapshot, context: 'analysis', side: null };
   assert.equal(validate(analysisSnapshot, analysisBoard, '/analysis/game/computer/123/analysis', 'white').side, 'white');
-  assert.equal(validate(analysisSnapshot, analysisBoard, '/analysis/game/computer/123/review', 'white'), null);
+  assert.equal(validate(analysisSnapshot, analysisBoard, '/analysis/game/computer/123/review', 'white').side, 'white');
   assert.equal(context.ChessFogBoard.validateSnapshot('{', board, '/play/computer', 'white'), null);
 });
 
@@ -335,7 +335,7 @@ test('MAIN bridge reads full FEN only in verified modes and rejects unfinished i
   handler({ target: board }); assert.equal(response.context, 'analysis');
   result = '*'; handler({ target: board }); assert.equal(response, null);
   result = '0-1';
-  ctx.location.pathname = '/analysis/game/computer/123/review'; handler({ target: board }); assert.equal(response, null);
+  ctx.location.pathname = '/analysis/game/computer/123/review'; handler({ target: board }); assert.equal(response.context, 'analysis');
   ctx.location.pathname = '/analysis/classroom'; handler({ target: board }); assert.equal(response, null);
   ctx.location.pathname = '/game/live/123'; board.id = 'board-single'; mode = 'observing';
   handler({ target: board }); assert.equal(response.context, 'review');

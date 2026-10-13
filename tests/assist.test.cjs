@@ -908,3 +908,44 @@ test('bot bridges and adapters support named bot routes while retaining board an
     assert.ok(entry.matches.includes('https://www.chess.com/play/computer/*'));
   }
 });
+
+
+test('completed Game Review routes support read-only board snapshots without enabling ticks', () => {
+  for (const prefix of ['assist', 'fog']) {
+    let listener, raw, result = '1-0';
+    class Element {
+      constructor() { this.tagName = 'WC-CHESS-BOARD'; this.id = 'board-analysis-board'; this.isConnected = true; }
+      dispatchEvent(event) { raw = event.detail; }
+      querySelector() { return null; }
+    }
+    const board = new Element();
+    board.game = {
+      getMode: () => ({ name: 'analysis' }), getPlayingAs: () => null, getVariant: () => 'chess',
+      getFEN: () => snapshot.fen, getOptions: () => ({ flipped: false }), getResult: () => result,
+      isAtEndOfLine: () => true, isDragging: () => false, isAnimating: () => false,
+    };
+    const location = { pathname: '/analysis/game/computer/2328646154/review' };
+    const c = vm.createContext({ HTMLElement: Element, location,
+      document: { addEventListener: (type, fn) => { listener = fn; } },
+      CustomEvent: class { constructor(type, options) { Object.assign(this, options); } } });
+    if (prefix === 'fog') run(c, 'fog-visibility.js');
+    run(c, prefix + '-bridge.js'); run(c, prefix + '-board.js');
+    for (const kind of ['computer', 'live', 'daily']) {
+      location.pathname = '/analysis/game/' + kind + '/2328646154/review';
+      listener({ target: board });
+      assert.equal(JSON.parse(raw).context, 'analysis');
+      if (prefix === 'fog') assert.ok(c.ChessFogBoard.validateSnapshot(raw, board, location.pathname, 'auto'));
+      else {
+        const state = c.ChessBoardAssist.validate(raw, board, location.pathname);
+        assert.equal(state.active, false);
+        assert.equal(context.ChessAssistTimer.createTurnTimer().update(state, 10000, true), false);
+      }
+    }
+    location.pathname = '/analysis/game/computer/2328646154/review/other';
+    listener({ target: board }); assert.equal(raw, 'null');
+    if (prefix === 'fog') {
+      location.pathname = '/analysis/game/computer/2328646154/review'; result = '*';
+      listener({ target: board }); assert.equal(raw, 'null');
+    }
+  }
+});

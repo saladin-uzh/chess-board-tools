@@ -14,7 +14,7 @@
     const analysis = input.context === "analysis" && (
       board.id === "board-single" && /^\/game\/daily\/\d+\/?$/.test(path) ||
       board.id === "board-analysis-board" &&
-        (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/analysis)?\/?$/.test(path)));
+        (path === "/analysis" || /^\/analysis\/game\/(?:live|daily|computer)\/\d+(?:\/(?:analysis|review))?\/?$/.test(path)));
     const review = input.context === "review" && board.id === "board-single" &&
       /^\/game\/(?:live|daily)\/\d+\/?$/.test(path) && ["1-0", "0-1", "1/2-1/2"].includes(input.result);
     if (!bot && !analysis && !review && !puzzle) return null;
