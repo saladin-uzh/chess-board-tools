@@ -25,8 +25,8 @@
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       const response = tab?.id === undefined ? null : await chrome.tabs.sendMessage(tab.id, { type: "chess-fog-status" });
-      boardStatus.textContent = response?.status || "Fog unavailable. Open a bot, analysis, or completed game review and reload the page.";
-    } catch { boardStatus.textContent = "Fog unavailable. Open a bot, analysis, or completed game review and reload the page."; }
+      boardStatus.textContent = response?.status || "Overlay unavailable. Open a supported board and reload.";
+    } catch { boardStatus.textContent = "Overlay unavailable. Open a supported board and reload."; }
   }
 
   chrome.storage.onChanged.addListener((changes, area) => {
