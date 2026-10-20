@@ -34,6 +34,9 @@ function contentHarness() {
       this.visible = true;
       this.classList = { contains: () => primary };
     }
+    matches() {
+      return this.classList.contains("cc-button-primary");
+    }
     getBoundingClientRect() {
       return { width: this.visible ? 20 : 0, height: 20 };
     }

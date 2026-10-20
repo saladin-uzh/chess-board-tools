@@ -1,11 +1,11 @@
 (() => {
   "use strict";
 
-  const CONFIRM_BUTTON_SELECTOR =
-    "div.confirm-move-buttons .cc-button-primary";
   const BUTTONS_ROOT_SELECTOR = "div.confirm-move-buttons";
   const CANCEL_CANDIDATE_SELECTOR = "button, .cc-button, a";
   const {
+    CONFIRM_BUTTON_SELECTOR,
+    PRIMARY_BUTTON_SELECTOR,
     hasInputFocus,
     KEYBINDING_STORAGE_KEY,
     normalizeKeybindings,
@@ -46,7 +46,7 @@
     return (
       Array.from(candidates).find(
         (candidate) =>
-          !candidate.classList.contains("cc-button-primary") &&
+          !candidate.matches(PRIMARY_BUTTON_SELECTOR) &&
           isClickable(candidate),
       ) ?? null
     );

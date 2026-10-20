@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Confirmation button regression checks</title>
+<style>
+  body { font: 16px system-ui; max-width: 850px; margin: 40px auto; }
+  button { padding: 12px; margin: 6px; }
+  .pass { color: #187235; }
+  .fail { color: #b02020; }
+</style>
+<h1>Confirmation button regression checks</h1>
+<p>Serve the repository over HTTP and open this page. Checks run against the real DOM and content script.</p>
+<button id="outside" class="cc-button-primary_other">Unrelated primary button</button>
+<div class="confirm-move-buttons">
+  <button id="confirm" class="cc-button-primary" aria-label="Submit Move">Confirm</button>
+  <button id="cancel" class="cc-button-secondary" aria-label="Cancel Move">Cancel</button>
+</div>
+<ol id="results"></ol>
+<script>
+  const storageListeners = [];
+  window.chrome = { storage: {
+    sync: { get: async () => ({}) },
+    onChanged: { addListener: listener => storageListeners.push(listener) },
+  } };
+</script>
+<script src="../settings.js"></script>
+<script src="../content.js"></script>
+<script>
+  window.addEventListener("load", () => {
+    const confirm = document.querySelector("#confirm");
+    const cancel = document.querySelector("#cancel");
+    const outside = document.querySelector("#outside");
+    const results = document.querySelector("#results");
+    let confirms = 0, cancels = 0, outsideClicks = 0, failures = 0;
+    confirm.addEventListener("click", () => confirms++);
+    cancel.addEventListener("click", () => cancels++);
+    outside.addEventListener("click", () => outsideClicks++);
+    function check(name, predicate) {
+      const item = document.createElement("li");
+      item.className = predicate ? "pass" : "fail";
+      item.textContent = `${predicate ? "PASS" : "FAIL"}: ${name}`;
+      results.append(item);
+      if (!predicate) failures++;
+    }
+    function key(code) {
+      const event = new KeyboardEvent("keydown", { code, key: code === "Space" ? " " : code, bubbles: true, cancelable: true });
+      window.dispatchEvent(event);
+      return event.defaultPrevented;
+    }
+    const classes = [
+      "cc-button-component cc-button-primary cc-button-large",
+      "cc-button-primary_5a36b5a cc-button-component_5a36b5a",
+      "cc-button-component_5a36b5a cc-button-primary_5a36b5a cc-button-large_5a36b5a",
+      "cc-button-component_next cc-button-primary_next cc-button-large_next",
+    ];
+    for (const [index, className] of classes.entries()) {
+      confirm.className = className;
+      check(`Space confirms class variant ${index + 1}`, key("Space") && confirms === index + 1);
+      check(`Escape cancels without confirming variant ${index + 1}`, key("Escape") && cancels === index + 1 && confirms === index + 1);
+    }
+    check("Primary buttons outside the confirmation panel are ignored", outsideClicks === 0);
+    const { PRIMARY_BUTTON_SELECTOR } = ChessConfirmMoveSettings;
+    for (const className of ["not-cc-button-primary_hash", "cc-button-primaryish", "other cc-button-primaryish_hash"]) {
+      confirm.className = className;
+      check(`Rejects lookalike class: ${className}`, !confirm.matches(PRIMARY_BUTTON_SELECTOR) && !key("Space"));
+    }
+    confirm.className = classes[2];
+    confirm.disabled = true;
+    check("Disabled confirmation is ignored", !key("Space") && confirms === classes.length);
+    confirm.disabled = false;
+    confirm.hidden = true;
+    check("Hidden confirmation is ignored", !key("Space") && confirms === classes.length);
+    confirm.hidden = false;
+    cancel.className = "cc-button-component_5a36b5a cc-button-secondary_5a36b5a cc-button-large_5a36b5a";
+    confirm.parentElement.prepend(cancel);
+    check("Live Chess button order still confirms Submit Move", key("Space") && confirms === classes.length + 1);
+    check("Live Chess button order still cancels Cancel Move", key("Escape") && cancels === classes.length + 1 && confirms === classes.length + 1);
+    document.title = `${failures ? "FAIL" : "PASS"}: confirmation button regression checks`;
+  });
+</script>
+</html>
