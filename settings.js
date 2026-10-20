@@ -2,6 +2,9 @@
   "use strict";
 
   const KEYBINDING_STORAGE_KEY = "keybindings";
+  const PRIMARY_BUTTON_SELECTOR =
+    ':is(.cc-button-primary, [class^="cc-button-primary_"], [class*=" cc-button-primary_"])';
+  const CONFIRM_BUTTON_SELECTOR = `div.confirm-move-buttons ${PRIMARY_BUTTON_SELECTOR}`;
   const FOG_STORAGE_KEY = "fogPreferences";
   const DEFAULT_FOG = Object.freeze({ enabled: false, opacity: 0.55, perspective: "auto" });
 
@@ -78,6 +81,8 @@
   }
 
   globalThis.ChessConfirmMoveSettings = Object.freeze({
+    PRIMARY_BUTTON_SELECTOR,
+    CONFIRM_BUTTON_SELECTOR,
     hasInputFocus,
     FOG_STORAGE_KEY,
     DEFAULT_FOG,

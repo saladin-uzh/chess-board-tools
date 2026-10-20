@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const { ASSIST_STORAGE_KEY, normalizeAssist, hasInputFocus } = globalThis.ChessConfirmMoveSettings;
+  const { ASSIST_STORAGE_KEY, normalizeAssist, hasInputFocus, CONFIRM_BUTTON_SELECTOR } = globalThis.ChessConfirmMoveSettings;
   const { read, readCoordinates, clickSquare, clickPromotion, cancelPremoves } = globalThis.ChessBoardAssist;
   const { createTurnTimer, createAudio } = globalThis.ChessAssistTimer;
   const turnTimer = createTurnTimer(), audio = createAudio();
@@ -63,7 +63,7 @@
     const nextIdentity = coordinates ? `${location.pathname}:${coordinates.session}:${snapshot?.context}:${snapshot?.active}:${coordinates.fen}:${coordinates.flipped}` : null;
     if (!coordinates?.stable) clear();
     if (nextIdentity !== identity) { clear(); identity = nextIdentity; }
-    const button = document.querySelector("div.confirm-move-buttons .cc-button-primary");
+    const button = document.querySelector(CONFIRM_BUTTON_SELECTOR);
     const owner = snapshot?.side ? `${snapshot.session}:${snapshot.side}` : null;
     if (!clickable(button)) { confirmationButton = null; confirmationOwner = null; }
     else if (button !== confirmationButton) { confirmationButton = button; confirmationOwner = owner; }
