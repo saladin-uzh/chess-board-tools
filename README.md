@@ -9,10 +9,13 @@ move confirmation shortcuts, and optional sound cues during your turn.
 Piece Vision Overlay is available against bots, in analysis, and in
 completed game reviews, and Rated, Daily and Learning puzzles.
 
-## Install locally
+## Installation
 
-This extension is not distributed through the Chrome Web Store. Install it as
-an unpacked extension from a local copy of this repository.
+[Chrome Web Store listing](https://chromewebstore.google.com/detail/chess-board-tools/cjcnnbgmhglibikfjocccmgfcpopclie) · [GitHub releases](https://github.com/saladin-uzh/chess-board-tools/releases)
+
+The store listing shows its current availability and version. To install a
+local copy, follow the unpacked-extension steps below. The extension popup is
+in English. No macOS App Store edition is published.
 
 ### 1. Get the extension files
 
@@ -44,8 +47,8 @@ button on `chrome://extensions`, then reload the Chess.com tab.
 For an already-installed temporary Safari extension, use **Safari Settings →
 Extensions → Reload** after changing the files, then close and reopen the test
 tabs. Existing tabs can retain old scripts or stale extension event handlers.
-Analysis and completed reviews were verified in Safari 27.0.1; see the
-[runtime validation](docs/issues-and-review-validation.md) for coverage.
+See [validation coverage](docs/validation.md) for recorded browser checks and
+remaining limits. Temporary Safari installations do not constitute an App Store build.
 
 ## Shortcuts and settings
 
@@ -129,9 +132,11 @@ default 55%), and select Auto, White, or Black. It starts disabled. Auto follows
 your player color when available; otherwise it uses the side at the bottom of
 the board and follows board flips. Manual White/Black perspectives stay fixed.
 
-Fog is supported on `/play/computer`, standalone `/analysis`, and completed
+The overlay supports `/play/computer` (including named bot routes), standalone
+`/analysis`, and completed
 `/analysis/game/live/*`, `/analysis/game/daily/*`, or
-`/analysis/game/computer/*` games, plus completed `/game/live/*` and
+`/analysis/game/computer/*` games (including `/analysis` and `/review` suffixes),
+plus completed `/game/live/*` and
 `/game/daily/*` reviews. Ongoing daily games also support fog while in analysis
 mode on `/game/daily/*` or `/analysis/game/daily/*`. It stays unavailable during
 active human play, in classrooms, variants, incomplete state, and unsupported pages. Fog also
@@ -194,5 +199,6 @@ between devices. The popup follows system/browser light or dark appearance.
 With Node.js 18 or newer, run `node --test tests/*.test.cjs`. The tests
 use mocked DOM and Chrome storage APIs; they do not require a Chess.com account.
 They cover hotkeys, visibility rules, complete-state/context validation, popup
-races, and overlay lifecycle. Live-browser evidence is tracked separately in
-[the implementation checklist](docs/fog-of-war-implementation.md).
+races, and overlay lifecycle. Recorded browser evidence and remaining limits are listed in
+[validation coverage](docs/validation.md). See the [changelog](CHANGELOG.md) for
+release changes and [architecture](docs/architecture.md) for module boundaries.

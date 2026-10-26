@@ -17,12 +17,12 @@
 <a href="privacy.uk.html" lang="uk">Приватність</a>
 </nav>
 <h1>Privacy — Chess Board Tools</h1>
-<p>Effective date: 9 October 2026.</p>
+<p>Effective date: 26 October 2026.</p>
 <h2>What the extension processes</h2>
-<p>The extension reads the current supported Chess.com board and interface in memory to provide keyboard controls, sound cues, and fog. It does not persist positions, move history, account identifiers, or game identifiers. Board access does not give the developer access to your account.</p>
+<p>The extension reads the current supported Chess.com board and interface in memory to provide keyboard controls, sound cues, and Piece Vision Overlay. It does not persist positions, move history, account identifiers, or game identifiers. Board access does not give the developer access to your account.</p>
 <h2>Saved settings</h2>
 <p>The storage permission saves preferences only. Confirmation and cancellation shortcuts use <code>chrome.storage.sync</code>. With Chrome Sync enabled, Chrome can synchronize them between signed-in Chrome browsers. With Sync disabled they remain local; offline changes can synchronize when connectivity returns.</p>
-<p>Fog settings (enabled, opacity, perspective) and board helpers (keyboard control and turn ticks) use separate <code>chrome.storage.local</code> keys and do not synchronize. Safari implements the sync storage API but does not synchronize these settings between devices.</p>
+<p>Fog settings (enabled, opacity, perspective) and board helpers (keyboard control, turn ticks, tick frequency and volume) use separate <code>chrome.storage.local</code> keys and do not synchronize. Safari implements the sync storage API but does not synchronize these settings between devices.</p>
 <h2>No developer collection</h2>
 <p>The extension code makes no external network requests, sends no telemetry, and saves no game history. It contains no advertising or analytics SDKs and sells or shares no personal data. It provides no engine evaluation or move recommendations.</p>
 <h2>Other services</h2>

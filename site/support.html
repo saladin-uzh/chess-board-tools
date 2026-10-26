@@ -22,12 +22,12 @@
 <h2>Safe test board</h2>
 <p>Use <a href="https://www.chess.com/analysis">Chess.com analysis</a> and a disposable position. Do not test in an active human game. Enable Keyboard board control in the popup; type Latin <code>b</code>, <code>2</code>, then <code>b</code>, <code>3</code>. Keyboard actions pause in focused inputs and interactive controls.</p>
 <h2>Installation and permissions</h2>
-<p>Chrome: allow the extension on its supported Chess.com pages. Safari: open the containing app, follow the enablement instructions, and enable Chess Board Tools in Safari Settings → Extensions. Allow access to Chess.com and reload the test tab. The App Store build targets macOS 27; it is not released yet.</p>
+<p>Chrome: allow the extension on Chess.com and reload open tabs after installation. For an existing temporary Safari installation, enable Chess Board Tools in Safari Settings → Extensions, allow access to Chess.com, and reopen the test tab after reloading the extension. No macOS App Store edition is published.</p>
 <h2>Common questions</h2>
 <ul>
-<li>Confirm/cancel shortcuts work only when Chess.com shows a visible enabled confirmation/cancellation button. Check the site’s move-confirmation setting.</li>
-<li>Turn ticks are deliberately silent in analysis and hidden tabs. In a disposable bot game, enable the option and interact once to unlock audio.</li>
-<li>Fog starts disabled. It works on supported standard bot boards, analysis, and completed game reviews; active human games and unsupported/incomplete positions disable it.</li>
+<li>Confirmation requires a visible enabled Chess.com button. Cancellation uses the Cancel button or clears all queued premoves on the active game board, even during the opponent’s turn and with keyboard board control disabled.</li>
+<li>Turn ticks offer Auto, Increment and fixed 2–30-second intervals, with volume from 0–100%. Auto needs a known initial time; 0% mutes sound. Ticks are silent in analysis, puzzles and hidden tabs. In a disposable bot game, enable the option and interact once to unlock audio.</li>
+<li>Piece Vision Overlay starts disabled. It supports standard bots, analysis, completed reviews, ongoing Daily analysis and Rated/Daily/Learning puzzles. Active human play, Rush/Battle, variants and unsupported/incomplete states disable it. Squares unseen by both sides have darker fog with diagonal stripes.</li>
 <li>Shortcut keys use Chrome Sync when enabled. Fog and board helper settings stay local. Safari does not synchronize extension settings.</li>
 <li>After updating an unpacked extension, reload it and reopen the Chess.com tab. Temporary Safari extension reloads can require a fresh tab.</li>
 </ul>
