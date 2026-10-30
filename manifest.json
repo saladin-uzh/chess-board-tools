@@ -80,6 +80,30 @@
         "assist.css"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.chess.com/*"
+      ],
+      "js": [
+        "popup.js",
+        "assist-popup.js",
+        "fog-popup.js",
+        "settings-view.js",
+        "floating-settings-geometry.js",
+        "floating-settings.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/icon-32.png"
+      ],
+      "matches": [
+        "https://www.chess.com/*"
+      ]
     }
   ]
 }

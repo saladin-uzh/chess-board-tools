@@ -16,12 +16,37 @@ The Node suite mocks DOM and Chrome APIs. It covers shortcuts and focus guards,
 legacy/suffixed confirmation classes, preference normalization and save races,
 coordinate geometry and board selection, promotion, premove dispatch, route and
 snapshot validation, overlay visibility/lifecycle, and tick scheduling/audio.
-Package validation checks the 22 runtime files, manifest/popup/CSS references,
+Package validation checks the 26 runtime files, manifest/popup/CSS references,
 ZIP integrity, hashes and provenance. Generated output stays in ignored `build/`.
 
 For a browser DOM regression fixture, serve the repository locally and open
 `tests/confirmation-buttons.html`. Its 16 checks use the real `settings.js` and
 `content.js`; they do not exercise a Chess.com account or installed extension.
+
+For floating settings, open `tests/settings-panel.html` from the same server.
+Its 18 checks exercise the real shared settings controllers and panel DOM with
+mocked Chrome APIs, including cross-surface updates, delayed/failed saves, focus,
+keyboard geometry, SPA navigation and host restoration.
+
+## Unreleased floating settings checks — 28 October 2026
+
+- 104 Node tests passed, including geometry bounds, shadow focus guards, toolbar
+  open acknowledgements and stale board-status responses.
+- All top-level JavaScript syntax checks and `git diff --check` passed. Candidate
+  packaging validated 26 runtime files, including the web-accessible icon.
+- The floating-settings fixture passed all 18 checks in Chromium 154. Real pointer
+  dragging/resizing, dark/light page tokens, a 280×240 viewport, scrolling and
+  geometry restoration after viewport growth were checked separately.
+- The existing confirmation-button fixture passed all 16 checks. The toolbar
+  popup measured 360×599.7 CSS pixels with its new entry command and unavailable
+  board status in the isolated profile.
+- An unpacked extension was loaded in a disposable Chromium profile. A locally
+  fulfilled `https://www.chess.com/analysis` document verified manifest injection,
+  actual Chrome sync/local storage, toolbar-to-page messaging, icon loading,
+  preference preservation after reload and independent open state in a second tab.
+  This was an isolated integration check, not a live Chess.com account/game test.
+- The protected Safari extension was not changed or reloaded. Safari runtime and
+  visual integration with the current authenticated Chess.com UI remain unverified.
 
 ## 1.2.0 release checks — 26 October 2026
 

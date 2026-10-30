@@ -12,6 +12,8 @@ of truth for injected files and URL matches.
 | `content.js` | Confirm/cancel shortcuts; legacy and suffixed Chess.com button classes; premove cancellation fallback |
 | `popup.html`, `popup.css`, `popup.js` | Popup layout, appearance and shortcut settings |
 | `assist-popup.js`, `fog-popup.js` | Local helper preferences and overlay status |
+| `settings-view.js`, `popup-entry.js` | Shared settings markup and toolbar entry point; the popup controllers initialize against either UI root |
+| `floating-settings.js`, `floating-settings-geometry.js` | Isolated-world page panel, local geometry, focus and SPA lifecycle |
 | `assist-bridge.js` | Read-only MAIN-world board snapshots for coordinates, clock metadata and premove counts |
 | `assist-board.js` | Snapshot validation, square geometry and native pointer-event dispatch |
 | `assist-content.js`, `assist.css` | Active visible board selection, coordinate/promotion input and helper lifecycle |
@@ -46,6 +48,19 @@ preferences use separate `chrome.storage.local` keys. Popup revision tracking
 prevents stale initial reads or delayed saves from overwriting incoming changes.
 Existing settings are normalized; new tick options default to Auto and 50%.
 No stored positions or history are required.
+
+Page settings live in a shadow root and reuse the popup controllers and storage
+keys. The page panel reads/subscribes to overlay status directly in the isolated
+world; toolbar status still uses extension messaging. MAIN-world bridges have no
+settings interface. Only the bundled 32px extension icon is web-accessible on
+Chess.com. The `chess-open-settings` extension message opens/focuses the panel and
+acknowledges `{ opened: true }`; it accepts no settings values.
+
+`floatingSettingsPreferences` stores only local left/top/width/height. Geometry
+is bounded to the current viewport, and writes are serialized. Open state stays
+in tab memory across SPA navigation and BFCache, and resets on full reload.
+The host is restored if page rendering removes it. Settings UI focus suppresses
+extension board shortcuts, including events retargeted through the shadow root.
 
 See [English instructions](../README.md), [Ukrainian instructions](../README.uk.md)
 and [validation coverage](validation.md) for supported behavior and limits.
