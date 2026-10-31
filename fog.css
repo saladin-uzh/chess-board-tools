@@ -26,11 +26,15 @@
 wc-chess-board:has(> .chess-fog-overlay) > .highlight {
   z-index: 1;
 }
-wc-chess-board:has(> .chess-fog-overlay) > .piece {
+/* Chess.com annotations use 0.8 opacity; move/selection highlights use 0.5. */
+wc-chess-board:has(> .chess-fog-overlay) > .highlight[style*="opacity: 0.8;"]:not(.growing-circle) {
   z-index: 6;
 }
-wc-chess-board:has(> .chess-fog-overlay) > svg.arrows {
+wc-chess-board:has(> .chess-fog-overlay) > .piece {
   z-index: 7;
+}
+wc-chess-board:has(> .chess-fog-overlay) > svg.arrows {
+  z-index: 8;
 }
 wc-chess-board:has(> .chess-fog-overlay) > .promotion-window--visible {
   z-index: 9;
