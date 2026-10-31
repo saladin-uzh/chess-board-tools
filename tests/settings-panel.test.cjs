@@ -59,3 +59,71 @@ test("toolbar open reports success only after the active page acknowledges it", 
   assert.match(status.textContent, /Open a Chess.com tab/);
   assert.equal(open.disabled, false);
 });
+
+function pointerPanel() {
+  class Element {
+    constructor() { this.style = {}; this.listeners = {}; this.isConnected = true; }
+    setAttribute() {}
+    append(child) { child.parentNode = this; this.panel = child; }
+    attachShadow() { return root; }
+    addEventListener(type, callback) { this.listeners[type] = callback; }
+    focus() {}
+    setPointerCapture() {}
+    dispatch(type, overrides = {}) {
+      this.listeners[type]({ type, pointerId: 1, button: 0, clientX: 500, clientY: 100,
+        currentTarget: this, preventDefault() {}, ...overrides });
+    }
+  }
+  const elements = new Map();
+  const root = new Element();
+  root.querySelector = selector => {
+    if (!elements.has(selector)) elements.set(selector, new Element());
+    return elements.get(selector);
+  };
+  const writes = [];
+  const c = vm.createContext({
+    document: { createElement: () => new Element(), body: new Element(), documentElement: new Element() },
+    CSSStyleSheet: class { replaceSync() {} },
+    MutationObserver: class { observe() {} disconnect() {} },
+    innerWidth: 1000, innerHeight: 800, addEventListener() {},
+    ChessSettingsView: { mount: () => () => {} },
+    chrome: {
+      runtime: { getURL: value => value, onMessage: { addListener() {} } },
+      storage: { local: { get: async () => ({}), set: async value => writes.push(value) },
+        onChanged: { addListener() {} } },
+    },
+  });
+  vm.runInContext(read("floating-settings-geometry.js"), c);
+  vm.runInContext(read("floating-settings.js"), c);
+  c.ChessFloatingSettings.open();
+  // The panel is the last element appended to the shadow root.
+  const styles = () => JSON.parse(JSON.stringify(root.panel.style));
+  return { c, root, elements, writes, styles };
+}
+
+for (const control of [".move", ".resize"]) {
+  for (const ending of ["pointercancel", "lostpointercapture", "pointerup"]) {
+    test(`${control} ${ending} restores canceled geometry or saves completed geometry`, async () => {
+      const { elements, writes, styles } = pointerPanel();
+      await new Promise(resolve => setImmediate(resolve));
+      const initial = styles();
+      const handle = elements.get(control);
+      handle.dispatch("pointerdown");
+      handle.dispatch("pointermove", { clientX: 460, clientY: 80 });
+      const moved = styles();
+      assert.notDeepEqual(moved, initial);
+      handle.dispatch(ending, { pointerId: 2 });
+      assert.deepEqual(styles(), moved);
+      assert.equal(writes.length, 0);
+      handle.dispatch(ending);
+      handle.dispatch("lostpointercapture");
+      await new Promise(resolve => setImmediate(resolve));
+      assert.deepEqual(styles(), ending === "pointerup" ? moved : initial);
+      assert.equal(writes.length, ending === "pointerup" ? 1 : 0);
+      if (writes.length) {
+        const saved = writes[0].floatingSettingsPreferences;
+        for (const key of ["left", "top", "width", "height"]) assert.equal(`${saved[key]}px`, moved[key]);
+      }
+    });
+  }
+}

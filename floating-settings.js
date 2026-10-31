@@ -116,8 +116,11 @@
   }
   function endPointer(event) {
     if (!drag || event.pointerId !== drag.id) return;
+    const initial = drag.geometry;
+    const completed = event.type === "pointerup";
     drag = null;
-    persist();
+    if (completed) persist();
+    else layout(initial);
   }
   function keyboardGeometry(event) {
     const delta = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key];
