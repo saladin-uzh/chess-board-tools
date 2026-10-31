@@ -23,6 +23,16 @@ For a browser DOM regression fixture, serve the repository locally and open
 `tests/confirmation-buttons.html`. Its 16 checks use the real `settings.js` and
 `content.js`; they do not exercise a Chess.com account or installed extension.
 
+`tests/fog-layers.html` checks the real fog stylesheet against native highlight
+markup, including annotation ordering, service highlights, promotion, element
+reuse, and overlay removal/reinsertion. On 31 October 2026, all 12 browser checks
+and 99 Node tests passed; syntax, diff and package validation also passed.
+Live Chess.com analysis DOM inspection confirmed inline `opacity: 0.8` for
+right-click annotations, `opacity: 0.5` for last-move highlights, and
+`.growing-circle` with `--opacity: 0.5` for selection. The annotation selector
+depends on that native inline opacity convention. The updated extension was not
+reloaded or tested on a live Chess.com board.
+
 For floating settings, open `tests/settings-panel.html` from the same server.
 Its 18 checks exercise the real shared settings controllers and panel DOM with
 mocked Chrome APIs, including cross-surface updates, delayed/failed saves, focus,
