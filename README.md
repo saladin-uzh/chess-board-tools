@@ -1,6 +1,7 @@
 # Chess Board Tools
 
-[![Support and privacy pages](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml)
+[![Extension build and submission](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/extension.yml/badge.svg?branch=prod)](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/extension.yml)
+[![Support and privacy pages](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml/badge.svg?branch=prod)](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml)
 
 [Українська версія](README.uk.md)
 
