@@ -229,7 +229,7 @@ function deferred() {
   return { promise, resolve, reject };
 }
 const flush = () => new Promise(resolve => setImmediate(resolve));
-function popup() {
+function popup(options = {}) {
   const load = deferred(), write = deferred();
   const elements = {};
   for (const id of ['fog-enabled', 'fog-opacity', 'fog-opacity-value', 'fog-perspective', 'fog-save-status', 'fog-board-status']) {
@@ -244,9 +244,24 @@ function popup() {
       onChanged: { addListener: fn => { changed = fn; } },
     } },
   });
-  run(ctx, 'settings.js'); run(ctx, 'fog-popup.js');
+  run(ctx, 'settings.js'); run(ctx, 'fog-popup.js'); ctx.ChessSettingsControllers.fog(ctx.document, options);
   return { elements, load, write, writes, change(value, area = 'local') { changed({ fogPreferences: { newValue: value } }, area); } };
 }
+
+test('page fog status adapter ignores stale responses and subscribes without tab access', async () => {
+  const first = deferred(), second = deferred();
+  let requests = 0, refresh;
+  const app = popup({
+    readBoardStatus: () => ++requests === 1 ? first.promise : second.promise,
+    subscribeBoardStatus: listener => { refresh = listener; },
+  });
+  app.load.resolve({}); await flush();
+  const pending = refresh();
+  second.resolve({ status: 'Fog active for black.' }); await pending;
+  first.resolve({ status: 'Old board status.' }); await flush();
+  assert.equal(app.elements['#fog-board-status'].textContent, 'Fog active for black.');
+  assert.equal(requests, 2);
+});
 
 test('fog popup blocks load/save races and preserves keybinding isolation', async () => {
   const app = popup();

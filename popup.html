@@ -22,77 +22,16 @@
         </div>
       </header>
 
-      <form class="settings" id="settings-form">
-        <label class="field" for="confirm-key">
-          <span>Confirm move key</span>
-          <select id="confirm-key" name="confirmKeyCode" disabled></select>
-        </label>
-
-        <label class="field" for="cancel-key">
-          <span>Cancel move key</span>
-          <select id="cancel-key" name="cancelKeyCode" disabled></select>
-        </label>
-
-        <p class="status" id="status" role="status" aria-live="polite"></p>
-      </form>
-      <section class="assist-settings" aria-label="Board helpers">
-        <label class="field fog-toggle" for="keyboard-enabled">
-          <span>Keyboard board control</span><input id="keyboard-enabled" type="checkbox" disabled>
-        </label>
-        <p>Squares: b then 2. Promotion: q/r/b/n. Pauses in input fields.</p>
-        <label class="field fog-toggle" for="ticking-enabled">
-          <span>Tick during my turn</span><input id="ticking-enabled" type="checkbox" disabled>
-        </label>
-        <div class="tick-controls">
-          <label class="field" for="tick-frequency">
-            <span>Tick frequency</span>
-            <select id="tick-frequency" disabled>
-              <option value="auto">Auto</option>
-              <option value="increment">Increment</option>
-              <option value="2">2 seconds</option>
-              <option value="5">5 seconds</option>
-              <option value="10">10 seconds</option>
-              <option value="15">15 seconds</option>
-              <option value="20">20 seconds</option>
-              <option value="30">30 seconds</option>
-            </select>
-          </label>
-          <label class="field" for="tick-volume">
-            <span>Tick volume <output id="tick-volume-value" for="tick-volume">50%</output></span>
-            <input id="tick-volume" type="range" min="0" max="100" step="1" value="50" disabled>
-          </label>
-        </div>
-        <p>Visible game tabs only; interact to enable audio.</p>
-        <p class="status" id="assist-save-status" role="status" aria-live="polite"></p>
-      </section>
-      <section class="fog-settings" aria-labelledby="fog-title">
-        <h2 id="fog-title">Piece Vision Overlay</h2>
-        <p>Bots, analysis, completed reviews, Rated, Daily and Learning puzzles. No fog in Rush or Battle.</p>
-        <label class="field fog-toggle" for="fog-enabled">
-          <span>Enable fog</span>
-          <input id="fog-enabled" type="checkbox" disabled>
-        </label>
-        <label class="field" for="fog-opacity">
-          <span>Fog opacity <output id="fog-opacity-value" for="fog-opacity">55%</output></span>
-          <input id="fog-opacity" type="range" min="20" max="80" step="1" value="55" disabled>
-        </label>
-        <label class="field" for="fog-perspective">
-          <span>Perspective</span>
-          <select id="fog-perspective" disabled>
-            <option value="auto">Auto (player / bottom)</option>
-            <option value="white">White</option>
-            <option value="black">Black</option>
-          </select>
-        </label>
-        <p class="status" id="fog-save-status" role="status" aria-live="polite"></p>
-        <p id="fog-board-status">Auto uses your color, or the bottom side when no player color is available.</p>
-        <p>Local fog settings; no position or history storage.</p>
-      </section>
+      <button id="open-floating-settings" type="button">Open floating settings</button>
+      <p id="floating-open-status" class="status" role="status" aria-live="polite"></p>
+      <div id="settings-content"></div>
     </main>
 
     <script src="settings.js"></script>
     <script src="popup.js"></script>
     <script src="fog-popup.js"></script>
     <script src="assist-popup.js"></script>
+    <script src="settings-view.js"></script>
+    <script src="popup-entry.js"></script>
   </body>
 </html>

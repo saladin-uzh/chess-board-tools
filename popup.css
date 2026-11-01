@@ -149,6 +149,19 @@ h2 { margin: 0; font-size: 15px; }
 input[type="range"] { width: 100%; accent-color: var(--accent); }
 input[type="checkbox"] { accent-color: var(--accent); }
 
+#open-floating-settings {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 6px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#open-floating-settings:focus-visible { outline: 2px solid var(--focus); }
+
 .settings { grid-template-columns: 1fr 1fr; }
 .settings .status { grid-column: 1 / -1; }
 .status:empty { display: none; }

@@ -60,6 +60,15 @@ shows a short description of the extension and lets you change the confirmation
 and cancellation keys. Changes are saved automatically and are applied to open
 Chess.com tabs without reloading the page.
 
+On Chess.com, select the **Chess Board Tools** button at the bottom right, or
+**Open floating settings** in the toolbar popup, to open the same settings in a
+floating panel. The independent extension panel follows the page's theme.
+Drag its title or resize its lower-right corner; focused title/resize buttons
+also accept arrow keys (Shift moves in larger steps). Escape closes the panel.
+Its position and size are saved locally. It stays open during navigation within
+the page, but starts closed after a full reload and in other tabs. Reload existing
+Chess.com tabs after updating the extension to make this panel available.
+
 Confirmation offers Enter, Space, or Ctrl; cancellation offers Esc, Space, or
 Ctrl. Defaults are Space and Esc, and the two actions require different keys.
 Previously saved unsupported keys fall back to defaults.
@@ -194,6 +203,8 @@ account/game identifiers are not stored by the extension.
 
 Safari implements the sync storage API but does not synchronize these settings
 between devices. The popup follows system/browser light or dark appearance.
+Floating-panel position and size use a separate local preference; its open state
+is kept only in the current tab's memory.
 
 ## Tests
 

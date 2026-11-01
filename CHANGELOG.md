@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add a floating Chess Board Tools settings panel, opened from the page or toolbar
+  popup, with shared settings, keyboard-accessible movement/resizing and locally
+  saved geometry. Existing preferences and the toolbar popup remain available.
+
 ## 1.2.0 — 2026-10-26
 
 Changes since 1.1.3:
