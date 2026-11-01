@@ -2,7 +2,7 @@ name: Support and privacy pages
 
 on:
   push:
-    branches: [main]
+    branches: [prod]
     paths: ["site/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 

@@ -1,6 +1,6 @@
 # Chess Board Tools
 
-[![Support and privacy pages](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml)
+[![Support and privacy pages](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml/badge.svg?branch=prod)](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml)
 
 [Українська версія](README.uk.md)
 
@@ -203,3 +203,5 @@ They cover hotkeys, visibility rules, complete-state/context validation, popup
 races, and overlay lifecycle. Recorded browser evidence and remaining limits are listed in
 [validation coverage](docs/validation.md). See the [changelog](CHANGELOG.md) for
 release changes and [architecture](docs/architecture.md) for module boundaries.
+
+[Production CI/CD](docs/ci-cd.md): production ZIP builds and Chrome Web Store setup.
