@@ -1,6 +1,6 @@
 # Chess Board Tools
 
-[![Support and privacy pages](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml)
+[![Support and privacy pages](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml/badge.svg?branch=prod)](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml)
 
 [English version](README.md)
 
@@ -214,3 +214,5 @@ Safari підтримує API sync storage, але не синхронізує �
 Попередні браузерні перевірки та їхні обмеження наведено в
 [описі перевірок](docs/validation.md). Зміни релізів — у
 [CHANGELOG](CHANGELOG.md), межі модулів — в [описі архітектури](docs/architecture.md).
+
+[Production CI/CD](docs/ci-cd.md): збірка ZIP та налаштування Chrome Web Store.
