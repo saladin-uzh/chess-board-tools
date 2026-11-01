@@ -203,3 +203,8 @@ They cover hotkeys, visibility rules, complete-state/context validation, popup
 races, and overlay lifecycle. Recorded browser evidence and remaining limits are listed in
 [validation coverage](docs/validation.md). See the [changelog](CHANGELOG.md) for
 release changes and [architecture](docs/architecture.md) for module boundaries.
+
+## Contributing
+
+Bug reports, reviews, testing, documentation and code contributions are welcome.
+See the [contribution guide](CONTRIBUTING.md) before submitting a pull request.
