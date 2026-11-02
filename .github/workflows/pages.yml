@@ -2,7 +2,7 @@ name: Support and privacy pages
 
 on:
   push:
-    branches: [main]
+    branches: [prod]
     paths: ["site/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/prod'
     runs-on: ubuntu-latest
     permissions:
       pages: write
