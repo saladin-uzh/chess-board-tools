@@ -2,9 +2,15 @@
 
 ## Unreleased
 
+## 1.2.1
+
 - Add a floating Chess Board Tools settings panel, opened from the page or toolbar
   popup, with shared settings, keyboard-accessible movement/resizing and locally
   saved geometry. Existing preferences and the toolbar popup remain available.
+- Keep colored square annotations visible above Piece Vision Overlay while
+  keeping last-move and selection highlights below it.
+- Add contribution guidelines and an MIT license, and automate production
+  extension builds and configured Chrome Web Store submissions.
 
 ## 1.2.0 — 2026-10-26
 
