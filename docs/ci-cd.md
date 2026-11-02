@@ -40,6 +40,10 @@ to authorized workflows.
 
 ## Release and retry
 
+Prepare releases on a release branch and open a pull request into `dev`.
+After that pull request is reviewed and merged, open a separate pull request
+from `dev` into `prod` for production promotion.
+
 Increase the three-component `version` in `manifest.json` manually before
 promoting a release to `prod`. CI does not edit versions, create commits, or
 merge `dev` automatically. Every push builds; only an eligible new version is

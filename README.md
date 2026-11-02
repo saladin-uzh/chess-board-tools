@@ -216,6 +216,8 @@ races, and overlay lifecycle. Recorded browser evidence and remaining limits are
 [validation coverage](docs/validation.md). See the [changelog](CHANGELOG.md) for
 release changes and [architecture](docs/architecture.md) for module boundaries.
 
+[Production CI/CD](docs/ci-cd.md): production ZIP builds and Chrome Web Store setup.
+
 ## Contributing
 
 Bug reports, reviews, testing, documentation and code contributions are welcome.
