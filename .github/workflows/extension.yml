@@ -1,0 +1,61 @@
+name: Extension build and submission
+
+on:
+  push:
+    branches: [prod]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24'
+      - name: Test extension
+        run: node --test tests/*.test.cjs
+      - name: Check JavaScript syntax
+        run: for file in *.js; do node --check "$file" || exit; done
+      - name: Test submission logic
+        run: python3 -m unittest discover -s tests -p 'test_publish_extension.py'
+      - name: Package extension
+        run: python3 scripts/package-extension.py
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: extension-${{ github.sha }}
+          path: |
+            build/*.zip
+            build/*.zip.sha256
+            build/*.zip.provenance.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Report build
+        run: echo "Built extension ZIP from $GITHUB_SHA. Download the extension artifact from this run." >> "$GITHUB_STEP_SUMMARY"
+
+  submit:
+    concurrency:
+      group: chrome-web-store-submission
+      cancel-in-progress: false
+    needs: build
+    if: github.ref == 'refs/heads/prod'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: extension-${{ github.sha }}
+          path: build
+      - name: Submit to Chrome Web Store
+        env:
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+          CWS_EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID }}
+        run: python3 scripts/publish-extension.py build
