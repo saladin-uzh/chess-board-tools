@@ -100,7 +100,7 @@ function popupHarness(delayedSave = false) {
   let storageListener;
   class Select {
     constructor(id) {
-      const tag = read("popup.html").match(new RegExp(`<select id="${id}"[^>]*>`));
+      const tag = read("settings-view.js").match(new RegExp(`<select id="${id}"[^>]*>`));
       this.disabled = /\bdisabled\b/.test(tag[0]);
       this.value = "";
       this.listeners = {};
@@ -144,6 +144,7 @@ function popupHarness(delayedSave = false) {
   });
   run(context, "settings.js");
   run(context, "popup.js");
+  context.ChessSettingsControllers.shortcuts(context.document);
   return { storage, save, confirm, cancel, status, writes,
     change: (value, area = "sync", key = "keybindings") =>
       storageListener({ [key]: { newValue: value } }, area),

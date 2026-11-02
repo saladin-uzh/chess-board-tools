@@ -324,7 +324,7 @@ function popupHarness() {
     local: { get: () => load.promise, set: async value => { await save.promise; writes.push(plain(value)); } },
     onChanged: { addListener: fn => { changed = fn; } },
   } } });
-  run(c, 'settings.js'); run(c, 'assist-popup.js');
+  run(c, 'settings.js'); run(c, 'assist-popup.js'); c.ChessSettingsControllers.assist(c.document);
   return { load, save, writes, keyboard: elements['#keyboard-enabled'], ticking: elements['#ticking-enabled'], status: elements['#assist-save-status'], frequency: elements['#tick-frequency'], volume: elements['#tick-volume'], volumeValue: elements['#tick-volume-value'],
     change: (value, area = 'local') => changed({ boardAssistPreferences: { newValue: value } }, area) };
 }

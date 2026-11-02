@@ -1,5 +1,6 @@
 # Chess Board Tools
 
+[![Extension build and submission](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/extension.yml/badge.svg?branch=prod)](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/extension.yml)
 [![Support and privacy pages](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml/badge.svg?branch=prod)](https://github.com/saladin-uzh/chess-board-tools/actions/workflows/pages.yml)
 
 [Українська версія](README.uk.md)
@@ -59,6 +60,15 @@ Select the extension icon in the browser toolbar to open the popup. The popup
 shows a short description of the extension and lets you change the confirmation
 and cancellation keys. Changes are saved automatically and are applied to open
 Chess.com tabs without reloading the page.
+
+On Chess.com, select the **Chess Board Tools** button at the bottom right, or
+**Open floating settings** in the toolbar popup, to open the same settings in a
+floating panel. The independent extension panel follows the page's theme.
+Drag its title or resize its lower-right corner; focused title/resize buttons
+also accept arrow keys (Shift moves in larger steps). Escape closes the panel.
+Its position and size are saved locally. It stays open during navigation within
+the page, but starts closed after a full reload and in other tabs. Reload existing
+Chess.com tabs after updating the extension to make this panel available.
 
 Confirmation offers Enter, Space, or Ctrl; cancellation offers Esc, Space, or
 Ctrl. Defaults are Space and Esc, and the two actions require different keys.
@@ -145,7 +155,8 @@ in Puzzle Rush and Puzzle Battle.
 
 Squares unseen by either side use a darker tint: their remaining transparency is
 half that of ordinary fog. Thin diagonal stripes distinguish these squares from
-ordinary fog. Square highlights stay below pieces; arrows stay above fog.
+ordinary fog. Colored square annotations stay above fog and below pieces; arrows
+stay above pieces. Last-move and selection highlights remain below fog.
 
 Clear squares are the union of your pieces' occupied squares and movement
 destinations, except that pawns reveal their two forward capture diagonals
@@ -193,6 +204,8 @@ account/game identifiers are not stored by the extension.
 
 Safari implements the sync storage API but does not synchronize these settings
 between devices. The popup follows system/browser light or dark appearance.
+Floating-panel position and size use a separate local preference; its open state
+is kept only in the current tab's memory.
 
 ## Tests
 
@@ -204,3 +217,8 @@ races, and overlay lifecycle. Recorded browser evidence and remaining limits are
 release changes and [architecture](docs/architecture.md) for module boundaries.
 
 [Production CI/CD](docs/ci-cd.md): production ZIP builds and Chrome Web Store setup.
+
+## Contributing
+
+Bug reports, reviews, testing, documentation and code contributions are welcome.
+See the [contribution guide](CONTRIBUTING.md) before submitting a pull request.

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Fog layer regression checks</title>
+<link rel="stylesheet" href="../fog.css">
+<style>
+  body { font: 16px system-ui; margin: 24px; }
+  wc-chess-board { display: block; position: relative; width: 160px; height: 160px; }
+  wc-chess-board > * { position: absolute; inset: 0; }
+  .highlight { z-index: 1; }
+  .piece { z-index: 2; }
+  svg.arrows { z-index: 3; }
+  .promotion-window--visible { z-index: 4; }
+  .pass { color: green; }
+  .fail { color: red; }
+</style>
+<h1>Fog layer regression checks</h1>
+<p>Uses the real fog stylesheet and native highlight markup observed on Chess.com.</p>
+<wc-chess-board>
+  <div id="last" class="highlight square-52" style="background-color: rgb(213, 164, 125); opacity: 0.5;"></div>
+  <div id="selected" class="highlight growing-circle square-54" style="--background-color: #81b64c; --opacity: 0.5;"></div>
+  <div id="annotation" class="highlight square-45" style="background-color: rgb(235, 97, 80); opacity: 0.8;" data-test-element="highlight" data-test-type="highlight"></div>
+  <div class="chess-fog-overlay"></div>
+  <div class="piece wp square-45"></div>
+  <svg class="arrows"></svg>
+  <div class="promotion-window--visible"></div>
+</wc-chess-board>
+<ol id="results"></ol>
+<script>
+  const board = document.querySelector('wc-chess-board');
+  const annotation = document.querySelector('#annotation');
+  const overlay = document.querySelector('.chess-fog-overlay');
+  const z = selector => Number(getComputedStyle(board.querySelector(selector)).zIndex);
+  let failures = 0;
+  function check(name, pass) {
+    const item = document.createElement('li');
+    item.className = pass ? 'pass' : 'fail';
+    item.textContent = `${pass ? 'PASS' : 'FAIL'}: ${name}`;
+    document.querySelector('#results').append(item);
+    if (!pass) failures++;
+  }
+  check('last move stays below fog', z('#last') < z('.chess-fog-overlay'));
+  check('selection stays below fog', z('#selected') < z('.chess-fog-overlay'));
+  check('annotation is above fog', z('#annotation') > z('.chess-fog-overlay'));
+  check('pieces are above annotations', z('.piece') > z('#annotation'));
+  check('arrows are above pieces', z('svg.arrows') > z('.piece'));
+  check('promotion is above arrows', z('.promotion-window--visible') > z('svg.arrows'));
+  check('fog does not intercept input', getComputedStyle(overlay).pointerEvents === 'none');
+  annotation.classList.add('growing-circle');
+  check('selection is excluded even at annotation opacity', z('#annotation') < z('.chess-fog-overlay'));
+  annotation.classList.remove('growing-circle');
+  annotation.style.opacity = '0.5';
+  check('reused highlight returns below fog when it becomes a move highlight', z('#annotation') < z('.chess-fog-overlay'));
+  annotation.style.opacity = '0.8';
+  check('reused annotation returns above fog', z('#annotation') > z('.chess-fog-overlay'));
+  overlay.remove();
+  check('removing fog restores native layers', z('#annotation') === 1 && z('.piece') === 2 && z('svg.arrows') === 3 && z('.promotion-window--visible') === 4);
+  board.append(overlay);
+  check('re-enabling fog restores annotation layer', z('#annotation') > z('.chess-fog-overlay'));
+  document.title = `${failures ? 'FAIL' : 'PASS'}: fog layer regression checks`;
+</script>
+</html>

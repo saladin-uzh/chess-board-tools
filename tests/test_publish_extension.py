@@ -45,6 +45,7 @@ class SubmissionTests(unittest.TestCase):
 
     def test_existing_versions_skip_without_upload(self):
         for key, state in [('publishedItemRevisionStatus', 'PUBLISHED'),
+                           ('publishedItemRevisionStatus', 'PUBLISHED_TO_TESTERS'),
                            ('submittedItemRevisionStatus', 'PENDING_REVIEW'),
                            ('submittedItemRevisionStatus', 'STAGED')]:
             with self.subTest(state=state), patch.object(P, 'artifact', return_value=(b'zip', '1.2.0')), \

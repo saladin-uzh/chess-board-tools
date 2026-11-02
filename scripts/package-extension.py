@@ -17,7 +17,8 @@ FILES = (
     "popup.js", "fog-popup.js", "fog-visibility.js", "fog-board.js",
     "fog-content.js", "fog-bridge.js", "fog.css", "assist-popup.js",
     "assist-board.js", "assist-content.js", "assist-bridge.js", "assist-timer.js",
-    "assist.css", "icons/icon-16.png", "icons/icon-32.png",
+    "assist.css", "settings-view.js", "popup-entry.js",
+    "floating-settings-geometry.js", "floating-settings.js", "icons/icon-16.png", "icons/icon-32.png",
     "icons/icon-48.png", "icons/icon-128.png",
 )
 
@@ -47,6 +48,8 @@ def validate(files):
     for script in manifest["content_scripts"]:
         refs.extend(script.get("js", []))
         refs.extend(script.get("css", []))
+    for resources in manifest.get("web_accessible_resources", []):
+        refs.extend(resources["resources"])
     parser = References()
     parser.feed(files["popup.html"].decode())
     refs.extend(parser.paths)

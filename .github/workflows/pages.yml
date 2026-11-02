@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/prod'
     runs-on: ubuntu-latest
     permissions:
       pages: write

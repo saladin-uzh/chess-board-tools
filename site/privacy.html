@@ -23,6 +23,7 @@
 <h2>Saved settings</h2>
 <p>The storage permission saves preferences only. Confirmation and cancellation shortcuts use <code>chrome.storage.sync</code>. With Chrome Sync enabled, Chrome can synchronize them between signed-in Chrome browsers. With Sync disabled they remain local; offline changes can synchronize when connectivity returns.</p>
 <p>Fog settings (enabled, opacity, perspective) and board helpers (keyboard control, turn ticks, tick frequency and volume) use separate <code>chrome.storage.local</code> keys and do not synchronize. Safari implements the sync storage API but does not synchronize these settings between devices.</p>
+<p>Floating settings panel position and size are stored locally. Its open state stays in the current tab's memory and is not synchronized.</p>
 <h2>No developer collection</h2>
 <p>The extension code makes no external network requests, sends no telemetry, and saves no game history. It contains no advertising or analytics SDKs and sells or shares no personal data. It provides no engine evaluation or move recommendations.</p>
 <h2>Other services</h2>

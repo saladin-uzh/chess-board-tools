@@ -1,6 +1,6 @@
 # Production builds and Chrome Web Store submission
 
-`dev` is the development branch; `prod` is the default production branch.
+`dev` is the default development branch; `prod` is the production branch.
 Every push to `prod` runs `.github/workflows/extension.yml`: Node tests,
 JavaScript syntax checks, offline submission tests and deterministic packaging.
 A successful build retains the ZIP, SHA-256 and provenance for 30 days in the
@@ -39,6 +39,10 @@ must treat workflow edits as privileged because repository secrets are available
 to authorized workflows.
 
 ## Release and retry
+
+Prepare releases on a release branch and open a pull request into `dev`.
+After that pull request is reviewed and merged, open a separate pull request
+from `dev` into `prod` for production promotion.
 
 Increase the three-component `version` in `manifest.json` manually before
 promoting a release to `prod`. CI does not edit versions, create commits, or

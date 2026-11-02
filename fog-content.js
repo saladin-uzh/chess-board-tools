@@ -13,6 +13,17 @@
   let timer = null;
   let frame = null;
   let status = "Fog is disabled.";
+  const statusListeners = new Set();
+  function setStatus(value) {
+    if (status === value) return;
+    status = value;
+    for (const listener of statusListeners) listener();
+  }
+  // Shared only with extension scripts in the isolated world.
+  globalThis.ChessFogStatus = Object.freeze({
+    read: () => status,
+    subscribe(listener) { statusListeners.add(listener); return () => statusListeners.delete(listener); },
+  });
 
   function removeMask() {
     overlay?.remove();
@@ -44,7 +55,7 @@
 
   function update() {
     frame = null;
-    if (!preferences.enabled) { detach(); status = "Fog is disabled."; return; }
+    if (!preferences.enabled) { detach(); setStatus("Fog is disabled."); return; }
     const selector = /^\/puzzles\/(?:rated|learning)\/?$/.test(location.pathname) ? "wc-chess-board#board-primary"
       : /^\/daily\/?$/.test(location.pathname) ? "wc-chess-board#board-board"
       : "wc-chess-board#board-play-computer, wc-chess-board#board-analysis-board, wc-chess-board#board-single";
@@ -54,7 +65,7 @@
     const rect = board?.getBoundingClientRect();
     if (!snapshot || snapshot.unavailable || !rect?.width || !rect?.height || Math.abs(rect.width - rect.height) > 1) {
       removeMask();
-      status = snapshot?.unavailable || "Fog unavailable on this board or while the position is changing.";
+      setStatus(snapshot?.unavailable || "Fog unavailable on this board or while the position is changing.");
       if (snapshot?.unavailable && board) {
         if (!notice) {
           notice = document.createElement("div");
@@ -84,7 +95,7 @@
       cell.classList.toggle("chess-fog-unseen", !masks.union[square] && !opponent.union[square]);
       cell.classList.toggle("chess-fog-selected", masks.selected?.[square] === true);
     }
-    status = `Fog active for ${snapshot.side}.`;
+    setStatus(`Fog active for ${snapshot.side}.`);
   }
 
   function schedule() {

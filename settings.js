@@ -69,7 +69,7 @@
 
   function isInteractiveTarget(target) {
     return Boolean(target?.isContentEditable || target?.closest?.(
-      'input, textarea, select, button, [contenteditable]:not([contenteditable="false"]), [role="textbox"]',
+      'input, textarea, select, button, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [data-chess-settings-ui]',
     ));
   }
 

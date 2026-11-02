@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Floating settings regression checks</title>
+<link rel="icon" href="../icons/icon-16.png">
+<style>
+  body { font: 14px system-ui; margin: 24px; max-width: 680px; background: #302e2b; color: #eee; }
+  :root { color-scheme: dark; --color-bg-opaque: #262421; --color-text-default: #eee; --color-bg-input: #383532; --color-text-brand: #81b64c; }
+  .pass { color: #a4e687; } .fail { color: #ffb4ab; }
+  #toolbar { max-width: 360px; } #toolbar label { display: block; }
+</style>
+<h1>Floating settings regression checks</h1>
+<p>Local fixture using real controllers, DOM and page panel, with mocked Chrome APIs.</p>
+<details><summary>Toolbar settings preview</summary><div id="toolbar"></div></details>
+<div class="confirm-move-buttons"><button class="cc-button-primary" id="confirm">Mock game confirmation</button></div>
+<ol id="results"></ol>
+<script>
+  const changes = [], messages = [], values = { local: {}, sync: {} };
+  const fixture = window.settingsFixture = { failSave: false, saveGate: null, confirms: 0 };
+  fixture.emit = (area, key, value) => {
+    values[area][key] = value;
+    for (const listener of changes) listener({ [key]: { newValue: value } }, area);
+  };
+  function storage(area) {
+    return {
+      get: async key => ({ [key]: values[area][key] }),
+      set: async record => {
+        if (fixture.saveGate) await fixture.saveGate;
+        if (fixture.failSave) throw new Error("Fixture storage failure");
+        for (const [key, value] of Object.entries(record)) fixture.emit(area, key, value);
+      },
+    };
+  }
+  window.chrome = {
+    storage: { local: storage("local"), sync: storage("sync"), onChanged: { addListener: listener => changes.push(listener) } },
+    runtime: { getURL: path => "../" + path, onMessage: { addListener: listener => messages.push(listener) } },
+    tabs: { query: async () => [{ id: 1 }], sendMessage: async () => ({ status: "Fog is disabled." }) },
+  };
+  let boardStatus = "Fog is disabled.";
+  const statusListeners = [];
+  window.ChessFogStatus = { read: () => boardStatus, subscribe: listener => statusListeners.push(listener) };
+  fixture.status = value => { boardStatus = value; statusListeners.forEach(listener => listener()); };
+  fixture.open = () => { let result; messages.forEach(listener => listener({ type: "chess-open-settings" }, {}, response => { result = response; })); return result; };
+  document.querySelector("#confirm").addEventListener("click", () => fixture.confirms++);
+</script>
+<script src="../settings.js"></script>
+<script src="../content.js"></script>
+<script src="../popup.js"></script>
+<script src="../assist-popup.js"></script>
+<script src="../fog-popup.js"></script>
+<script src="../settings-view.js"></script>
+<script src="../floating-settings-geometry.js"></script>
+<script src="../floating-settings.js"></script>
+<script>
+  window.settingsFixtureDone = (async () => {
+    const results = document.querySelector("#results");
+    const tick = () => new Promise(resolve => setTimeout(resolve, 0));
+    function check(name, condition) {
+      const item = document.createElement("li");
+      item.className = condition ? "pass" : "fail";
+      item.textContent = `${condition ? "PASS" : "FAIL"}: ${name}`;
+      results.append(item);
+      if (!condition) throw new Error(name);
+    }
+    const toolbar = document.querySelector("#toolbar");
+    ChessSettingsView.mount(toolbar);
+    await tick();
+    const shadow = document.querySelector("[data-chess-settings-ui]").shadowRoot;
+    const find = selector => shadow.querySelector(selector);
+    check("Page starts with its panel closed", !find(".panel"));
+    check("Toolbar message opens settings", fixture.open()?.opened === true);
+    fixture.open(); await tick();
+    check("Repeated opening keeps one panel", shadow.querySelectorAll(".panel").length === 1);
+    check("Both surfaces use the existing defaults", find("#confirm-key").value === "Space" && !find("#keyboard-enabled").checked && find("#tick-frequency").value === "auto");
+    toolbar.querySelector("#confirm-key").value = "Enter";
+    toolbar.querySelector("#confirm-key").dispatchEvent(new Event("change")); await tick();
+    check("Shortcut updates reach the page panel", find("#confirm-key").value === "Enter");
+    find("#keyboard-enabled").click(); await tick();
+    check("Page preferences reach the toolbar", toolbar.querySelector("#keyboard-enabled").checked);
+    fixture.emit("sync", "keybindings", { confirmKeyCode: "Control", cancelKeyCode: "Escape" });
+    find("#cancel-key").value = "Control";
+    find("#cancel-key").dispatchEvent(new Event("change")); await tick();
+    check("Duplicate shortcuts restore saved values", find("#cancel-key").value === "Escape" && find("#status").textContent === "Choose different keys.");
+    fixture.failSave = true; find("#keyboard-enabled").click(); await tick();
+    check("Failed saves restore stored preferences", find("#keyboard-enabled").checked && find("#assist-save-status").textContent.includes("Could not save"));
+    fixture.failSave = false;
+    let release; fixture.saveGate = new Promise(resolve => { release = resolve; });
+    find("#ticking-enabled").click();
+    fixture.emit("local", "boardAssistPreferences", { keyboard: false, ticking: false, tickMode: "increment" });
+    check("Incoming state wins while a save is pending", !find("#keyboard-enabled").checked && find("#tick-frequency").value === "increment" && find("#ticking-enabled").disabled);
+    fixture.failSave = true; release(); await tick(); fixture.saveGate = null; fixture.failSave = false;
+    check("Failed delayed save retains incoming state", !find("#keyboard-enabled").checked && find("#tick-frequency").value === "increment");
+    fixture.status("Fog unavailable on this board."); await tick();
+    check("Page board status uses its isolated-world adapter", find("#fog-board-status").textContent === "Fog unavailable on this board.");
+    fixture.emit("sync", "keybindings", { confirmKeyCode: "Space", cancelKeyCode: "Escape" });
+    find("#tick-volume").focus();
+    find("#tick-volume").dispatchEvent(new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true, composed: true }));
+    check("Settings input cannot submit a board move", fixture.confirms === 0);
+    find(".move").focus();
+    const before = find(".panel").getBoundingClientRect();
+    find(".move").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true, composed: true })); await tick();
+    check("Keyboard movement persists geometry", values.local.floatingSettingsPreferences.left === before.left - 10);
+    find(".resize").focus();
+    find(".resize").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true, composed: true })); await tick();
+    check("Keyboard resizing persists geometry", values.local.floatingSettingsPreferences.width === before.width - 10);
+    const panel = find(".panel"); history.pushState({}, "", "#spa-test");
+    check("SPA navigation preserves the same open panel", find(".panel") === panel && !panel.hidden);
+    find(".move").dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true, composed: true }));
+    check("Escape closes the panel and restores focus", panel.hidden && shadow.activeElement === find(".launcher"));
+    find(".launcher").click();
+    check("Reopening restores geometry", !panel.hidden && panel.getBoundingClientRect().width === before.width - 10);
+    const host = document.querySelector("[data-chess-settings-ui]");
+    host.remove(); await tick();
+    check("Host removal during page rendering restores the same panel", host.isConnected && find(".panel") === panel);
+    document.title = "PASS — Floating settings regression checks";
+    return results.children.length;
+  })().catch(error => { document.title = "FAIL — Floating settings regression checks"; console.error(error); throw error; });
+</script>
+</html>

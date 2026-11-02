@@ -71,8 +71,8 @@ def should_upload(status, candidate):
     submitted_state, submitted = revisions(status, 'submittedItemRevisionStatus')
     if any(current < version(value) for value in published + submitted):
         raise SubmissionError('Build version is lower than an existing store revision')
-    if published_state == 'PUBLISHED' and any(current == version(value) for value in published):
-        report(f'Publication skipped: version {candidate} is already published.')
+    if published_state in ('PUBLISHED', 'PUBLISHED_TO_TESTERS') and any(current == version(value) for value in published):
+        report(f'Publication skipped: version {candidate} is already published ({published_state}).')
         return False
     if submitted_state in ('PENDING_REVIEW', 'STAGED', 'PUBLISHED', 'PUBLISHED_TO_TESTERS'):
         if any(current == version(value) for value in submitted):
