@@ -17,7 +17,7 @@ FILES = (
     "popup.js", "fog-popup.js", "fog-visibility.js", "fog-board.js",
     "fog-content.js", "fog-bridge.js", "fog.css", "assist-popup.js",
     "assist-board.js", "assist-content.js", "assist-bridge.js", "assist-timer.js",
-    "assist.css", "settings-view.js", "popup-entry.js",
+    "assist.css", "settings-view.js", "settings-layout.js", "popup-entry.js",
     "floating-settings-geometry.js", "floating-settings.js", "icons/icon-16.png", "icons/icon-32.png",
     "icons/icon-48.png", "icons/icon-128.png",
 )

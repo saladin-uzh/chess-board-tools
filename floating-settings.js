@@ -27,11 +27,11 @@
       border: 0; padding: 4px; background: none; color: inherit; }
     .mark { width: 24px; height: 24px; margin-right: 6px; vertical-align: middle; border-radius: 4px; }
     .close { border: 0; background: none; color: inherit; padding: 4px 8px; font-size: 20px; }
-    .content { flex: 1; min-height: 0; overflow: auto; padding: 12px; overscroll-behavior: contain; }
+    .content { flex: 1; min-height: 0; overflow: auto; padding: 8px 12px; overscroll-behavior: contain; }
     p { margin: 0; font-size: 12px; }
     h2 { margin: 0; font-size: 15px; }
-    .settings, .assist-settings, .fog-settings { display: grid; gap: 8px; }
-    .assist-settings, .fog-settings { border-top: 1px solid #8886; margin-top: 12px; padding-top: 12px; }
+    .settings, .assist-settings, .fog-settings { display: grid; gap: 4px; }
+    .assist-settings, .fog-settings { border-top: 1px solid #8886; margin-top: 6px; padding-top: 8px; }
     .field { display: grid; gap: 4px; font-weight: 600; }
     .fog-toggle { display: flex; align-items: center; justify-content: space-between; }
     select { width: 100%; min-height: 32px; border: 1px solid #888; border-radius: 6px; padding: 4px;
@@ -39,7 +39,6 @@
     option { color: var(--color-text-default, light-dark(#25303b, #f0f3f6)); background: var(--color-bg-opaque, light-dark(#fff, #262421)); }
     input { accent-color: var(--color-text-brand, #81b64c); }
     input[type=range] { width: 100%; }
-    .tick-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .status:empty { display: none; }
     .status--error { color: light-dark(#b42318, #ffb4ab); }
     .status--success { color: light-dark(#137333, #8ddb9f); }
@@ -47,7 +46,7 @@
     .resize { touch-action: none; cursor: nwse-resize; border: 0; background: none; color: inherit;
       min-width: 28px; min-height: 28px; }
   `);
-  root.adoptedStyleSheets = [sheet];
+  root.adoptedStyleSheets = [sheet, globalThis.ChessSettingsLayout];
   const launcher = document.createElement("button");
   launcher.type = "button";
   launcher.className = "launcher";
@@ -77,6 +76,12 @@
     if (panel) {
       for (const name of ["left", "top", "width", "height"]) panel.style[name] = `${currentGeometry[name]}px`;
     }
+  }
+  function layoutInitial(value) {
+    layout(value);
+    if (typeof value?.height === "number" && Number.isFinite(value.height)) return;
+    panel.style.height = "auto";
+    layout({ ...value, height: panel.offsetHeight });
   }
   function persist() {
     revision++;
@@ -173,7 +178,7 @@
       returnFocus = root.activeElement || document.activeElement;
       if (!panel) createPanel();
       panel.hidden = false;
-      layout(savedGeometry);
+      layoutInitial(savedGeometry);
       launcher.setAttribute("aria-expanded", "true");
     }
     refreshStatus();
@@ -194,7 +199,7 @@
   chrome.storage.local.get(STORAGE_KEY).then(data => {
     if (revision !== loadRevision) return;
     savedGeometry = data[STORAGE_KEY] || null;
-    if (panel && !panel.hidden) layout(savedGeometry);
+    if (panel && !panel.hidden) layoutInitial(savedGeometry);
   }).catch(() => {});
   addEventListener("resize", () => { if (panel && !panel.hidden) layout(currentGeometry); });
   addEventListener("pageshow", () => { if (panel && !panel.hidden) { layout(currentGeometry); refreshStatus(); } });

@@ -11,6 +11,7 @@
     normalizeKeybindings,
   } = globalThis.ChessConfirmMoveSettings;
   let keybindings = normalizeKeybindings(null);
+  let keybindingsRevision = 0;
 
   function isClickable(element) {
     if (!(element instanceof HTMLElement)) {
@@ -92,11 +93,12 @@
   }
 
   async function loadKeybindings() {
+    const revision = keybindingsRevision;
     try {
       const data = await chrome.storage.sync.get(KEYBINDING_STORAGE_KEY);
-      keybindings = normalizeKeybindings(data[KEYBINDING_STORAGE_KEY]);
+      if (revision === keybindingsRevision) keybindings = normalizeKeybindings(data[KEYBINDING_STORAGE_KEY]);
     } catch (error) {
-      keybindings = normalizeKeybindings(null);
+      if (revision === keybindingsRevision) keybindings = normalizeKeybindings(null);
     }
   }
 
@@ -105,12 +107,15 @@
       return;
     }
 
+    keybindingsRevision++;
     keybindings = normalizeKeybindings(changes[KEYBINDING_STORAGE_KEY].newValue);
   });
 
   loadKeybindings().then(() => {
     window.addEventListener("keydown", handleKeydown, true);
     window.addEventListener("keyup", handleKeyup, true);
+    window.addEventListener("pointerdown", () => { controlPress = null; }, true);
+    window.addEventListener("wheel", () => { controlPress = null; }, true);
     window.addEventListener("blur", () => { controlPress = null; });
     window.addEventListener("focusin", () => { controlPress = null; }, true);
     window.addEventListener("pagehide", () => { controlPress = null; });

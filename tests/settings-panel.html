@@ -50,6 +50,7 @@
 <script src="../assist-popup.js"></script>
 <script src="../fog-popup.js"></script>
 <script src="../settings-view.js"></script>
+<script src="../settings-layout.js"></script>
 <script src="../floating-settings-geometry.js"></script>
 <script src="../floating-settings.js"></script>
 <script>
@@ -72,6 +73,8 @@
     check("Toolbar message opens settings", fixture.open()?.opened === true);
     fixture.open(); await tick();
     check("Repeated opening keeps one panel", shadow.querySelectorAll(".panel").length === 1);
+    const content = find(".content"), initialPanel = find(".panel");
+    check("Default panel fits its content when the viewport permits", initialPanel.offsetHeight >= innerHeight - 24 || content.scrollHeight <= content.clientHeight + 1);
     check("Both surfaces use the existing defaults", find("#confirm-key").value === "Space" && !find("#keyboard-enabled").checked && find("#tick-frequency").value === "auto");
     toolbar.querySelector("#confirm-key").value = "Enter";
     toolbar.querySelector("#confirm-key").dispatchEvent(new Event("change")); await tick();

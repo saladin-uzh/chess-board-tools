@@ -97,5 +97,14 @@
     document.dispatchEvent(new PointerEvent("pointerup", { ...options, buttons: 0 }));
     return true;
   }
-  globalThis.ChessBoardAssist = Object.freeze({ read, readCoordinates, validate, validateCoordinates, point, clickSquare, clickPromotion, cancelPremoves });
+  function cancelSelection(board, snapshot) {
+    if (!board?.isConnected || !snapshot?.active || !snapshot.stable || !snapshot.side ||
+        !["human", "bot"].includes(snapshot.context)) return false;
+    const highlights = board.querySelectorAll(".highlight.growing-circle");
+    if (highlights.length !== 1) return false;
+    const square = highlights[0].getAttribute("class")?.match(/\bsquare-([1-8])([1-8])\b/);
+    if (!square) return false;
+    return clickSquare(board, `${String.fromCharCode(96 + Number(square[1]))}${square[2]}`, snapshot);
+  }
+  globalThis.ChessBoardAssist = Object.freeze({ read, readCoordinates, validate, validateCoordinates, point, clickSquare, clickPromotion, cancelPremoves, cancelSelection });
 })();

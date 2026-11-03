@@ -21,7 +21,7 @@
     const position = parseFEN(input.fen);
     if (!position || !(input.selected === null || Number.isInteger(input.selected) && input.selected >= 0 && input.selected < 64)) return null;
     const side = perspective === "auto" ? (["white", "black"].includes(input.side) ? input.side : input.flipped ? "black" : "white") : perspective;
-    if (!["white", "black"].includes(side)) return { unavailable: "Choose White or Black in the popup." };
+    if (!["white", "black"].includes(side)) return null;
     return { position, side, selected: input.selected, flipped: input.flipped };
   }
 

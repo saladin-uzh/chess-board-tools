@@ -7,7 +7,6 @@
   let revision = 0;
   let board = null;
   let overlay = null;
-  let notice = null;
   let boardObserver = null;
   let resizeObserver = null;
   let timer = null;
@@ -35,8 +34,6 @@
     resizeObserver?.disconnect();
     boardObserver = resizeObserver = null;
     removeMask();
-    notice?.remove();
-    notice = null;
     board = null;
   }
 
@@ -45,8 +42,8 @@
     board = next;
     if (!board) return;
     boardObserver = new MutationObserver(records => {
-      if (records.some(record => !record.target.closest?.(".chess-fog-overlay, .chess-fog-notice") &&
-          !(record.type === "childList" && [...record.addedNodes, ...record.removedNodes].every(node => node === overlay || node === notice || node.classList?.contains("chess-fog-overlay") || node.classList?.contains("chess-fog-notice"))))) schedule();
+      if (records.some(record => !record.target.closest?.(".chess-fog-overlay") &&
+          !(record.type === "childList" && [...record.addedNodes, ...record.removedNodes].every(node => node === overlay || node.classList?.contains("chess-fog-overlay"))))) schedule();
     });
     boardObserver.observe(board, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "style"] });
     resizeObserver = new ResizeObserver(schedule);
@@ -63,21 +60,11 @@
     if (next !== board) attach(next);
     const snapshot = board ? read(board, preferences.perspective) : null;
     const rect = board?.getBoundingClientRect();
-    if (!snapshot || snapshot.unavailable || !rect?.width || !rect?.height || Math.abs(rect.width - rect.height) > 1) {
+    if (!snapshot || !rect?.width || !rect?.height || Math.abs(rect.width - rect.height) > 1) {
       removeMask();
-      setStatus(snapshot?.unavailable || "Fog unavailable on this board or while the position is changing.");
-      if (snapshot?.unavailable && board) {
-        if (!notice) {
-          notice = document.createElement("div");
-          notice.className = "chess-fog-notice";
-          notice.setAttribute("role", "status");
-          board.append(notice);
-        }
-        if (notice.textContent !== status) notice.textContent = status;
-      } else { notice?.remove(); notice = null; }
+      setStatus("Fog unavailable on this board or while the position is changing.");
       return;
     }
-    notice?.remove(); notice = null;
     const masks = visibility(snapshot.position, snapshot.side, snapshot.selected);
     const opponent = visibility(snapshot.position, snapshot.side === "white" ? "black" : "white");
     if (!overlay) {
