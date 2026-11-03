@@ -145,6 +145,8 @@ input:disabled {
 }
 
 h2 { margin: 0; font-size: 15px; }
+.fog-settings { grid-template-columns: 1fr 1fr; column-gap: 8px; }
+.fog-settings > :not(label[for="fog-opacity"]):not(label[for="fog-perspective"]) { grid-column: 1 / -1; }
 .fog-toggle { display: flex; align-items: center; justify-content: space-between; }
 input[type="range"] { width: 100%; accent-color: var(--accent); }
 input[type="checkbox"] { accent-color: var(--accent); }

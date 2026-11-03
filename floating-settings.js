@@ -27,11 +27,15 @@
       border: 0; padding: 4px; background: none; color: inherit; }
     .mark { width: 24px; height: 24px; margin-right: 6px; vertical-align: middle; border-radius: 4px; }
     .close { border: 0; background: none; color: inherit; padding: 4px 8px; font-size: 20px; }
-    .content { flex: 1; min-height: 0; overflow: auto; padding: 12px; overscroll-behavior: contain; }
+    .content { flex: 1; min-height: 0; overflow: auto; padding: 8px 12px; overscroll-behavior: contain; }
     p { margin: 0; font-size: 12px; }
     h2 { margin: 0; font-size: 15px; }
-    .settings, .assist-settings, .fog-settings { display: grid; gap: 8px; }
-    .assist-settings, .fog-settings { border-top: 1px solid #8886; margin-top: 12px; padding-top: 12px; }
+    .settings, .assist-settings, .fog-settings { display: grid; gap: 4px; }
+    .settings { grid-template-columns: 1fr 1fr; }
+    .settings .status { grid-column: 1 / -1; }
+    .assist-settings, .fog-settings { border-top: 1px solid #8886; margin-top: 6px; padding-top: 8px; }
+    .fog-settings { grid-template-columns: 1fr 1fr; column-gap: 8px; }
+    .fog-settings > :not(label[for="fog-opacity"]):not(label[for="fog-perspective"]) { grid-column: 1 / -1; }
     .field { display: grid; gap: 4px; font-weight: 600; }
     .fog-toggle { display: flex; align-items: center; justify-content: space-between; }
     select { width: 100%; min-height: 32px; border: 1px solid #888; border-radius: 6px; padding: 4px;
@@ -77,6 +81,12 @@
     if (panel) {
       for (const name of ["left", "top", "width", "height"]) panel.style[name] = `${currentGeometry[name]}px`;
     }
+  }
+  function layoutInitial(value) {
+    layout(value);
+    if (typeof value?.height === "number" && Number.isFinite(value.height)) return;
+    panel.style.height = "auto";
+    layout({ ...value, height: panel.offsetHeight });
   }
   function persist() {
     revision++;
@@ -173,7 +183,7 @@
       returnFocus = root.activeElement || document.activeElement;
       if (!panel) createPanel();
       panel.hidden = false;
-      layout(savedGeometry);
+      layoutInitial(savedGeometry);
       launcher.setAttribute("aria-expanded", "true");
     }
     refreshStatus();
@@ -194,7 +204,7 @@
   chrome.storage.local.get(STORAGE_KEY).then(data => {
     if (revision !== loadRevision) return;
     savedGeometry = data[STORAGE_KEY] || null;
-    if (panel && !panel.hidden) layout(savedGeometry);
+    if (panel && !panel.hidden) layoutInitial(savedGeometry);
   }).catch(() => {});
   addEventListener("resize", () => { if (panel && !panel.hidden) layout(currentGeometry); });
   addEventListener("pageshow", () => { if (panel && !panel.hidden) { layout(currentGeometry); refreshStatus(); } });

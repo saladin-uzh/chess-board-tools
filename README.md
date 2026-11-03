@@ -66,7 +66,8 @@ On Chess.com, select the **Chess Board Tools** button at the bottom right, or
 floating panel. The independent extension panel follows the page's theme.
 Drag its title or resize its lower-right corner; focused title/resize buttons
 also accept arrow keys (Shift moves in larger steps). Escape closes the panel.
-Its position and size are saved locally. It stays open during navigation within
+Its initial height fits its contents when the viewport allows; smaller windows
+scroll. Its position and size are saved locally. It stays open during navigation within
 the page, but starts closed after a full reload and in other tabs. Reload existing
 Chess.com tabs after updating the extension to make this panel available.
 
