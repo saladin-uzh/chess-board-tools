@@ -146,7 +146,7 @@ function harness({ realTimer = false } = {}) {
   run(c, 'assist-content.js');
   function dispatch(type, event = {}) { event.type = type; for (const fn of listeners[type] || []) fn(event); }
   return { document, get board() { return board; }, selectionAction(value) { selectionAction = value; }, clickedBoards, cancelledBoards, cancelPremoves: () => c.ChessAssistInput.cancelPremoves(), boards(value) { candidates = value; }, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
-    key(key, extra = {}) { const e = { key, code: key === 'Escape' ? 'Escape' : '', target: {}, preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...extra }; dispatch('keydown', e); return e; },
+    key(key, extra = {}) { const code = /^[a-z]$/.test(key) ? `Key${key.toUpperCase()}` : /^[1-8]$/.test(key) ? `Digit${key}` : key === 'Escape' ? 'Escape' : ''; const e = { key, code, target: {}, preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...extra }; dispatch('keydown', e); return e; },
     activation(value) { c.navigator = value; },
     dispatch, advance(ms) { now += ms; for (const [id, t] of timeouts) if (t.due <= now) { timeouts.delete(id); t.fn(); } },
     poll() { for (const fn of intervals.values()) fn(); },
@@ -184,6 +184,15 @@ test('promotion keys select host pieces and suspend coordinate input', async () 
     app.key('a'); app.key('8'); assert.equal(app.clicks.length, 0);
     assert.equal(app.key(key).prevented, true); assert.deepEqual(app.clicks, [key]);
   }
+});
+
+test('coordinate and promotion keys use physical positions across layouts', async () => {
+  const app = harness(); await flush();
+  app.key('и', { code: 'KeyB' }); app.key('"', { code: 'Digit2' });
+  app.key('ф', { code: 'KeyA' }); app.key('2', { code: 'Numpad2' });
+  assert.deepEqual(app.clicks, ['b2', 'a2']);
+  app.picker('q'); assert.equal(app.key('й', { code: 'KeyQ' }).prevented, true);
+  assert.deepEqual(app.clicks, ['b2', 'a2', 'q']);
 });
 
 test('a repeated file key cancels only the file buffer and keeps the selected piece', async () => {

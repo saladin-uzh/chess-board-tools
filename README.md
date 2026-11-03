@@ -96,8 +96,9 @@ deselecting the piece already selected on the board. A different letter replaces
 the file selection. The following digit outlines the chosen square above fog. The square
 outline clears on position or lifecycle changes. An incomplete letter appears beside
 the board and clears after five seconds, Escape, focus changes, scrolling,
-position changes, or board replacement. Use Latin `a–h` in your active layout.
-When the host promotion picker opens, `q/r/b/n` choose queen/rook/bishop/knight;
+position changes, or board replacement. Physical `a–h` positions on a standard
+QWERTY keyboard work regardless of layout; use the number row or numeric keypad.
+When the host promotion picker opens, physical QWERTY `q/r/b/n` positions choose queen/rook/bishop/knight;
 coordinate entry pauses. Chess.com validates moves and retains its normal
 confirmation flow. All keyboard actions pause while an input has focus.
 

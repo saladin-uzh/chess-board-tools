@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Cancel the selected piece as well as queued premoves with the cancel shortcut.
+- Use physical key positions for board coordinates and promotion, independent of keyboard layout.
 
 ## 1.2.1
 

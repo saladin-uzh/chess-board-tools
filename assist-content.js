@@ -87,18 +87,19 @@
     const snapshot = update();
     if (!snapshot?.stable) { clear(); return; }
     const picker = promotion();
-    const key = event.key?.toLowerCase();
+    const letter = /^Key([A-Z])$/.exec(event.code)?.[1].toLowerCase();
+    const digit = /^(?:Digit|Numpad)([1-8])$/.exec(event.code)?.[1];
     if (picker) {
       clear();
-      if (!/^[qrbn]$/.test(key || "")) return;
-      const candidates = [...picker.querySelectorAll(`.promotion-piece.w${key}, .promotion-piece.b${key}`)].filter(clickable);
+      if (!/^[qrbn]$/.test(letter || "")) return;
+      const candidates = [...picker.querySelectorAll(`.promotion-piece.w${letter}, .promotion-piece.b${letter}`)].filter(clickable);
       if (candidates.length === 1) { if (clickPromotion(candidates[0])) consume(event); }
       return;
     }
-    if (/^[a-h]$/.test(key || "")) {
-      if (file === key) { clearBuffer(); consume(event); return; }
-      clearBuffer(); file = key;
-      const column = key.charCodeAt(0) - 97;
+    if (/^[a-h]$/.test(letter || "")) {
+      if (file === letter) { clearBuffer(); consume(event); return; }
+      clearBuffer(); file = letter;
+      const column = letter.charCodeAt(0) - 97;
       filePreview = showRegion("chess-assist-file", snapshot.flipped ? 7 - column : column);
       const rect = board.getBoundingClientRect();
       indicator = document.createElement("div");
@@ -109,12 +110,12 @@
       document.body.append(indicator);
       bufferTimer = setTimeout(clear, 5000);
       consume(event);
-    } else if (/^[1-8]$/.test(key || "") && file) {
-      const square = `${file}${key}`;
+    } else if (digit && file) {
+      const square = `${file}${digit}`;
       clearBuffer();
       if (clickSquare(board, square, snapshot)) {
         squareIndicator?.remove();
-        const column = square.charCodeAt(0) - 97, row = Number(key) - 1;
+        const column = square.charCodeAt(0) - 97, row = Number(digit) - 1;
         squareIndicator = showRegion("chess-assist-square", snapshot.flipped ? 7 - column : column, snapshot.flipped ? row : 7 - row);
         consume(event);
       }
