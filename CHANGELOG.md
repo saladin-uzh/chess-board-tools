@@ -2,9 +2,13 @@
 
 ## Unreleased
 
+## 1.2.2
+
 - Cancel the selected piece as well as queued premoves with the cancel shortcut.
 - Use physical key positions for board coordinates and promotion, independent of keyboard layout.
 - Fit the default floating settings panel to its content and compact both settings surfaces.
+- Prevent stale shortcut preferences and keyboard focus or Ctrl combinations from triggering unintended moves.
+- Share settings layout rules and remove unreachable fog notice code.
 
 ## 1.2.1
 
