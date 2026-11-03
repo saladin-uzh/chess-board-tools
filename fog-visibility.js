@@ -97,5 +97,5 @@
     return { union, selected: selectedMask };
   }
 
-  globalThis.ChessFogVisibility = Object.freeze({ parseFEN, visibility, squareIndex, colorOf });
+  globalThis.ChessFogVisibility = Object.freeze({ parseFEN, visibility, squareIndex });
 })();
