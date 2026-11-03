@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Cancel the selected piece as well as queued premoves with the cancel shortcut.
+
 ## 1.2.1
 
 - Add a floating Chess Board Tools settings panel, opened from the page or toolbar

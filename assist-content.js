@@ -1,7 +1,7 @@
 (() => {
   "use strict";
   const { ASSIST_STORAGE_KEY, normalizeAssist, hasInputFocus, CONFIRM_BUTTON_SELECTOR } = globalThis.ChessConfirmMoveSettings;
-  const { read, readCoordinates, clickSquare, clickPromotion, cancelPremoves } = globalThis.ChessBoardAssist;
+  const { read, readCoordinates, clickSquare, clickPromotion, cancelPremoves, cancelSelection } = globalThis.ChessBoardAssist;
   const { createTurnTimer, createAudio } = globalThis.ChessAssistTimer;
   const turnTimer = createTurnTimer(), audio = createAudio();
   let preferences = normalizeAssist(null), revision = 0;
@@ -31,7 +31,10 @@
   }
   globalThis.ChessAssistInput = Object.freeze({ clear, cancelPremoves() {
     update();
-    return timerBoard ? cancelPremoves(timerBoard, read(timerBoard)) : false;
+    if (!timerBoard) return false;
+    const snapshot = read(timerBoard);
+    const selected = cancelSelection(timerBoard, snapshot);
+    return cancelPremoves(timerBoard, snapshot) || selected;
   } });
   function clickable(element) {
     const rect = element?.getBoundingClientRect();

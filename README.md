@@ -79,8 +79,8 @@ such as Ctrl+C are ignored. Shortcuts activate after settings load; popup
 controls are disabled while loading or saving.
 
 Confirmation requires a visible, enabled confirmation button. Cancellation
-uses the visible Cancel button, or clears all queued premoves on your active
-game board, including during the opponent’s turn. It works with keyboard
+uses the visible Cancel button, or deselects the selected piece and clears all
+queued premoves on your active game board, including during the opponent’s turn. It works with keyboard
 board control disabled. All extension keyboard actions pause while
 an input, textarea, select, editable element, or textbox has focus. Events
 inside buttons and other interactive controls are also ignored.
