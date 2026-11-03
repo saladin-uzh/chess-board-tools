@@ -31,11 +31,7 @@
     p { margin: 0; font-size: 12px; }
     h2 { margin: 0; font-size: 15px; }
     .settings, .assist-settings, .fog-settings { display: grid; gap: 4px; }
-    .settings { grid-template-columns: 1fr 1fr; }
-    .settings .status { grid-column: 1 / -1; }
     .assist-settings, .fog-settings { border-top: 1px solid #8886; margin-top: 6px; padding-top: 8px; }
-    .fog-settings { grid-template-columns: 1fr 1fr; column-gap: 8px; }
-    .fog-settings > :not(label[for="fog-opacity"]):not(label[for="fog-perspective"]) { grid-column: 1 / -1; }
     .field { display: grid; gap: 4px; font-weight: 600; }
     .fog-toggle { display: flex; align-items: center; justify-content: space-between; }
     select { width: 100%; min-height: 32px; border: 1px solid #888; border-radius: 6px; padding: 4px;
@@ -43,7 +39,6 @@
     option { color: var(--color-text-default, light-dark(#25303b, #f0f3f6)); background: var(--color-bg-opaque, light-dark(#fff, #262421)); }
     input { accent-color: var(--color-text-brand, #81b64c); }
     input[type=range] { width: 100%; }
-    .tick-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .status:empty { display: none; }
     .status--error { color: light-dark(#b42318, #ffb4ab); }
     .status--success { color: light-dark(#137333, #8ddb9f); }
@@ -51,7 +46,7 @@
     .resize { touch-action: none; cursor: nwse-resize; border: 0; background: none; color: inherit;
       min-width: 28px; min-height: 28px; }
   `);
-  root.adoptedStyleSheets = [sheet];
+  root.adoptedStyleSheets = [sheet, globalThis.ChessSettingsLayout];
   const launcher = document.createElement("button");
   launcher.type = "button";
   launcher.className = "launcher";

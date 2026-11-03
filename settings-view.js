@@ -19,7 +19,7 @@
         <label class="field fog-toggle" for="keyboard-enabled">
           <span>Keyboard board control</span><input id="keyboard-enabled" type="checkbox" disabled>
         </label>
-        <p>Squares: b then 2. Promotion: q/r/b/n. Pauses in input fields.</p>
+        <p>Use physical QWERTY keys: b then 2; promotion q/r/b/n. Pauses in input fields.</p>
         <label class="field fog-toggle" for="ticking-enabled">
           <span>Tick during my turn</span><input id="ticking-enabled" type="checkbox" disabled>
         </label>
@@ -52,11 +52,11 @@
           <span>Enable fog</span>
           <input id="fog-enabled" type="checkbox" disabled>
         </label>
-        <label class="field" for="fog-opacity">
+        <label class="field settings-pair" for="fog-opacity">
           <span>Fog opacity <output id="fog-opacity-value" for="fog-opacity">55%</output></span>
           <input id="fog-opacity" type="range" min="20" max="80" step="1" value="55" disabled>
         </label>
-        <label class="field" for="fog-perspective">
+        <label class="field settings-pair" for="fog-perspective">
           <span>Perspective</span>
           <select id="fog-perspective" disabled>
             <option value="auto">Auto (player / bottom)</option>
@@ -70,7 +70,6 @@
       </section>
 `;
   globalThis.ChessSettingsView = Object.freeze({
-    markup,
     mount(root, options = {}) {
       root.innerHTML = markup;
       const { shortcuts, assist, fog } = globalThis.ChessSettingsControllers;

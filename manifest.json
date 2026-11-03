@@ -90,6 +90,7 @@
         "assist-popup.js",
         "fog-popup.js",
         "settings-view.js",
+        "settings-layout.js",
         "floating-settings-geometry.js",
         "floating-settings.js"
       ],

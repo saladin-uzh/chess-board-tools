@@ -41,7 +41,8 @@ test("toolbar open reports success only after the active page acknowledges it", 
   const status = {};
   let response = { opened: true }, message;
   const c = vm.createContext({
-    document: { querySelector: selector => selector === "#open-floating-settings" ? open : status },
+    document: { adoptedStyleSheets: [], querySelector: selector => selector === "#open-floating-settings" ? open : status },
+    ChessSettingsLayout: {},
     ChessSettingsView: { mount() {} }, window: { close() { closed = true; } },
     chrome: { tabs: { query: async () => [{ id: 7 }], sendMessage: async (id, value) => {
       disabledDuringSend = open.disabled; message = { id, type: value.type }; return response;
@@ -84,6 +85,7 @@ function pointerPanel() {
   const c = vm.createContext({
     document: { createElement: () => new Element(), body: new Element(), documentElement: new Element() },
     CSSStyleSheet: class { replaceSync() {} },
+    ChessSettingsLayout: {},
     MutationObserver: class { observe() {} disconnect() {} },
     innerWidth: 1000, innerHeight: 800, addEventListener() {},
     ChessSettingsView: { mount: () => () => {} },
