@@ -66,7 +66,8 @@ On Chess.com, select the **Chess Board Tools** button at the bottom right, or
 floating panel. The independent extension panel follows the page's theme.
 Drag its title or resize its lower-right corner; focused title/resize buttons
 also accept arrow keys (Shift moves in larger steps). Escape closes the panel.
-Its position and size are saved locally. It stays open during navigation within
+Its initial height fits its contents when the viewport allows; smaller windows
+scroll. Its position and size are saved locally. It stays open during navigation within
 the page, but starts closed after a full reload and in other tabs. Reload existing
 Chess.com tabs after updating the extension to make this panel available.
 
@@ -79,8 +80,8 @@ such as Ctrl+C are ignored. Shortcuts activate after settings load; popup
 controls are disabled while loading or saving.
 
 Confirmation requires a visible, enabled confirmation button. Cancellation
-uses the visible Cancel button, or clears all queued premoves on your active
-game board, including during the opponent’s turn. It works with keyboard
+uses the visible Cancel button, or deselects the selected piece and clears all
+queued premoves on your active game board, including during the opponent’s turn. It works with keyboard
 board control disabled. All extension keyboard actions pause while
 an input, textarea, select, editable element, or textbox has focus. Events
 inside buttons and other interactive controls are also ignored.
@@ -96,8 +97,9 @@ deselecting the piece already selected on the board. A different letter replaces
 the file selection. The following digit outlines the chosen square above fog. The square
 outline clears on position or lifecycle changes. An incomplete letter appears beside
 the board and clears after five seconds, Escape, focus changes, scrolling,
-position changes, or board replacement. Use Latin `a–h` in your active layout.
-When the host promotion picker opens, `q/r/b/n` choose queen/rook/bishop/knight;
+position changes, or board replacement. Physical `a–h` positions on a standard
+QWERTY keyboard work regardless of layout; use the number row or numeric keypad.
+When the host promotion picker opens, physical QWERTY `q/r/b/n` positions choose queen/rook/bishop/knight;
 coordinate entry pauses. Chess.com validates moves and retains its normal
 confirmation flow. All keyboard actions pause while an input has focus.
 

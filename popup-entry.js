@@ -1,5 +1,6 @@
 (() => {
   "use strict";
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, globalThis.ChessSettingsLayout];
   globalThis.ChessSettingsView.mount(document.querySelector("#settings-content"));
   const open = document.querySelector("#open-floating-settings");
   const status = document.querySelector("#floating-open-status");

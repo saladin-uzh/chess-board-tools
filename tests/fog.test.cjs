@@ -208,6 +208,9 @@ test('adapter rejects unsupported, transient, incomplete and disconnected snapsh
   assert.equal(validate(snapshot, { ...board, isConnected: false }), null);
   assert.equal(validate(snapshot, board, '/play/online'), null);
   assert.equal(validate(snapshot, board, '/analysis/classroom'), null);
+  for (const perspective of ['red', null, undefined]) {
+    assert.equal(context.ChessFogBoard.validateSnapshot(JSON.stringify(snapshot), board, '/play/computer', perspective), null);
+  }
   assert.equal(validate({ ...snapshot, side: null }).side, 'white');
   assert.equal(validate({ ...snapshot, side: null, flipped: true }).side, 'black');
   assert.equal(validate({ ...snapshot, side: 'white', flipped: true }).side, 'white');

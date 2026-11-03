@@ -162,6 +162,27 @@ test("initial storage loading cannot trigger the opposite move action", async ()
   assert.equal(app.cancel.clicks, 1);
 });
 
+for (const outcome of ["resolve", "reject"]) {
+  test(`new shortcut settings survive delayed initial read ${outcome}`, async () => {
+    const app = contentHarness();
+    app.change({ confirmKeyCode: "Enter", cancelKeyCode: "Space" });
+    if (outcome === "resolve") app.storage.resolve({ keybindings: { confirmKeyCode: "Space", cancelKeyCode: "Escape" } });
+    else app.storage.reject(new Error("Storage unavailable"));
+    await flush();
+    app.key("Space", " "); assert.equal(app.cancel.clicks, 1); assert.equal(app.confirm.clicks, 0);
+    app.key("Enter", "Enter"); assert.equal(app.confirm.clicks, 1);
+  });
+}
+
+test("focused links and ARIA controls cannot trigger confirmation", async () => {
+  const app = contentHarness(); app.storage.resolve({ keybindings: { confirmKeyCode: "Enter", cancelKeyCode: "Escape" } }); await flush();
+  for (const selector of ['a[href]', '[role="button"]', '[role="link"]', 'summary']) {
+    app.document.activeElement = { closest: query => query.includes(selector) ? {} : null };
+    assert.equal(app.key("Enter", "Enter").prevented, undefined);
+  }
+  assert.equal(app.confirm.clicks, 0);
+});
+
 test("cancel shortcuts clear premoves without a confirmation panel, including standalone Ctrl", async () => {
   for (const code of ['Escape', 'Space', 'Control']) {
     const app = contentHarness(); let clears = 0, cancels = 0;
@@ -304,6 +325,10 @@ test("both Ctrl keys act only on standalone release; chords, blur and focus canc
   app.key("KeyC", "c", { ctrlKey: true });
   assert.equal(app.key("ControlLeft", "Control", {}, "keyup").prevented, undefined);
   for (const reset of ["blur", "focusin", "pagehide"]) {
+    app.key("ControlLeft", "Control", { ctrlKey: true }); app.listeners[reset]();
+    assert.equal(app.key("ControlLeft", "Control", {}, "keyup").prevented, undefined);
+  }
+  for (const reset of ["pointerdown", "wheel"]) {
     app.key("ControlLeft", "Control", { ctrlKey: true }); app.listeners[reset]();
     assert.equal(app.key("ControlLeft", "Control", {}, "keyup").prevented, undefined);
   }

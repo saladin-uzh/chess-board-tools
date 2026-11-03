@@ -110,7 +110,7 @@ test('audio waits for gesture, releases nodes and tolerates blocked or missing a
 
 function harness({ realTimer = false } = {}) {
   const listeners = {}, docListeners = {}, timeouts = new Map(), intervals = new Map(), clicks = [], timerCalls = [], timerResets = [], ticks = [], unlocks = [];
-  let candidates = null;
+  let candidates = null, selectionAction = () => false;
   const clickedBoards = [], cancelledBoards = [];
   let now = 0, serial = 0, changed, current = { ...snapshot, context: 'analysis', active: false, side: null }, board, confirmation;
   class Element {
@@ -134,7 +134,7 @@ function harness({ realTimer = false } = {}) {
     clearTimeout: id => timeouts.delete(id), setInterval: fn => { const id = ++serial; intervals.set(id, fn); return id; }, clearInterval: id => intervals.delete(id),
     addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
     chrome: { storage: { local: { get: async () => ({ boardAssistPreferences: { keyboard: true } }) }, onChanged: { addListener: fn => { changed = fn; } } } },
-    ChessBoardAssist: { cancelPremoves: (b, state) => { if (!state?.active || !state?.stable || !state?.premoveCount) return false; cancelledBoards.push(b); return true; }, read: b => b.id === 'secondary' ? null : current, readCoordinates: () => current, clickSquare: (b, square) => { clickedBoards.push(b); clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
+    ChessBoardAssist: { cancelSelection: (...args) => selectionAction(...args), cancelPremoves: (b, state) => { if (!state?.active || !state?.stable || !state?.premoveCount) return false; cancelledBoards.push(b); return true; }, read: b => b.id === 'secondary' ? null : current, readCoordinates: () => current, clickSquare: (b, square) => { clickedBoards.push(b); clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
     ChessAssistTimer: { createTurnTimer: () => ({ reset() { timerResets.push(true); }, update(...args) { timerCalls.push(args); return false; } }), createAudio: () => ({ unlock() { unlocks.push(now); }, close() {}, tick() { ticks.push(now); } }) },
   });
   run(c, 'settings.js');
@@ -145,8 +145,8 @@ function harness({ realTimer = false } = {}) {
   }
   run(c, 'assist-content.js');
   function dispatch(type, event = {}) { event.type = type; for (const fn of listeners[type] || []) fn(event); }
-  return { document, get board() { return board; }, clickedBoards, cancelledBoards, cancelPremoves: () => c.ChessAssistInput.cancelPremoves(), boards(value) { candidates = value; }, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
-    key(key, extra = {}) { const e = { key, code: key === 'Escape' ? 'Escape' : '', target: {}, preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...extra }; dispatch('keydown', e); return e; },
+  return { document, get board() { return board; }, selectionAction(value) { selectionAction = value; }, clickedBoards, cancelledBoards, cancelPremoves: () => c.ChessAssistInput.cancelPremoves(), boards(value) { candidates = value; }, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
+    key(key, extra = {}) { const code = /^[a-z]$/.test(key) ? `Key${key.toUpperCase()}` : /^[1-8]$/.test(key) ? `Digit${key}` : key === 'Escape' ? 'Escape' : ''; const e = { key, code, target: {}, preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...extra }; dispatch('keydown', e); return e; },
     activation(value) { c.navigator = value; },
     dispatch, advance(ms) { now += ms; for (const [id, t] of timeouts) if (t.due <= now) { timeouts.delete(id); t.fn(); } },
     poll() { for (const fn of intervals.values()) fn(); },
@@ -184,6 +184,15 @@ test('promotion keys select host pieces and suspend coordinate input', async () 
     app.key('a'); app.key('8'); assert.equal(app.clicks.length, 0);
     assert.equal(app.key(key).prevented, true); assert.deepEqual(app.clicks, [key]);
   }
+});
+
+test('coordinate and promotion keys use physical positions across layouts', async () => {
+  const app = harness(); await flush();
+  app.key('и', { code: 'KeyB' }); app.key('"', { code: 'Digit2' });
+  app.key('ф', { code: 'KeyA' }); app.key('2', { code: 'Numpad2' });
+  assert.deepEqual(app.clicks, ['b2', 'a2']);
+  app.picker('q'); assert.equal(app.key('й', { code: 'KeyQ' }).prevented, true);
+  assert.deepEqual(app.clicks, ['b2', 'a2', 'q']);
 });
 
 test('a repeated file key cancels only the file buffer and keeps the selected piece', async () => {
@@ -283,6 +292,25 @@ test('premove cancellation dispatches native right pointer events only for owned
   for (const change of [{ premoveCount: 0 }, { side: null }, { active: false }, { stable: false }, { context: 'puzzle' }, { context: 'analysis' }]) {
     assert.equal(c.ChessBoardAssist.cancelPremoves(board, { ...queued, ...change }), false);
   }
+  assert.equal(events.length, 2);
+});
+
+test('selection cancellation clicks only an unambiguous selection on an active owned game', () => {
+  const events = [];
+  const c = vm.createContext({ document: { dispatchEvent: e => events.push(e) },
+    PointerEvent: class { constructor(type, options) { this.type = type; Object.assign(this, options); } } });
+  run(c, 'assist-board.js');
+  let highlights = [{ getAttribute: () => 'highlight growing-circle square-25' }];
+  const board = { isConnected: true, querySelectorAll: () => highlights,
+    getBoundingClientRect: () => ({ left: 10, top: 20, width: 800, height: 800 }), dispatchEvent: e => events.push(e) };
+  const state = { ...snapshot, context: 'human', active: true, side: 'white', stable: true, flipped: false };
+  assert.equal(c.ChessBoardAssist.cancelSelection(board, state), true);
+  assert.deepEqual(events.map(e => [e.type, e.button, e.clientX, e.clientY]), [['pointerdown', 0, 160, 370], ['pointerup', 0, 160, 370]]);
+  for (const change of [{ side: null }, { active: false }, { stable: false }, { context: 'analysis' }])
+    assert.equal(c.ChessBoardAssist.cancelSelection(board, { ...state, ...change }), false);
+  highlights = []; assert.equal(c.ChessBoardAssist.cancelSelection(board, state), false);
+  highlights = [{ getAttribute: () => 'highlight growing-circle' }]; assert.equal(c.ChessBoardAssist.cancelSelection(board, state), false);
+  highlights = [highlights[0], highlights[0]]; assert.equal(c.ChessBoardAssist.cancelSelection(board, state), false);
   assert.equal(events.length, 2);
 });
 
@@ -865,6 +893,16 @@ test('premove cancellation follows the primary game while coordinates follow a s
   app.boards([secondary]);
   assert.equal(app.cancelPremoves(), false);
   assert.deepEqual(app.cancelledBoards, [primary]);
+});
+
+test('cancel action clears selection and queued premoves on the primary board', async () => {
+  const app = harness(); await flush(); const selected = [];
+  app.selectionAction((board, state) => { selected.push([board, state]); return true; });
+  app.state({ ...snapshot, context: 'human', premoveCount: 2 });
+  assert.equal(app.cancelPremoves(), true);
+  assert.equal(selected[0][0], app.board); assert.deepEqual(app.cancelledBoards, [app.board]);
+  app.state({ ...snapshot, context: 'human', premoveCount: 0 });
+  assert.equal(app.cancelPremoves(), true);
 });
 
 

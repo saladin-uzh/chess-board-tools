@@ -162,13 +162,8 @@ input[type="checkbox"] { accent-color: var(--accent); }
 
 #open-floating-settings:focus-visible { outline: 2px solid var(--focus); }
 
-.settings { grid-template-columns: 1fr 1fr; }
-.settings .status { grid-column: 1 / -1; }
 .status:empty { display: none; }
 
 .tick-controls {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
   align-items: center;
 }
