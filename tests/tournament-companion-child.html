@@ -21,12 +21,14 @@ h2, input, .underlined-tabs-component { flex:0 0 auto; }
 <script>
 const kind = new URLSearchParams(location.search).get("kind");
 const tab = document.querySelector("#tournament");
-if (!new URLSearchParams(location.search).has("missing")) {
+if (["arena", "tournament"].includes(kind) && !new URLSearchParams(location.search).has("missing")) {
 tab.dataset.tab = kind;
 tab.addEventListener("click", () => {
   document.querySelector('[data-tab="watch"]').classList.remove("tabs-active"); tab.classList.add("tabs-active");
   const panel = document.createElement("div"); panel.className = `${kind}-tab-container`;
-  panel.innerHTML = `<div class="${kind}-header-component"><h2>Fixture tournament</h2><button class="header-action">Event details</button></div><div class="underlined-tabs-component"><button role="tab">Standings</button><button role="tab">Games</button><button role="tab">Chat</button></div><div class="native-content"></div><div class="${kind}-footer-component"><button class="footer-action">Join event</button></div>`;
+  panel.innerHTML = '<div><h2>Fixture tournament</h2><button class="header-action">Event details</button></div><div class="underlined-tabs-component"><button role="tab">Standings</button><button role="tab">Games</button><button role="tab">Chat</button></div><div class="native-content"></div><div><button class="footer-action">Join event</button></div>';
+  panel.firstElementChild.className = `${kind}-header-component`;
+  panel.lastElementChild.className = `${kind}-footer-component`;
   const content=panel.querySelector('.native-content');
   function selectTab(button){
     for(const tab of panel.querySelectorAll('.underlined-tabs-component button'))tab.classList.toggle('underlined-tabs-active',tab===button);
@@ -35,7 +37,14 @@ tab.addEventListener("click", () => {
       content.innerHTML='<div class="native-scroll">'+Array.from({length:100},(_,i)=>`<p>Message ${i}</p>`).join('')+'</div><input aria-label="Native chat"><button class="native-send">Native send</button>';
       content.querySelector('.native-send').addEventListener('click',()=>{panel.dataset.fixtureSends=Number(panel.dataset.fixtureSends||0)+1;});
     }else{
-      content.innerHTML='<div class="native-scroll">'+Array.from({length:100},(_,i)=>`<div class="row-action" role="button" tabindex="0">${button.textContent} entry ${i}</div>`).join('')+'</div>';
+      const scroll = document.createElement('div'); scroll.className = 'native-scroll';
+      for(let i=0;i<100;i++){
+        const row = document.createElement('div'); row.className = 'row-action';
+        row.setAttribute('role','button'); row.tabIndex = 0;
+        row.textContent = `${button.textContent} entry ${i}`;
+        scroll.append(row);
+      }
+      content.replaceChildren(scroll);
       for(const row of content.querySelectorAll('.row-action')){
         const activate=()=>{panel.dataset.fixtureNavigations=Number(panel.dataset.fixtureNavigations||0)+1;};
         row.addEventListener('click',activate);row.addEventListener('auxclick',activate);

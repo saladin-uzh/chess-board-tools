@@ -71,6 +71,11 @@ not established by either local fixture run.
 JavaScript syntax, diff and packaging checks passed with 29 runtime files.
 This is local candidate validation, not installed-extension or live-service proof.
 
+`tests/tournament-companion-security.html` checks that the simulated child page
+rejects unsupported tournament kinds and renders markup-like tab labels as text.
+It also checks normal Arena/Swiss standings, native Chat handlers and missing-view
+behavior. This regression reproduced HTML interpretation before the fixture fix.
+
 ## Unreleased floating settings checks — 28 October 2026
 
 - 104 Node tests passed, including geometry bounds, shadow focus guards, toolbar
