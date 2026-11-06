@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add a preview tournament companion opened from native Arena/Swiss Share.
+  It keeps the main Play tab available while displaying a separate native
+  tournament page, with close, move and resize controls. Live confirmation-button
+  and reconnect validation remain pending.
+
 ## 1.2.2
 
 - Cancel the selected piece as well as queued premoves with the cancel shortcut.
