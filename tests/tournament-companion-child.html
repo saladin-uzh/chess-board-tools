@@ -1,0 +1,53 @@
+<!doctype html><meta charset="utf-8"><title>Simulated native Play page</title>
+<style>
+body { margin:0; background:#262421; color:#eee; font:14px system-ui; }
+.board-layout-main { height:500px; background:#456; }
+.board-layout-sidebar { margin-left:100px; width:360px; }
+.sidebar-component,.sidebar-content { display:flex; flex-direction:column; }
+.arena-tab-container,.tournament-tab-container { display:flex; flex-direction:column; }
+.native-content { flex:1; min-height:0; display:flex; flex-direction:column; }
+.native-scroll { flex:1; min-height:0; overflow:auto; }
+h2, input, .underlined-tabs-component { flex:0 0 auto; }
+.native-modal { position:fixed;inset:30px;z-index:1000;background:#444; }
+#mobile-toolbar { position:fixed;inset:0 0 auto;z-index:100;background:#484; }
+</style>
+<div class="board-layout-nav"><nav id="sidebar-main-menu">Native menu</nav><header id="mobile-toolbar">Mobile menu</header></div>
+<div id="mobile-top-section">Mobile top section</div>
+<div class="board-layout-main">Second board</div><div class="sidebar-ad">Advertisement</div><div class="board-layout-ad">Board advertisement</div>
+<div class="opened-chats-container">Private chat</div><div class="floating-modal-component">Native games window</div>
+<div class="board-layout-sidebar"><div class="sidebar-component"><div class="tabs-component" role="tablist">
+<button role="tab" data-tab="watch" class="tabs-tab tabs-active">Watch</button><button id="tournament" role="tab" class="tabs-tab">Tournament</button>
+</div><div class="sidebar-content"></div></div></div>
+<script>
+const kind = new URLSearchParams(location.search).get("kind");
+const tab = document.querySelector("#tournament");
+if (!new URLSearchParams(location.search).has("missing")) {
+tab.dataset.tab = kind;
+tab.addEventListener("click", () => {
+  document.querySelector('[data-tab="watch"]').classList.remove("tabs-active"); tab.classList.add("tabs-active");
+  const panel = document.createElement("div"); panel.className = `${kind}-tab-container`;
+  panel.innerHTML = `<div class="${kind}-header-component"><h2>Fixture tournament</h2><button class="header-action">Event details</button></div><div class="underlined-tabs-component"><button role="tab">Standings</button><button role="tab">Games</button><button role="tab">Chat</button></div><div class="native-content"></div><div class="${kind}-footer-component"><button class="footer-action">Join event</button></div>`;
+  const content=panel.querySelector('.native-content');
+  function selectTab(button){
+    for(const tab of panel.querySelectorAll('.underlined-tabs-component button'))tab.classList.toggle('underlined-tabs-active',tab===button);
+    panel.dataset.fixtureTab=button.textContent;
+    if(button.textContent==='Chat'){
+      content.innerHTML='<div class="native-scroll">'+Array.from({length:100},(_,i)=>`<p>Message ${i}</p>`).join('')+'</div><input aria-label="Native chat"><button class="native-send">Native send</button>';
+      content.querySelector('.native-send').addEventListener('click',()=>{panel.dataset.fixtureSends=Number(panel.dataset.fixtureSends||0)+1;});
+    }else{
+      content.innerHTML='<div class="native-scroll">'+Array.from({length:100},(_,i)=>`<div class="row-action" role="button" tabindex="0">${button.textContent} entry ${i}</div>`).join('')+'</div>';
+      for(const row of content.querySelectorAll('.row-action')){
+        const activate=()=>{panel.dataset.fixtureNavigations=Number(panel.dataset.fixtureNavigations||0)+1;};
+        row.addEventListener('click',activate);row.addEventListener('auxclick',activate);
+        row.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' ')activate();});
+      }
+    }
+  }
+  for(const button of panel.querySelectorAll('.underlined-tabs-component button')){
+    button.dataset.tab=kind+button.textContent;button.addEventListener('click',()=>selectTab(button));
+  }
+  selectTab(panel.querySelector('.underlined-tabs-component button'));
+  document.querySelector(".sidebar-content").replaceChildren(panel);
+});
+}
+</script>
