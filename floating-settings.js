@@ -18,8 +18,12 @@
       outline: 3px solid var(--color-text-brand, #81b64c); outline-offset: 2px; }
     .launcher, .panel { pointer-events: auto; color: var(--color-text-default, light-dark(#25303b, #f0f3f6));
       background: var(--color-bg-opaque, light-dark(#fff, #262421)); border: 1px solid var(--color-text-brand, #81b64c); }
-    .launcher { position: absolute; right: 12px; bottom: 12px; padding: 6px 10px; border-radius: 18px;
-      max-width: calc(100% - 24px); box-shadow: 0 2px 8px #0003; }
+    .launcher { position: absolute; bottom: 24px; left: calc(62px + 18px); width: 32px; height: 32px;
+      padding: 0; border-radius: 50%; box-shadow: 0 2px 8px #0003; }
+    .launcher img { display: block; width: 100%; height: 100%; border-radius: 50%; }
+    @media (max-width: 768px) {
+      .launcher { bottom: calc(100vh - 32px - 12px); left: calc(160px + 18px); }
+    }
     .panel { position: absolute; display: flex; flex-direction: column; border-radius: 12px;
       box-shadow: 0 8px 30px #0005; overflow: hidden; }
     .header { display: flex; flex-shrink: 0; align-items: center; gap: 8px; padding: 8px; border-bottom: 1px solid #8886; }
@@ -50,7 +54,11 @@
   const launcher = document.createElement("button");
   launcher.type = "button";
   launcher.className = "launcher";
-  launcher.textContent = "Chess Board Tools";
+  launcher.setAttribute("aria-label", "Chess Board Tools settings");
+  const launcherIcon = document.createElement("img");
+  launcherIcon.src = chrome.runtime.getURL("icons/icon-32.png");
+  launcherIcon.alt = "";
+  launcher.append(launcherIcon);
   launcher.setAttribute("aria-haspopup", "dialog");
   launcher.setAttribute("aria-expanded", "false");
   root.append(launcher);
