@@ -21,6 +21,7 @@ of truth for injected files and URL matches.
 | `fog-bridge.js`, `fog-board.js` | Read-only MAIN-world adapter and restricted standard-board snapshot validation |
 | `fog-visibility.js` | FEN parsing and piece-visibility calculation |
 | `fog-content.js`, `fog.css` | Overlay lifecycle, selection outlines and rendering layers |
+| `arrow-board.js`, `arrow-content.js`, `arrow.css`, `arrow-popup.js` | Native SVG arrow reading, per-color numbering, passive labels and local toggle |
 | `site/` | Static support/privacy pages deployed by `.github/workflows/pages.yml` |
 | `scripts/package-extension.py` | Deterministic runtime ZIP, reference/integrity validation, hashes and provenance |
 

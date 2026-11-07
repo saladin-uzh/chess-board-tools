@@ -426,7 +426,7 @@ function controller() {
     append(child) { child.parent = this; this.children.push(child); }
     remove() { if (this.parent) this.parent.children = this.parent.children.filter(child => child !== this); this.isConnected = false; }
     setAttribute(key, value) { this[key] = value; }
-    closest() { return this.className.startsWith('chess-fog-') ? this : this.parent?.closest(); }
+    closest(selector) { return this.className.split(' ').some(name => selector.split(/,\s*/).includes(`.${name}`)) ? this : this.parent?.closest(selector); }
     getBoundingClientRect() { return { width: 640, height: 640 }; }
   }
   class Observer {
@@ -494,6 +494,14 @@ test('overlay avoids its own observer loop, survives replacement/resize, and cle
   assert.equal(app.frames.size, 0);
   mutation.fn([{ target: app.board, type: 'childList', addedNodes: [overlay], removedNodes: [] }]);
   assert.equal(app.frames.size, 0);
+  const arrowOverlay = { classList: { contains: name => name === 'chess-arrow-numbers' }, closest: selector => selector.includes('.chess-arrow-numbers') ? arrowOverlay : null };
+  mutation.fn([{ target: arrowOverlay, type: 'childList', addedNodes: [{}], removedNodes: [] }]);
+  mutation.fn([{ target: app.board, type: 'childList', addedNodes: [arrowOverlay], removedNodes: [] }]);
+  mutation.fn([{ target: app.board, type: 'childList', addedNodes: [], removedNodes: [arrowOverlay] }]);
+  assert.equal(app.frames.size, 0);
+  mutation.fn([{ target: app.board, type: 'childList', addedNodes: [arrowOverlay, {}], removedNodes: [] }]);
+  assert.equal(app.frames.size, 1);
+  app.tick();
   app.observers[1].fn(); app.observers[1].fn();
   assert.equal(app.frames.size, 1);
   app.tick(); assert.equal(app.board.children.length, 1);

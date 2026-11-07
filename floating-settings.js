@@ -34,8 +34,8 @@
     .content { flex: 1; min-height: 0; overflow: auto; padding: 8px 12px; overscroll-behavior: contain; }
     p { margin: 0; font-size: 12px; }
     h2 { margin: 0; font-size: 15px; }
-    .settings, .assist-settings, .fog-settings { display: grid; gap: 4px; }
-    .assist-settings, .fog-settings { border-top: 1px solid #8886; margin-top: 6px; padding-top: 8px; }
+    .settings, .assist-settings, .fog-settings, .arrow-settings { display: grid; gap: 4px; }
+    .assist-settings, .fog-settings, .arrow-settings { border-top: 1px solid #8886; margin-top: 6px; padding-top: 8px; }
     .field { display: grid; gap: 4px; font-weight: 600; }
     .fog-toggle { display: flex; align-items: center; justify-content: space-between; }
     select { width: 100%; min-height: 32px; border: 1px solid #888; border-radius: 6px; padding: 4px;

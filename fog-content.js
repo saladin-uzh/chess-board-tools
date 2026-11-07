@@ -42,8 +42,9 @@
     board = next;
     if (!board) return;
     boardObserver = new MutationObserver(records => {
-      if (records.some(record => !record.target.closest?.(".chess-fog-overlay") &&
-          !(record.type === "childList" && [...record.addedNodes, ...record.removedNodes].every(node => node === overlay || node.classList?.contains("chess-fog-overlay"))))) schedule();
+      if (records.some(record => !record.target.closest?.(".chess-fog-overlay, .chess-arrow-numbers") &&
+          !(record.type === "childList" && [...record.addedNodes, ...record.removedNodes].every(node => node === overlay ||
+            node.classList?.contains("chess-fog-overlay") || node.classList?.contains("chess-arrow-numbers"))))) schedule();
     });
     boardObserver.observe(board, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "style"] });
     resizeObserver = new ResizeObserver(schedule);

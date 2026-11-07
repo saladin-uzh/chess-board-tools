@@ -6,6 +6,8 @@
     ':is(.cc-button-primary, [class^="cc-button-primary_"], [class*=" cc-button-primary_"])';
   const CONFIRM_BUTTON_SELECTOR = `div.confirm-move-buttons ${PRIMARY_BUTTON_SELECTOR}`;
   const FOG_STORAGE_KEY = "fogPreferences";
+  const ARROW_STORAGE_KEY = "arrowNumberPreferences";
+  const normalizeArrows = value => ({ enabled: value?.enabled === true });
   const DEFAULT_FOG = Object.freeze({ enabled: false, opacity: 0.55, perspective: "auto" });
 
   function normalizeFog(value) {
@@ -85,6 +87,8 @@
     CONFIRM_BUTTON_SELECTOR,
     hasInputFocus,
     FOG_STORAGE_KEY,
+    ARROW_STORAGE_KEY,
+    normalizeArrows,
     DEFAULT_FOG,
     normalizeFog,
     KEYBINDING_STORAGE_KEY,
