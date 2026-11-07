@@ -117,6 +117,16 @@
     const host = document.querySelector("[data-chess-settings-ui]");
     host.remove(); await tick();
     check("Host removal during page rendering restores the same panel", host.isConnected && find(".panel") === panel);
+    const iconImages = [find(".launcher img"), find(".mark")];
+    await Promise.all(iconImages.map(image => image.decode()));
+    const reference = document.createElement("canvas");
+    reference.width = reference.height = 32;
+    reference.getContext("2d").drawImage(iconImages[0], 0, 0);
+    const expectedPixels = reference.getContext("2d").getImageData(0, 0, 32, 32).data;
+    iconImages.forEach(image => image.dispatchEvent(new Event("error")));
+    const fallbackCanvases = [find(".launcher canvas"), find("canvas.mark")];
+    check("Both icons retain the original artwork if image loading fails", fallbackCanvases.every(canvas =>
+      canvas && canvas.getContext("2d").getImageData(0, 0, 32, 32).data.every((value, index) => value === expectedPixels[index])));
     document.title = "PASS — Floating settings regression checks";
     return results.children.length;
   })().catch(error => { document.title = "FAIL — Floating settings regression checks"; console.error(error); throw error; });
