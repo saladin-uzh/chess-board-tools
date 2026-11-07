@@ -38,3 +38,29 @@ test("numbers are independent by color, close gaps after removal, and avoid near
   assert.equal(context.ChessConfirmMoveSettings.normalizeArrows(null).enabled, false);
   assert.equal(context.ChessConfirmMoveSettings.normalizeArrows({ enabled: true }).enabled, true);
 });
+
+test("arrow observer ignores fog and number overlays but responds to native changes", async () => {
+  const observers = [], frames = new Map();
+  let id = 0;
+  const board = { getBoundingClientRect: () => ({ width: 800, height: 800 }), querySelector: () => null };
+  const ctx = vm.createContext({
+    document: { documentElement: {}, querySelectorAll: () => [board] },
+    MutationObserver: class { constructor(fn) { this.fn = fn; observers.push(this); } observe() {} disconnect() {} },
+    ResizeObserver: class { observe() {} disconnect() {} },
+    requestAnimationFrame: fn => { frames.set(++id, fn); return id; }, cancelAnimationFrame: key => frames.delete(key),
+    addEventListener() {}, chrome: { storage: { local: { get: async () => ({ arrowNumberPreferences: { enabled: true } }) }, onChanged: { addListener() {} } } },
+    ChessArrowBoard: { read: () => [] },
+  });
+  for (const file of ["settings.js", "arrow-content.js"]) vm.runInContext(fs.readFileSync(path.join(__dirname, "..", file), "utf8"), ctx);
+  await new Promise(resolve => setImmediate(resolve));
+  const frame = [...frames.values()][0]; frames.clear(); frame();
+  const observer = observers[1];
+  const fog = { classList: { contains: name => name === "chess-fog-overlay" }, closest: selector => selector.includes(".chess-fog-overlay") ? fog : null };
+  const numbers = { classList: { contains: name => name === "chess-arrow-numbers" }, closest: selector => selector.includes(".chess-arrow-numbers") ? numbers : null };
+  observer.fn([{ target: fog, type: "attributes" }]);
+  observer.fn([{ target: board, type: "childList", addedNodes: [fog], removedNodes: [] }]);
+  observer.fn([{ target: board, type: "childList", addedNodes: [], removedNodes: [numbers] }]);
+  assert.equal(frames.size, 0);
+  observer.fn([{ target: board, type: "childList", addedNodes: [fog, {}], removedNodes: [] }]);
+  assert.equal(frames.size, 1);
+});

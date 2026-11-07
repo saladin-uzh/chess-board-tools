@@ -23,7 +23,9 @@
     for (const board of boards) {
       if (!observers.has(board)) {
         const observer = new MutationObserver(records => {
-          if (records.some(record => !record.target.closest?.(".chess-arrow-numbers"))) schedule();
+          if (records.some(record => !record.target.closest?.(".chess-arrow-numbers, .chess-fog-overlay") &&
+              !(record.type === "childList" && [...record.addedNodes, ...record.removedNodes].every(node =>
+                node.classList?.contains("chess-arrow-numbers") || node.classList?.contains("chess-fog-overlay"))))) schedule();
         });
         observer.observe(board, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "style", "points", "transform", "fill", "stroke"] });
         observers.set(board, observer);
