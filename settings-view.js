@@ -45,6 +45,13 @@
         <p>Visible game tabs only; interact to enable audio.</p>
         <p class="status" id="assist-save-status" role="status" aria-live="polite"></p>
       </section>
+      <section class="arrow-settings" aria-label="Arrow annotations">
+        <label class="field fog-toggle" for="number-arrows">
+          <span>Number arrows</span><input id="number-arrows" type="checkbox" disabled>
+        </label>
+        <p>Number drawn arrows separately for each color.</p>
+        <p class="status" id="arrow-save-status" role="status" aria-live="polite"></p>
+      </section>
       <section class="fog-settings" aria-labelledby="fog-title">
         <h2 id="fog-title">Piece Vision Overlay</h2>
         <p>Bots, analysis, completed reviews, Rated, Daily and Learning puzzles. No fog in Rush or Battle.</p>
@@ -72,9 +79,10 @@
   globalThis.ChessSettingsView = Object.freeze({
     mount(root, options = {}) {
       root.innerHTML = markup;
-      const { shortcuts, assist, fog } = globalThis.ChessSettingsControllers;
+      const { shortcuts, assist, fog, arrows } = globalThis.ChessSettingsControllers;
       shortcuts(root);
       assist(root);
+      arrows(root);
       return fog(root, options);
     },
   });

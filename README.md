@@ -71,6 +71,10 @@ scroll. Its position and size are saved locally. It stays open during navigation
 the page, but starts closed after a full reload and in other tabs. Reload existing
 Chess.com tabs after updating the extension to make this panel available.
 
+**Number arrows** adds a number near the start of each drawn arrow. Each color
+has its own sequence, which is recalculated when arrows change. The option is
+off by default and saved locally. Square highlights are not numbered.
+
 Confirmation offers Enter, Space, or Ctrl; cancellation offers Esc, Space, or
 Ctrl. Defaults are Space and Esc, and the two actions require different keys.
 Previously saved unsupported keys fall back to defaults.

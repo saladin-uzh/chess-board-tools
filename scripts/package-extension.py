@@ -14,7 +14,8 @@ import zipfile
 ROOT = Path(__file__).resolve().parent.parent
 FILES = (
     "manifest.json", "settings.js", "content.js", "popup.html", "popup.css",
-    "popup.js", "fog-popup.js", "fog-visibility.js", "fog-board.js",
+    "popup.js", "arrow-popup.js", "arrow-board.js", "arrow-content.js", "arrow.css",
+    "fog-popup.js", "fog-visibility.js", "fog-board.js",
     "fog-content.js", "fog-bridge.js", "fog.css", "assist-popup.js",
     "assist-board.js", "assist-content.js", "assist-bridge.js", "assist-timer.js",
     "assist.css", "settings-view.js", "settings-layout.js", "popup-entry.js",
