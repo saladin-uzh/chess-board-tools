@@ -39,6 +39,18 @@ test("numbers are independent by color, close gaps after removal, and avoid near
   assert.equal(context.ChessConfirmMoveSettings.normalizeArrows({ enabled: true }).enabled, true);
 });
 
+test("crowded starting squares place five numbers separately, including at board edges", () => {
+  for (const [x, y] of [[400, 400], [0, 0], [800, 400]]) {
+    const labels = context.ChessArrowBoard.number(Array.from({ length: 5 }, () => ({ x, y, color: "red" })), 800, 800);
+    for (let i = 0; i < labels.length; i++) {
+      assert.equal(labels[i].ordinal, i + 1);
+      assert.ok(labels[i].x >= labels[i].radius && labels[i].x <= 800 - labels[i].radius);
+      assert.ok(labels[i].y >= labels[i].radius && labels[i].y <= 800 - labels[i].radius);
+      for (let j = 0; j < i; j++) assert.ok(Math.hypot(labels[i].x - labels[j].x, labels[i].y - labels[j].y) >= labels[i].radius * 2.2 - 1e-9);
+    }
+  }
+});
+
 test("arrow observer ignores fog and number overlays but responds to native changes", async () => {
   const observers = [], frames = new Map();
   let id = 0;

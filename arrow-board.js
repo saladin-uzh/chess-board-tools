@@ -28,11 +28,21 @@
       const ordinal = (counts.get(arrow.color) || 0) + 1;
       counts.set(arrow.color, ordinal);
       const offsets = [[0, -1], [1, 0], [-1, 0], [0, 1], [1, -1], [-1, -1], [1, 1], [-1, 1]];
-      const candidates = offsets.map(([dx, dy]) => ({
-        x: Math.max(radius, Math.min(width - radius, arrow.x + dx * radius * 1.6)),
-        y: Math.max(radius, Math.min(height - radius, arrow.y + dy * radius * 1.6)),
-      }));
-      const place = candidates.find(candidate => occupied.every(other => Math.hypot(candidate.x - other.x, candidate.y - other.y) >= radius * 2.2)) || candidates[0];
+      let place = null, best = null, bestDistance = -1;
+      const step = radius * 1.6;
+      const maxRing = Math.ceil(Math.max(width, height) / step) + 1;
+      for (let ring = 1; ring <= maxRing && !place; ring++) {
+        for (const [dx, dy] of offsets) {
+          const candidate = {
+            x: Math.max(radius, Math.min(width - radius, arrow.x + dx * step * ring)),
+            y: Math.max(radius, Math.min(height - radius, arrow.y + dy * step * ring)),
+          };
+          const distance = occupied.reduce((min, other) => Math.min(min, Math.hypot(candidate.x - other.x, candidate.y - other.y)), Infinity);
+          if (distance > bestDistance) { best = candidate; bestDistance = distance; }
+          if (distance >= radius * 2.2) { place = candidate; break; }
+        }
+      }
+      place ||= best;
       occupied.push(place);
       return { ...place, color: arrow.color, ordinal, radius };
     });
