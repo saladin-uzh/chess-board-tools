@@ -1,0 +1,115 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tournament companion checks</title>
+<style>body{font:14px system-ui;background:#302e2b;color:#eee}.pass{color:#a4e687}.fail{color:#ffb4ab}dialog{position:static;margin:0}input{max-width:90%}</style>
+<h1>Tournament companion checks</h1><p>Production code with simulated native pages; no Chess.com requests.</p>
+<button role="tab" class="tabs-active" id="parent-play">Parent Play</button><button id="confirm">Mock native confirmation</button>
+<ol id="results"></ol>
+<script>
+history.replaceState({},"","/play/online");
+let parentClicks=0, requests=[], shareCloses=0, escapedPanelEvents=0;
+for(const type of ["pointerdown","pointermove","pointerup","mousedown","mousemove","mouseup","click","dblclick","contextmenu"]){
+  document.addEventListener(type,event=>{
+    if(event.composedPath().some(node=>node instanceof Element&&node.hasAttribute("data-chess-tournament-companion")))escapedPanelEvents++;
+  });
+}
+document.querySelector("#parent-play").addEventListener("click",()=>parentClicks++);
+const originalSrc=Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype,"src");
+Object.defineProperty(HTMLIFrameElement.prototype,"src",{get:originalSrc.get,set(value){
+  requests.push(value);const target=new URL(value),kind=target.pathname.split("/")[2];
+  originalSrc.set.call(this,`/tests/tournament-companion-child.html?kind=${kind}&fixture=${Date.now()}${target.pathname.endsWith("/789")?"&missing=1":""}`);
+}});
+</script>
+<script>
+window.companionRuntimeReady=(async()=>{
+  const revision=Date.now();
+  for(const name of ["floating-settings-geometry.js","tournament-companion-view.js","tournament-companion.js"]){
+    await new Promise((resolve,reject)=>{const script=document.createElement("script");script.src=`/${name}?fixture=${revision}`;script.onload=resolve;script.onerror=reject;document.head.append(script);});
+  }
+})();
+</script>
+<script>
+const tick=()=>new Promise(resolve=>setTimeout(resolve,20));
+function check(name,ok){const item=document.createElement("li");item.className=ok?"pass":"fail";item.textContent=`${ok?"PASS":"FAIL"}: ${name}`;document.querySelector("#results").append(item);if(!ok)throw new Error(name);}
+function share(kind,id=123){
+  const dialog=document.createElement("dialog");dialog.open=true;
+  dialog.innerHTML=`<button class="cc-modal-close-component">Close Share</button><div class="share-event-modal-content"><input class="share-event-modal-input" value="https://www.chess.com/play/${kind}/${id}"></div>`;
+  dialog.querySelector("button").addEventListener("click",()=>{shareCloses++;dialog.remove();});document.body.append(dialog);return dialog;
+}
+const bounded=host=>{const r=host.getBoundingClientRect();return r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1;};
+const key=(target,key)=>target.dispatchEvent(new KeyboardEvent("keydown",{key,bubbles:true,composed:true}));
+window.companionFixtureDone=(async()=>{
+  await companionRuntimeReady;
+  for(const kind of ["arena","tournament"]){
+    const before=requests.length, dialog=share(kind);await tick();
+    const launch=dialog.querySelector("[data-chess-tournament-launcher]").shadowRoot.querySelector("button");
+    check(`${kind}: native Share gets one optional launcher`,dialog.querySelectorAll("[data-chess-tournament-launcher]").length===1&&requests.length===before);
+    launch.click();await tick();
+    const host=document.querySelector("[data-chess-tournament-companion]"),root=host.shadowRoot,frame=root.querySelector("iframe");
+    for(let i=0;i<100&&frame.style.visibility!=="visible";i++)await tick();
+    check(`${kind}: native child selected and Share closed`,frame.style.visibility==="visible"&&!dialog.isConnected);
+    check(`${kind}: parent Play and confirmation remain mounted`,parentClicks===0&&document.querySelector("#parent-play").classList.contains("tabs-active")&&getComputedStyle(document.querySelector("#confirm")).display!=="none");
+    check(`${kind}: floating window is bounded`,bounded(host));
+    const doc=frame.contentDocument,win=doc.defaultView,panel=doc.querySelector(`.${kind}-tab-container`);
+    check(`${kind}: second board, menus and unrelated chats hidden`,[".board-layout-main",".board-layout-nav","#sidebar-main-menu",".sidebar-ad",".board-layout-ad","#mobile-toolbar","#mobile-top-section",".tabs-component",".opened-chats-container",".floating-modal-component"].every(s=>win.getComputedStyle(doc.querySelector(s)).display==="none"));
+    const rect=panel.getBoundingClientRect();check(`${kind}: native panel fits child viewport`,Math.abs(rect.top)<1&&Math.abs(rect.left)<1&&rect.right<=win.innerWidth+1&&rect.bottom<=win.innerHeight+1);
+    check(`${kind}: non-tab header/footer actions reject pointer input`,[".header-action",".footer-action"].every(s=>win.getComputedStyle(doc.querySelector(s)).pointerEvents==="none"));
+    const nativeTabs=Array.from(panel.querySelectorAll('.underlined-tabs-component button'));
+    check(`${kind}: native content tabs retain pointer input`,nativeTabs.every(button=>win.getComputedStyle(button).pointerEvents!=="none"));
+    for(const button of nativeTabs)button.click();await tick();check(`${kind}: native tab handlers remain intact`,panel.dataset.fixtureTab==="Chat");
+    const nativeInput=doc.querySelector("input");nativeInput.value="fixture draft";key(nativeInput,"Escape");
+    check(`${kind}: chat input keys stay in child`,host.isConnected&&nativeInput.value==="fixture draft");
+    doc.querySelector(".native-send").click();check(`${kind}: native handler preserved`,panel.dataset.fixtureSends==="1");
+    const modal=doc.createElement("div");modal.className="native-modal";modal.textContent="Native error dialog";doc.body.append(modal);
+    const top=doc.elementFromPoint(40,40);check(`${kind}: native dialogs remain above sidebar`,top===modal);modal.remove();
+    for(const label of ["Games","Standings"]){
+      nativeTabs.find(button=>button.textContent===label).click();await tick();
+      const row=panel.querySelector('.row-action'),scroll=panel.querySelector('.native-scroll');
+      row.click();row.dispatchEvent(new MouseEvent('auxclick',{bubbles:true,cancelable:true}));key(row,'Enter');
+      const popover=doc.createElement('button');popover.textContent='Open profile from detached popover';popover.addEventListener('click',()=>{panel.dataset.fixtureNavigations=Number(panel.dataset.fixtureNavigations||0)+1;});doc.body.append(popover);popover.click();popover.remove();
+      const wheel=new WheelEvent('wheel',{bubbles:true,cancelable:true,deltaY:100});scroll.dispatchEvent(wheel);
+      check(`${kind}: ${label} is read-only with scrolling retained`,!panel.dataset.fixtureNavigations&&!wheel.defaultPrevented&&win.getComputedStyle(scroll).pointerEvents!=="none");
+    }
+    const openedProfiles=[];win.open=(...args)=>{openedProfiles.push(args);return null;};
+    const profile=doc.createElement('a');profile.href='/member/Fixture_Player';profile.textContent='Fixture_Player';
+    profile.addEventListener('click',()=>{panel.dataset.fixtureNavigations='unexpected';});panel.querySelector('.native-scroll').append(profile);profile.click();
+    const username=doc.createElement('div');username.className='cc-user-username-component';username.dataset.testElement='user-tagline-username';username.textContent='Another_Player';username.setAttribute('role','button');username.tabIndex=0;panel.querySelector('.native-scroll').append(username);key(username,'Enter');
+    check(`${kind}: profiles open only in a separate tab with no opener`,JSON.stringify(openedProfiles)===JSON.stringify([
+      ['https://www.chess.com/member/Fixture_Player','_blank','noopener,noreferrer'],
+      ['https://www.chess.com/member/another_player','_blank','noopener,noreferrer']])&&!panel.dataset.fixtureNavigations);
+    profile.href='/game/123';profile.click();username.textContent='short…';username.click();
+    check(`${kind}: game links and shortened usernames cannot open profiles`,openedProfiles.length===2&&!panel.dataset.fixtureNavigations);
+    nativeTabs.find(button=>button.textContent==="Chat").click();await tick();panel.querySelector('.native-send').click();
+    check(`${kind}: returning to Chat removes read-only guards`,panel.dataset.fixtureSends==="2");
+    key(root.querySelector(".move"),"ArrowLeft");key(root.querySelector(".resize"),"ArrowDown");check(`${kind}: keyboard geometry remains bounded`,bounded(host));
+    check(`${kind}: reopening same target creates no extra page`,ChessTournamentCompanion.open(`https://www.chess.com/play/${kind}/123`)&&requests.length===before+1);
+    check(`${kind}: switching target requires explicit close`,!ChessTournamentCompanion.open(`https://www.chess.com/play/${kind}/456`)&&requests.length===before+1);
+    document.querySelector("#parent-play").append(document.createTextNode(" "));await tick();check(`${kind}: parent SPA render preserves companion`,host.isConnected&&root.querySelectorAll("iframe").length===1);
+    doc.querySelector(`[data-tab="${kind}"]`).classList.remove("tabs-active");doc.querySelector(".sidebar-content").textContent="Unrelated game chat";await tick();
+    check(`${kind}: child leaving tournament hides unrelated content`,frame.style.visibility==="hidden"&&!root.querySelector(".availability").hidden);
+    root.querySelector(".restore").click();await tick();
+    check(`${kind}: Show tournament recovers without a new page`,frame.style.visibility==="visible"&&requests.length===before+1&&parentClicks===0);
+    const beforeEvents=escapedPanelEvents;
+    for(const type of ["pointerdown","pointermove","pointerup","mousedown","mousemove","mouseup","dblclick","contextmenu"])root.querySelector(".close").dispatchEvent(new Event(type,{bubbles:true,composed:true}));
+    check(`${kind}: panel pointer events stay out of parent page handlers`,escapedPanelEvents===beforeEvents);
+    root.querySelector(".close").click();await tick();check(`${kind}: close click stays out of parent page handlers`,escapedPanelEvents===beforeEvents);
+    check(`${kind}: close disposes child page`,!host.isConnected&&!frame.isConnected);
+  }
+  const before=requests.length;check("Malformed Share URL never opens a page",!ChessTournamentCompanion.open("https://evil.test/play/arena/123")&&requests.length===before);
+  const dialog=share("tournament");await tick();dialog.querySelector("[data-chess-tournament-launcher]").shadowRoot.querySelector("button").click();await tick();
+  history.replaceState({},"","/analysis");document.body.append(document.createElement("span"));await tick();
+  check("Leaving Play/game disposes companion",!document.querySelector("[data-chess-tournament-companion]"));
+  history.replaceState({},"","/play/online");
+  ChessTournamentCompanion.open("https://www.chess.com/play/arena/123");dispatchEvent(new PageTransitionEvent("pagehide"));
+  check("pagehide disposes companion before BFCache",!document.querySelector("[data-chess-tournament-companion]"));
+  ChessTournamentCompanion.open("https://www.chess.com/play/tournament/789");
+  const unavailableRoot=document.querySelector("[data-chess-tournament-companion]").shadowRoot;
+  await new Promise(resolve=>{
+    const done=()=>{clearTimeout(deadline);observer.disconnect();resolve();};
+    const observer=new MutationObserver(()=>{if(unavailableRoot.querySelector(".status").textContent.includes("unavailable"))done();});
+    const deadline=setTimeout(done,17000);observer.observe(unavailableRoot.querySelector(".status"),{childList:true,subtree:true});
+  });
+  check("A page without a native tournament reports unavailable after its startup deadline",unavailableRoot.querySelector(".status").textContent.includes("unavailable")&&unavailableRoot.querySelector("iframe").style.visibility==="hidden");
+  ChessTournamentCompanion.close();
+  share("tournament");await tick();
+  document.title=`PASS: ${document.querySelector("#results").children.length} tournament companion checks`;
+})().catch(error=>{document.title="FAIL: "+error.message;throw error;});
+</script>

@@ -17,7 +17,7 @@
 <a href="privacy.uk.html" lang="uk">Приватність</a>
 </nav>
 <h1>Privacy — Chess Board Tools</h1>
-<p>Effective date: 26 October 2026.</p>
+<p>Effective date: 6 November 2026.</p>
 <h2>What the extension processes</h2>
 <p>The extension reads the current supported Chess.com board and interface in memory to provide keyboard controls, sound cues, and Piece Vision Overlay. It does not persist positions, move history, account identifiers, or game identifiers. Board access does not give the developer access to your account.</p>
 <h2>Saved settings</h2>
@@ -25,7 +25,9 @@
 <p>Fog settings (enabled, opacity, perspective) and board helpers (keyboard control, turn ticks, tick frequency and volume) use separate <code>chrome.storage.local</code> keys and do not synchronize. Safari implements the sync storage API but does not synchronize these settings between devices.</p>
 <p>Floating settings panel position and size are stored locally. Its open state stays in the current tab's memory and is not synchronized.</p>
 <h2>No developer collection</h2>
-<p>The extension code makes no external network requests, sends no telemetry, and saves no game history. It contains no advertising or analytics SDKs and sells or shares no personal data. It provides no engine evaluation or move recommendations.</p>
+<p>The extension sends no telemetry and saves no game history. It contains no advertising or analytics SDKs and does not sell personal data. It provides no engine evaluation or move recommendations.</p>
+<h2>Optional tournament companion</h2>
+<p>Opening the tournament companion loads a second native Chess.com page using your existing browser session. That page makes its normal site requests, including third-party resources, and sends chat messages when you submit them through its native input. The extension does not persist chat content or tournament identifiers, read account credentials, or send them to a developer server. The companion's URL, size and open state stay in tab memory. Closing it removes the additional page.</p>
 <h2>Other services</h2>
 <p>Chess.com and your browser have their own privacy policies. Chrome Sync is a browser service, not a developer server. This documentation site is hosted by GitHub Pages; hosting infrastructure may process technical request information under <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub’s privacy statement</a>. These pages contain no analytics, cookies set by our code, or third-party scripts. GitHub Issues submissions are public: do not include account details, private game links, or secrets.</p>
 <h2>Control and support</h2>
