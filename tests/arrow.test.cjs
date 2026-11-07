@@ -51,6 +51,17 @@ test("crowded starting squares place five numbers separately, including at board
   }
 });
 
+test("small boards keep 28px badges inside the board and separated", () => {
+  for (const [x, y] of [[160, 160], [0, 0], [320, 160]]) {
+    const labels = context.ChessArrowBoard.number(Array.from({ length: 5 }, () => ({ x, y, color: "red" })), 320, 320);
+    for (let i = 0; i < labels.length; i++) {
+      assert.ok(labels[i].x >= 14 && labels[i].x <= 306);
+      assert.ok(labels[i].y >= 14 && labels[i].y <= 306);
+      for (let j = 0; j < i; j++) assert.ok(Math.hypot(labels[i].x - labels[j].x, labels[i].y - labels[j].y) >= 28);
+    }
+  }
+});
+
 test("arrow observer ignores fog and number overlays but responds to native changes", async () => {
   const observers = [], frames = new Map();
   let id = 0;

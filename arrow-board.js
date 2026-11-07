@@ -23,7 +23,7 @@
   function number(arrows, width, height) {
     const counts = new Map();
     const occupied = [];
-    const radius = Math.max(9, Math.min(width, height) / 38);
+    const radius = Math.max(14, Math.min(width, height) / 38);
     return arrows.map(arrow => {
       const ordinal = (counts.get(arrow.color) || 0) + 1;
       counts.set(arrow.color, ordinal);
