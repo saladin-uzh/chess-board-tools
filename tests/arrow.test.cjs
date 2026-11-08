@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const test = require("node:test");
+const attachPreferencesWorker = require("./preferences-harness.cjs");
 
 const context = vm.createContext({ getComputedStyle: shape => shape.style });
 for (const file of ["settings.js", "arrow-board.js"]) {
@@ -102,9 +103,10 @@ test("arrow observer ignores fog and number overlays but responds to native chan
     MutationObserver: class { constructor(fn) { this.fn = fn; observers.push(this); } observe() {} disconnect() {} },
     ResizeObserver: class { observe() {} disconnect() {} },
     requestAnimationFrame: fn => { frames.set(++id, fn); return id; }, cancelAnimationFrame: key => frames.delete(key),
-    addEventListener() {}, chrome: { storage: { local: { get: async () => ({}) }, sync: { get: async () => ({ arrowNumberPreferences: { enabled: true } }) }, onChanged: { addListener() {} } } },
+    addEventListener() {}, chrome: { storage: { local: { get: async () => ({}) }, sync: { get: async () => ({ arrowNumberPreferences: { enabled: true } }) }, onChanged: { addListener() {}, removeListener() {} } } },
     ChessArrowBoard: { read: () => [] },
   });
+  attachPreferencesWorker(ctx.chrome);
   for (const file of ["settings.js", "arrow-content.js"]) vm.runInContext(fs.readFileSync(path.join(__dirname, "..", file), "utf8"), ctx);
   await new Promise(resolve => setImmediate(resolve));
   const frame = [...frames.values()][0]; frames.clear(); frame();

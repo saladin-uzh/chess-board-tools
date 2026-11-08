@@ -34,8 +34,12 @@
     };
   }
   window.chrome = {
-    storage: { local: storage("local"), sync: storage("sync"), onChanged: { addListener: listener => changes.push(listener) } },
-    runtime: { getURL: path => "../" + path, onMessage: { addListener: listener => messages.push(listener) } },
+    storage: { local: storage("local"), sync: storage("sync"), onChanged: { addListener: listener => changes.push(listener), removeListener: listener => { const index = changes.indexOf(listener); if (index >= 0) changes.splice(index, 1); } } },
+    runtime: { sendMessage: async message => {
+      const { key } = message;
+      if (message.type === "chess-preferences-save") await chrome.storage.sync.set({ [key]: message.value });
+      return { ok: true, value: (await chrome.storage.sync.get(key))[key] };
+    }, getURL: path => "../" + path, onMessage: { addListener: listener => messages.push(listener) } },
     tabs: { query: async () => [{ id: 1 }], sendMessage: async () => ({ status: "Fog is disabled." }) },
   };
   let boardStatus = "Fog is disabled.";

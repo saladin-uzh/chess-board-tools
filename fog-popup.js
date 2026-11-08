@@ -2,7 +2,7 @@
   "use strict";
   globalThis.ChessSettingsControllers ||= {};
   globalThis.ChessSettingsControllers.fog = function (root = document, options = {}) {
-    const { loadSyncedPreferences, FOG_STORAGE_KEY, normalizeFog } = globalThis.ChessConfirmMoveSettings;
+    const { loadSyncedPreferences, saveSyncedPreferences, FOG_STORAGE_KEY, normalizeFog } = globalThis.ChessConfirmMoveSettings;
     const enabled = root.querySelector("#fog-enabled");
     const opacity = root.querySelector("#fog-opacity");
     const opacityValue = root.querySelector("#fog-opacity-value");
@@ -59,7 +59,7 @@
       saving = true;
       controls.forEach(control => { control.disabled = true; });
       try {
-        await chrome.storage.sync.set({ [FOG_STORAGE_KEY]: next });
+        await saveSyncedPreferences(FOG_STORAGE_KEY, next);
         if (revision === saveRevision) saved = next;
         status.textContent = "Saved.";
       } catch { status.textContent = "Could not save fog settings."; }

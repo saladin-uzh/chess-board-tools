@@ -2,9 +2,10 @@
 
 ## Helper settings sync — 8 November 2026
 
-- 133 Node tests passed, including legacy migration for every helper key, existing sync precedence, a change during migration, malformed data and storage failures.
+- 140 Node tests passed, including legacy migration for every helper key, existing sync precedence, changes during migration, malformed data and storage failures.
+- Worker tests use separate client VM contexts and the actual worker to verify queued migrations/saves, late reads, queue recovery and sender/key validation. Two race regressions failed before the fix.
 - UI/content tests cover incoming sync changes and delayed reads/saves; local geometry remains separate.
-- All 20 floating-settings browser fixture checks passed with mocked Chrome APIs; JavaScript syntax, diff and 31-file packaging checks passed.
+- All 20 floating-settings browser fixture checks passed with mocked Chrome APIs; JavaScript syntax, diff and 32-file packaging checks passed.
 - Real synchronization between two signed-in Chrome devices has not been tested.
 
 ## Reproducible local checks
@@ -23,7 +24,7 @@ The Node suite mocks DOM and Chrome APIs. It covers shortcuts and focus guards,
 legacy/suffixed confirmation classes, preference normalization and save races,
 coordinate geometry and board selection, promotion, premove dispatch, route and
 snapshot validation, overlay visibility/lifecycle, and tick scheduling/audio.
-Package validation checks the 27 runtime files, manifest/popup/CSS references,
+Package validation checks the 32 runtime files, manifest/popup/CSS references,
 ZIP integrity, hashes and provenance. Generated output stays in ignored `build/`.
 
 For a browser DOM regression fixture, serve the repository locally and open

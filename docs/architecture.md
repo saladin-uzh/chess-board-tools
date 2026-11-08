@@ -1,14 +1,15 @@
 # Architecture
 
-Chess Board Tools is a Manifest V3 extension with no build step, background
-worker, production dependencies, or remote code. `manifest.json` is the source
+Chess Board Tools is a Manifest V3 extension with no build step, production dependencies, or remote code. A small extension
+service worker coordinates helper preference storage. `manifest.json` is the source
 of truth for injected files and URL matches.
 
 ## Modules
 
 | Files | Responsibility |
 | --- | --- |
-| `settings.js` | Shared selectors, shortcut choices, storage keys and preference normalization |
+| `settings.js` | Shared selectors, shortcut choices, normalization and worker storage requests |
+| `preferences-worker.js` | Per-key queues for helper preference loads, migration and saves across extension contexts |
 | `content.js` | Confirm/cancel shortcuts; legacy and suffixed Chess.com button classes; premove cancellation fallback |
 | `popup.html`, `popup.css`, `popup.js` | Popup layout, appearance and shortcut settings |
 | `assist-popup.js`, `fog-popup.js` | Synced helper preferences and overlay status |
@@ -45,12 +46,19 @@ overlay rules. Pieces render above the fog; arrows render above the fog and
 ordinary square highlights remain below pieces.
 
 Shortcut, overlay, arrow numbering and board-helper preferences use separate
-`chrome.storage.sync` keys. `settings.js` shares in-flight reads and migrates
-normalized legacy local values only when the sync key is absent, checking sync
-again before writing. Existing sync values win; local backups are removed after
-a successful migration or when sync already has a value. Failed migration writes
-retain local preferences for retry. Popup revision tracking
-prevents stale initial reads or delayed saves from overwriting incoming changes.
+`chrome.storage.sync` keys. Helper controllers and content scripts send storage
+requests to `preferences-worker.js`. Its per-key queues serialize migration and
+explicit saves across tabs and settings surfaces, so a delayed migration cannot
+overwrite a later local save. Failed operations do not block subsequent requests;
+independent keys can proceed concurrently. The worker accepts only messages from
+this extension for the three helper keys and normalizes all stored values.
+
+The worker migrates normalized legacy local values only when the sync key is
+absent. Incoming Sync events invalidate pending read snapshots. Existing sync
+values win; local backups are removed after a successful migration or when sync
+already has a value. Failed migration writes retain local preferences for retry.
+Popup revision tracking prevents stale initial reads or delayed save responses
+from overwriting incoming changes. Shortcut storage remains independent.
 Existing settings are normalized; new tick options default to Auto and 50%.
 No stored positions or history are required.
 

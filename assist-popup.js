@@ -2,7 +2,7 @@
   "use strict";
   globalThis.ChessSettingsControllers ||= {};
   globalThis.ChessSettingsControllers.assist = function (root = document) {
-    const { loadSyncedPreferences, ASSIST_STORAGE_KEY, normalizeAssist } = globalThis.ChessConfirmMoveSettings;
+    const { loadSyncedPreferences, saveSyncedPreferences, ASSIST_STORAGE_KEY, normalizeAssist } = globalThis.ChessConfirmMoveSettings;
     const keyboard = root.querySelector("#keyboard-enabled");
     const ticking = root.querySelector("#ticking-enabled");
     const frequency = root.querySelector("#tick-frequency");
@@ -42,7 +42,7 @@
       saving = true;
       for (const control of controls) control.disabled = true;
       try {
-        await chrome.storage.sync.set({ [ASSIST_STORAGE_KEY]: next });
+        await saveSyncedPreferences(ASSIST_STORAGE_KEY, next);
         if (revision === saveRevision) saved = next;
         status.textContent = "Saved.";
       } catch { status.textContent = "Could not save board helper settings."; }

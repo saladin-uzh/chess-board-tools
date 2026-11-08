@@ -2,7 +2,7 @@
   "use strict";
   globalThis.ChessSettingsControllers ||= {};
   globalThis.ChessSettingsControllers.arrows = function (root = document) {
-    const { loadSyncedPreferences, ARROW_STORAGE_KEY, normalizeArrows } = globalThis.ChessConfirmMoveSettings;
+    const { loadSyncedPreferences, saveSyncedPreferences, ARROW_STORAGE_KEY, normalizeArrows } = globalThis.ChessConfirmMoveSettings;
     const toggle = root.querySelector("#number-arrows");
     const status = root.querySelector("#arrow-save-status");
     let saved = normalizeArrows(null);
@@ -34,7 +34,7 @@
       saving = true;
       render();
       try {
-        await chrome.storage.sync.set({ [ARROW_STORAGE_KEY]: next });
+        await saveSyncedPreferences(ARROW_STORAGE_KEY, next);
         if (revision === saveRevision) saved = next;
         status.textContent = "Saved.";
       } catch { status.textContent = "Could not save arrow settings."; }

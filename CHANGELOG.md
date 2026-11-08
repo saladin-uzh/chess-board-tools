@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Synchronize fog, arrow numbering, keyboard controls and turn-tick preferences through Chrome Sync, with normalized migration of existing local settings. Floating-panel geometry remains local.
+- Synchronize fog, arrow numbering, keyboard controls and turn-tick preferences through Chrome Sync, with normalized migration of existing local settings. Floating-panel geometry remains local. Serialize migration and explicit saves through an extension service worker so concurrent settings surfaces cannot overwrite newer choices.
 
 ## 1.2.2
 

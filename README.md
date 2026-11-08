@@ -203,7 +203,7 @@ synchronizes these settings with your other signed-in Chrome browsers. When
 syncing is disabled, these settings stay local to the browser. Chrome stores
 offline changes locally and resumes synchronization when back online.
 
-Existing local helper settings migrate automatically when their sync key is absent; existing synced values take priority. The local copy is removed after successful migration. If migration cannot save, local preferences remain available for retry. Position
+Existing local helper settings migrate automatically when their sync key is absent; existing synced values take priority. The local copy is removed after successful migration. If migration cannot save, local preferences remain available for retry. Helper preference loads and saves share a per-key worker queue across tabs and settings surfaces, preserving the order of migration and explicit saves. Position
 snapshots are used in memory to draw the mask; positions, move history, and
 account/game identifiers are not stored by the extension.
 
