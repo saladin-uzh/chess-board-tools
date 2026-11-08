@@ -1,19 +1,13 @@
 # Validation and browser coverage
 
-## Helper settings sync — 8 November 2026
-
-- 133 Node tests passed, including legacy migration for every helper key, existing sync precedence, a change during migration, malformed data and storage failures.
-- UI/content tests cover incoming sync changes and delayed reads/saves; local geometry remains separate.
-- All 20 floating-settings browser fixture checks passed with mocked Chrome APIs; JavaScript syntax, diff and 31-file packaging checks passed.
-- Real synchronization between two signed-in Chrome devices has not been tested.
-
 ## Fog highlight layering — 8 November 2026
 
 Live Chess.com analysis inspection confirmed last-move highlights have computed
 opacity 0.5, and selection uses a growing-circle pseudo-element with opacity 0.5.
 The fix lifts these native translucent highlights above fog without changing opacity;
 opaque highlights retain their existing layer. All 124 Node tests and all 15
-local browser layer checks passed. Full live extension integration remains untested.
+local browser layer checks passed. The installed extension has not been updated
+for this check.
 
 ## Reproducible local checks
 

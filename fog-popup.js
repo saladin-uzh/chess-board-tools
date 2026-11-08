@@ -2,7 +2,7 @@
   "use strict";
   globalThis.ChessSettingsControllers ||= {};
   globalThis.ChessSettingsControllers.fog = function (root = document, options = {}) {
-    const { loadSyncedPreferences, FOG_STORAGE_KEY, normalizeFog } = globalThis.ChessConfirmMoveSettings;
+    const { FOG_STORAGE_KEY, normalizeFog } = globalThis.ChessConfirmMoveSettings;
     const enabled = root.querySelector("#fog-enabled");
     const opacity = root.querySelector("#fog-opacity");
     const opacityValue = root.querySelector("#fog-opacity-value");
@@ -38,14 +38,14 @@
     }
 
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area !== "sync" || !changes[FOG_STORAGE_KEY]) return;
+      if (area !== "local" || !changes[FOG_STORAGE_KEY]) return;
       revision++;
       saved = normalizeFog(changes[FOG_STORAGE_KEY].newValue);
       render();
       showBoardStatus();
     });
     const loadRevision = revision;
-    loadSyncedPreferences(FOG_STORAGE_KEY).then(data => {
+    chrome.storage.local.get(FOG_STORAGE_KEY).then(data => {
       if (revision === loadRevision) saved = normalizeFog(data[FOG_STORAGE_KEY]);
     }).catch(() => { status.textContent = "Fog settings unavailable. Using defaults."; }).finally(() => {
       loading = false;
@@ -59,7 +59,7 @@
       saving = true;
       controls.forEach(control => { control.disabled = true; });
       try {
-        await chrome.storage.sync.set({ [FOG_STORAGE_KEY]: next });
+        await chrome.storage.local.set({ [FOG_STORAGE_KEY]: next });
         if (revision === saveRevision) saved = next;
         status.textContent = "Saved.";
       } catch { status.textContent = "Could not save fog settings."; }

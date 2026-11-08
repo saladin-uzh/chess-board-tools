@@ -25,7 +25,6 @@
   function storage(area) {
     return {
       get: async key => ({ [key]: values[area][key] }),
-      remove: async key => { delete values[area][key]; },
       set: async record => {
         if (fixture.saveGate) await fixture.saveGate;
         if (fixture.failSave) throw new Error("Fixture storage failure");
@@ -92,7 +91,7 @@
     fixture.failSave = false;
     let release; fixture.saveGate = new Promise(resolve => { release = resolve; });
     find("#ticking-enabled").click();
-    fixture.emit("sync", "boardAssistPreferences", { keyboard: false, ticking: false, tickMode: "increment" });
+    fixture.emit("local", "boardAssistPreferences", { keyboard: false, ticking: false, tickMode: "increment" });
     check("Incoming state wins while a save is pending", !find("#keyboard-enabled").checked && find("#tick-frequency").value === "increment" && find("#ticking-enabled").disabled);
     fixture.failSave = true; release(); await tick(); fixture.saveGate = null; fixture.failSave = false;
     check("Failed delayed save retains incoming state", !find("#keyboard-enabled").checked && find("#tick-frequency").value === "increment");

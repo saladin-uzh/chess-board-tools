@@ -2,7 +2,7 @@
   "use strict";
   globalThis.ChessSettingsControllers ||= {};
   globalThis.ChessSettingsControllers.assist = function (root = document) {
-    const { loadSyncedPreferences, ASSIST_STORAGE_KEY, normalizeAssist } = globalThis.ChessConfirmMoveSettings;
+    const { ASSIST_STORAGE_KEY, normalizeAssist } = globalThis.ChessConfirmMoveSettings;
     const keyboard = root.querySelector("#keyboard-enabled");
     const ticking = root.querySelector("#ticking-enabled");
     const frequency = root.querySelector("#tick-frequency");
@@ -23,13 +23,13 @@
       for (const control of controls) control.disabled = loading || saving;
     }
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area !== "sync" || !changes[ASSIST_STORAGE_KEY]) return;
+      if (area !== "local" || !changes[ASSIST_STORAGE_KEY]) return;
       revision++;
       saved = normalizeAssist(changes[ASSIST_STORAGE_KEY].newValue);
       render();
     });
     const loadRevision = revision;
-    loadSyncedPreferences(ASSIST_STORAGE_KEY).then(data => {
+    chrome.storage.local.get(ASSIST_STORAGE_KEY).then(data => {
       if (revision === loadRevision) saved = normalizeAssist(data[ASSIST_STORAGE_KEY]);
     }).catch(() => { status.textContent = "Board helper settings unavailable. Using defaults."; })
       .finally(() => { loading = false; render(); });
@@ -42,7 +42,7 @@
       saving = true;
       for (const control of controls) control.disabled = true;
       try {
-        await chrome.storage.sync.set({ [ASSIST_STORAGE_KEY]: next });
+        await chrome.storage.local.set({ [ASSIST_STORAGE_KEY]: next });
         if (revision === saveRevision) saved = next;
         status.textContent = "Saved.";
       } catch { status.textContent = "Could not save board helper settings."; }

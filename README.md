@@ -73,7 +73,7 @@ Chess.com tabs after updating the extension to make this panel available.
 
 **Number arrows** adds a number near the start of each drawn arrow. Each color
 has its own sequence, which is recalculated when arrows change. The option is
-off by default and saved with Chrome Sync. Square highlights are not numbered.
+off by default and saved locally. Square highlights are not numbered.
 
 Confirmation offers Enter, Space, or Ctrl; cancellation offers Esc, Space, or
 Ctrl. Defaults are Space and Esc, and the two actions require different keys.
@@ -92,7 +92,7 @@ inside buttons and other interactive controls are also ignored.
 
 ## Board control and thinking ticks
 
-The popup has separate **Keyboard board control** and **Tick during my turn** switches. Both start disabled and use Chrome Sync preferences.
+The popup has separate **Keyboard board control** and **Tick during my turn** switches. Both start disabled and use local preferences.
 
 Type coordinates sequentially: `b`, `2` selects b2; `b`, `3` clicks b3.
 Coordinates stay algebraic when flipped. A letter immediately highlights its
@@ -198,12 +198,13 @@ The extension uses the `storage` permission only to save your shortcut, fog, and
 The extension code makes no external network requests and does not collect
 telemetry or game history. It runs only on the listed Chess.com URLs.
 
-Shortcut, fog, arrow numbering and board helper settings use `chrome.storage.sync`. When Chrome Sync is enabled, Chrome
+Shortcut settings use `chrome.storage.sync`. When Chrome Sync is enabled, Chrome
 synchronizes these settings with your other signed-in Chrome browsers. When
 syncing is disabled, these settings stay local to the browser. Chrome stores
 offline changes locally and resumes synchronization when back online.
 
-Existing local helper settings migrate automatically when their sync key is absent; existing synced values take priority. The local copy is removed after successful migration. If migration cannot save, local preferences remain available for retry. Position
+Fog and board helper preferences use separate `chrome.storage.local` keys
+and are not synchronized. Position
 snapshots are used in memory to draw the mask; positions, move history, and
 account/game identifiers are not stored by the extension.
 

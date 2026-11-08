@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const { loadSyncedPreferences, FOG_STORAGE_KEY, normalizeFog } = globalThis.ChessConfirmMoveSettings;
+  const { FOG_STORAGE_KEY, normalizeFog } = globalThis.ChessConfirmMoveSettings;
   const { read } = globalThis.ChessFogBoard;
   const { visibility } = globalThis.ChessFogVisibility;
   let preferences = normalizeFog(null);
@@ -98,7 +98,7 @@
   }
 
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "sync" && changes[FOG_STORAGE_KEY]) {
+    if (area === "local" && changes[FOG_STORAGE_KEY]) {
       revision++;
       apply(changes[FOG_STORAGE_KEY].newValue);
     }
@@ -107,7 +107,7 @@
     if (message?.type === "chess-fog-status") respond({ status });
   });
   const loadingRevision = revision;
-  loadSyncedPreferences(FOG_STORAGE_KEY).then(data => {
+  chrome.storage.local.get(FOG_STORAGE_KEY).then(data => {
     if (revision === loadingRevision) apply(data[FOG_STORAGE_KEY]);
   }).catch(() => { if (revision === loadingRevision) apply(null); });
   addEventListener("pagehide", () => {
