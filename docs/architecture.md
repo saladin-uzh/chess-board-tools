@@ -44,7 +44,10 @@ runtime: standard bots, analysis, completed reviews, Daily analysis and
 Rated/Daily/Learning puzzles. It excludes active human play, Puzzle Rush,
 Puzzle Battle, classrooms and variants. Coordinates are not restricted by these
 overlay rules. Pieces render above the fog; arrows render above the fog and
-ordinary square highlights remain below pieces.
+native translucent move/selection highlights and manual annotations render above
+fog and below pieces. Opaque native highlights retain their original layer.
+The native inline opacity convention identifies which highlights to lift;
+no host opacity or visibility is changed.
 
 Shortcut, player privacy, overlay, arrow numbering and board-helper preferences use separate
 `chrome.storage.sync` keys. Fog, arrow numbering and board-helper controllers/content scripts send storage

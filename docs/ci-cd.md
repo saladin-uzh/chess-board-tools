@@ -44,7 +44,12 @@ Prepare releases on a release branch and open a pull request into `dev`.
 After that pull request is reviewed and merged, open a separate pull request
 from `dev` into `prod` for production promotion.
 Always squash-merge pull requests into `prod`, and use the release version as
-the resulting commit title (for example, `v1.2.2`).
+the resulting commit title (for example, `v1.2.3`).
+
+The English-only listing text is tracked in
+[`chrome-web-store-description.txt`](chrome-web-store-description.txt). Update
+the Developer Dashboard draft separately; the ZIP submission job does not edit
+listing descriptions. Check the saved draft before submitting a new version.
 
 Increase the three-component `version` in `manifest.json` manually before
 promoting a release to `prod`. CI does not edit versions, create commits, or

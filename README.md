@@ -6,9 +6,13 @@
 [Українська версія](README.uk.md)
 
 A browser extension for Chess.com with keyboard board controls, configurable
-move confirmation shortcuts, and optional sound cues during your turn.
+move confirmation shortcuts, optional sound cues during your turn, numbered arrows,
+and a switch to hide player information beside the board.
 Piece Vision Overlay is available against bots, in analysis, and in
 completed game reviews, and Rated, Daily and Learning puzzles.
+
+See the [changelog](CHANGELOG.md) for changes in 1.2.3 and the
+[English Chrome Web Store description](docs/chrome-web-store-description.txt) for listing text.
 
 ## Installation
 

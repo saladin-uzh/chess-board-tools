@@ -1,5 +1,14 @@
 # Validation and browser coverage
 
+## 1.2.3 candidate — 8 November 2026
+
+- All 145 Node tests, 13 Python submission tests, JavaScript syntax checks and diff checks passed.
+- All 65 local browser fixture checks passed: settings (20), player privacy (14), fog layers (15) and confirmation buttons (16). Chrome APIs and orientation snapshots are mocked in the relevant fixtures.
+- Packaging validated all 35 runtime files, ZIP integrity, references, hashes and provenance. The candidate manifest is version 1.2.3.
+- All 57 local documentation references resolved. The home, support and privacy pages were checked in a browser; the updated support/privacy views had no horizontal overflow.
+- The saved Chrome Web Store draft was verified as English only, with 1,119 characters. Listing publication is separate from saving the draft.
+- Full installed-extension service-worker integration, live gameplay, Safari runtime and real two-device synchronization remain unverified for this candidate.
+
 ## Player privacy — 8 November 2026
 
 - 145 Node tests passed after integrating the helper storage worker, including opt-in defaults, malformed settings, failed saves, stale reads, sync changes and page lifecycle cleanup.
@@ -51,17 +60,16 @@ For a browser DOM regression fixture, serve the repository locally and open
 `content.js`; they do not exercise a Chess.com account or installed extension.
 
 `tests/fog-layers.html` checks the real fog stylesheet against native highlight
-markup, including annotation ordering, service highlights, promotion, element
+markup, including annotation ordering, translucent and opaque highlights, promotion, element
 reuse, and overlay removal/reinsertion. On 31 October 2026, all 12 browser checks
 and 99 Node tests passed; syntax, diff and package validation also passed.
 Live Chess.com analysis DOM inspection confirmed inline `opacity: 0.8` for
 right-click annotations, `opacity: 0.5` for last-move highlights, and
-`.growing-circle` with `--opacity: 0.5` for selection. The annotation selector
-depends on that native inline opacity convention. The updated extension was not
-reloaded or tested on a live Chess.com board.
+`.growing-circle` with `--opacity: 0.5` for selection. The highlight selectors depend on those native inline opacity conventions.
+See the current layering checks above for the updated ordering.
 
 For floating settings, open `tests/settings-panel.html` from the same server.
-Its 18 checks exercise the real shared settings controllers and panel DOM with
+Its 20 checks exercise the real shared settings controllers and panel DOM with
 mocked Chrome APIs, including cross-surface updates, delayed/failed saves, focus,
 keyboard geometry, SPA navigation and host restoration.
 
@@ -82,8 +90,7 @@ keyboard geometry, SPA navigation and host restoration.
   actual Chrome sync/local storage, toolbar-to-page messaging, icon loading,
   preference preservation after reload and independent open state in a second tab.
   This was an isolated integration check, not a live Chess.com account/game test.
-- The protected Safari extension was not changed or reloaded. Safari runtime and
-  visual integration with the current authenticated Chess.com UI remain unverified.
+- Safari runtime and visual integration for that candidate remain unverified.
 
 ## 1.2.0 release checks — 26 October 2026
 
@@ -122,8 +129,7 @@ every scenario was repeated against the final release package.
 
 Real two-device Chrome Sync, physical standalone Ctrl, a complete puzzle
 promotion/orientation/review matrix, every fixed tick preset and human-game clock
-metadata were not all runtime-tested. The final confirmation selector was not
-reloaded into the protected Safari installation. No signed macOS App Store or
+metadata were not all runtime-tested. The final confirmation selector did not receive a full Safari integration check. No signed macOS App Store or
 TestFlight build was validated. Temporary Safari checks do not establish App
 Store distribution readiness.
 

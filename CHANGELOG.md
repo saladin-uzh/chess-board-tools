@@ -2,10 +2,12 @@
 
 ## Unreleased
 
+## 1.2.3
+
+- Add optional per-color numbering of native arrows, with labels near arrow starts and placement adjusted to reduce overlap.
+- Restore settings launcher/panel icons when image loading fails.
 - Add an optional Hide player information setting: replace names, avatars and ratings beside the board with White and Black while retaining clocks and captured pieces. The preference uses Chrome Sync.
-
 - Render native translucent last-move and selection highlights above Piece Vision Overlay without changing their opacity or the layer of opaque highlights.
-
 - Synchronize fog, arrow numbering, keyboard controls and turn-tick preferences through Chrome Sync, with normalized migration of existing local settings. Floating-panel geometry remains local. Serialize migration and explicit saves through an extension service worker so concurrent settings surfaces cannot overwrite newer choices.
 
 ## 1.2.2
