@@ -426,12 +426,6 @@ function controller() {
     append(child) { child.parent = this; this.children.push(child); }
     remove() { if (this.parent) this.parent.children = this.parent.children.filter(child => child !== this); this.isConnected = false; }
     setAttribute(key, value) { this[key] = value; }
-    removeAttribute(key) { delete this[key]; }
-    toggleAttribute(key, enabled) { if (enabled) this[key] = ''; else delete this[key]; }
-    querySelectorAll(selector) {
-      return this.children.filter(child => selector === '.highlight'
-        ? child.classList.contains('highlight') : Object.hasOwn(child, 'data-chess-fog-hidden'));
-    }
     closest(selector) { return this.className.split(' ').some(name => selector.split(/,\s*/).includes(`.${name}`)) ? this : this.parent?.closest(selector); }
     getBoundingClientRect() { return { width: 640, height: 640 }; }
   }
@@ -463,7 +457,6 @@ function controller() {
   };
   return {
     loading, tick, observers, timers, frames, events,
-    highlight(className) { const element = new Element(); element.className = className; current.append(element); return element; },
     get board() { return current; },
     get snapshot() { return snapshot; },
     set snapshot(value) { snapshot = value; },
@@ -605,28 +598,4 @@ test('screenshot position keeps g7, h6, g4 and h4 darker than ordinary fog', asy
   assert.equal(cell('e8').contains('chess-fog-hidden'), true);
   assert.equal(cell('e8').contains('chess-fog-unseen'), false);
   assert.equal(cell('d1').contains('chess-fog-hidden'), false);
-});
-
-
-test('fog suppresses native highlights only on hidden logical squares and restores them on every exit', async () => {
-  const app = controller();
-  const last = app.highlight('highlight square-44');
-  const selected = app.highlight('highlight growing-circle square-44');
-  const visible = app.highlight('highlight square-22');
-  app.loading.resolve({ fogPreferences: { enabled: true } }); await flush(); app.tick();
-  for (const highlight of [last, selected]) assert.ok(Object.hasOwn(highlight, 'data-chess-fog-hidden'));
-  assert.equal(Object.hasOwn(visible, 'data-chess-fog-hidden'), false);
-  app.snapshot = { ...app.snapshot, flipped: true }; app.tick();
-  assert.ok(Object.hasOwn(last, 'data-chess-fog-hidden'));
-  last.className = 'highlight square-22'; app.tick();
-  assert.equal(Object.hasOwn(last, 'data-chess-fog-hidden'), false);
-  app.snapshot = null; app.tick();
-  assert.equal(Object.hasOwn(selected, 'data-chess-fog-hidden'), false);
-  app.snapshot = { position: parseFEN(fen({ b2: 'P' })), side: 'white', selected: null, flipped: false }; app.tick();
-  assert.ok(Object.hasOwn(selected, 'data-chess-fog-hidden'));
-  app.change({ enabled: false }); app.tick();
-  assert.equal(Object.hasOwn(selected, 'data-chess-fog-hidden'), false);
-  app.change({ enabled: true }); app.tick();
-  app.events.pagehide();
-  assert.equal(Object.hasOwn(selected, 'data-chess-fog-hidden'), false);
 });

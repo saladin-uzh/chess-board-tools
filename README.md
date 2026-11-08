@@ -162,7 +162,7 @@ in Puzzle Rush and Puzzle Battle.
 Squares unseen by either side use a darker tint: their remaining transparency is
 half that of ordinary fog. Thin diagonal stripes distinguish these squares from
 ordinary fog. Colored square annotations stay above fog and below pieces; arrows
-stay above pieces. Last-move and selection highlights are hidden on fogged squares and remain visible on clear squares.
+stay above pieces. Native translucent last-move and selection highlights also stay above fog, retaining their original transparency. Opaque highlights retain their native layer.
 
 Clear squares are the union of your pieces' occupied squares and movement
 destinations, except that pawns reveal their two forward capture diagonals

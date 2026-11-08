@@ -26,11 +26,8 @@
 wc-chess-board:has(> .chess-fog-overlay) > .highlight {
   z-index: 1;
 }
-/* A translucent mask alone still lets native move and selection colors through. */
-wc-chess-board:has(> .chess-fog-overlay) > .highlight[data-chess-fog-hidden]:is(.growing-circle, :not([style*="opacity: 0.8;"])) {
-  visibility: hidden;
-}
-/* Chess.com annotations use 0.8 opacity; move/selection highlights use 0.5. */
+/* Preserve native transparency while lifting move/selection highlights above fog. */
+wc-chess-board:has(> .chess-fog-overlay) > .highlight[style*="opacity: 0.5;"],
 wc-chess-board:has(> .chess-fog-overlay) > .highlight[style*="opacity: 0.8;"]:not(.growing-circle) {
   z-index: 6;
 }

@@ -1,10 +1,13 @@
 # Validation and browser coverage
 
-## Fog highlight fix — 8 November 2026
+## Fog highlight layering — 8 November 2026
 
-- 125 Node tests passed, including a regression that fails on the original controller.
-- The fog layer fixture passed all 19 checks in Chromium 154, including actual computed visibility, annotation reuse and overlay removal.
-- These are mocked controller and local browser checks; live Chess.com and Safari have not been tested for this fix.
+Live Chess.com analysis inspection confirmed last-move highlights have computed
+opacity 0.5, and selection uses a growing-circle pseudo-element with opacity 0.5.
+The fix lifts these native translucent highlights above fog without changing opacity;
+opaque highlights retain their existing layer. All 124 Node tests and all 15
+local browser layer checks passed. The installed extension has not been updated
+for this check.
 
 ## Reproducible local checks
 

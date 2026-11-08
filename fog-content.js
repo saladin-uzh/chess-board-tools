@@ -25,9 +25,6 @@
   });
 
   function removeMask() {
-    for (const highlight of board?.querySelectorAll("[data-chess-fog-hidden]") || []) {
-      highlight.removeAttribute("data-chess-fog-hidden");
-    }
     overlay?.remove();
     overlay = null;
   }
@@ -71,12 +68,6 @@
     }
     const masks = visibility(snapshot.position, snapshot.side, snapshot.selected);
     const opponent = visibility(snapshot.position, snapshot.side === "white" ? "black" : "white");
-    for (const highlight of board.querySelectorAll(".highlight")) {
-      const square = /(?:^|\s)square-([1-8])([1-8])(?:\s|$)/.exec(highlight.className);
-      const hidden = square && !masks.union[(Number(square[2]) - 1) * 8 + Number(square[1]) - 1];
-      // This attribute is outside the observer filter, so it cannot schedule a redraw.
-      highlight.toggleAttribute("data-chess-fog-hidden", Boolean(hidden));
-    }
     if (!overlay) {
       overlay = document.createElement("div");
       overlay.className = "chess-fog-overlay";

@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Hide native last-move and selection highlights on fogged squares so they cannot show through the translucent mask; preserve manual annotations and restore highlights when fog clears.
+- Render native translucent last-move and selection highlights above Piece Vision Overlay without changing their opacity or the layer of opaque highlights.
 
 ## 1.2.2
 
