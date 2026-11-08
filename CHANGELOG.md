@@ -4,6 +4,8 @@
 
 - Render native translucent last-move and selection highlights above Piece Vision Overlay without changing their opacity or the layer of opaque highlights.
 
+- Synchronize fog, arrow numbering, keyboard controls and turn-tick preferences through Chrome Sync, with normalized migration of existing local settings. Floating-panel geometry remains local. Serialize migration and explicit saves through an extension service worker so concurrent settings surfaces cannot overwrite newer choices.
+
 ## 1.2.2
 
 - Cancel the selected piece as well as queued premoves with the cancel shortcut.
