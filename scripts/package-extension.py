@@ -13,7 +13,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parent.parent
 FILES = (
-    "manifest.json", "settings.js", "content.js", "popup.html", "popup.css",
+    "manifest.json", "settings.js", "preferences-worker.js", "content.js", "popup.html", "popup.css",
     "player-popup.js", "player-content.js", "player.css",
     "popup.js", "arrow-popup.js", "arrow-board.js", "arrow-content.js", "arrow.css",
     "fog-popup.js", "fog-visibility.js", "fog-board.js",
@@ -47,6 +47,8 @@ def validate(files):
     if not re.fullmatch(r"\d+\.\d+\.\d+", manifest["version"]):
         raise ValueError("Expected a three-component release version")
     refs = list(manifest["icons"].values()) + [manifest["action"]["default_popup"]]
+    if "background" in manifest:
+        refs.append(manifest["background"]["service_worker"])
     for script in manifest["content_scripts"]:
         refs.extend(script.get("js", []))
         refs.extend(script.get("css", []))

@@ -12,6 +12,9 @@
   "permissions": [
     "storage"
   ],
+  "background": {
+    "service_worker": "preferences-worker.js"
+  },
   "action": {
     "default_title": "Chess Board Tools",
     "default_popup": "popup.html"

@@ -2,14 +2,22 @@
 
 ## Player privacy — 8 November 2026
 
-- 129 Node tests passed, including opt-in defaults, malformed settings, failed saves, stale reads, sync changes and page lifecycle cleanup.
+- 145 Node tests passed after integrating the helper storage worker, including opt-in defaults, malformed settings, failed saves, stale reads, sync changes and page lifecycle cleanup.
 - All 14 checks in `tests/player-privacy.html` passed in a browser with mocked Chrome APIs and orientation snapshots: identity masking, color changes, panel replacement, clock/capture preservation, restoration and settings synchronization.
 - All 20 shared floating-settings browser fixture checks passed with the new control present.
-- JavaScript syntax, diff checks, 13 Python submission tests and 34-file candidate packaging passed.
+- JavaScript syntax, diff checks, 13 Python submission tests and 35-file candidate packaging passed.
 - Live Chess.com DOM inspection covered online lobby, analysis and bot-selection player panels. The new feature has not been tested as an installed extension during live play or between signed-in Chrome devices.
 
 To reproduce the DOM checks, serve the repository locally and open
 `tests/player-privacy.html` and `tests/settings-panel.html`.
+
+## Helper settings sync — 8 November 2026
+
+- 140 Node tests passed, including legacy migration for every helper key, existing sync precedence, changes during migration, malformed data and storage failures.
+- Worker tests use separate client VM contexts and the actual worker to verify queued migrations/saves, late reads, queue recovery and sender/key validation. Two race regressions failed before the fix.
+- UI/content tests cover incoming sync changes and delayed reads/saves; local geometry remains separate.
+- All 20 floating-settings browser fixture checks passed with mocked Chrome APIs; JavaScript syntax, diff and 32-file packaging checks passed.
+- Real synchronization between two signed-in Chrome devices has not been tested.
 
 ## Reproducible local checks
 
@@ -27,7 +35,7 @@ The Node suite mocks DOM and Chrome APIs. It covers shortcuts and focus guards,
 legacy/suffixed confirmation classes, preference normalization and save races,
 coordinate geometry and board selection, promotion, premove dispatch, route and
 snapshot validation, overlay visibility/lifecycle, and tick scheduling/audio.
-Package validation checks the 27 runtime files, manifest/popup/CSS references,
+Package validation checks the 35 runtime files, manifest/popup/CSS references,
 ZIP integrity, hashes and provenance. Generated output stays in ignored `build/`.
 
 For a browser DOM regression fixture, serve the repository locally and open
