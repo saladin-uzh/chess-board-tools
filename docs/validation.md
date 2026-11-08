@@ -11,6 +11,14 @@
 To reproduce the DOM checks, serve the repository locally and open
 `tests/player-privacy.html` and `tests/settings-panel.html`.
 
+## Fog highlight layering — 8 November 2026
+
+Live Chess.com analysis inspection confirmed last-move highlights have computed
+opacity 0.5, and selection uses a growing-circle pseudo-element with opacity 0.5.
+The fix lifts these native translucent highlights above fog without changing opacity;
+opaque highlights retain their existing layer. All 124 Node tests and all 15
+local browser layer checks passed. Full live extension integration remains untested.
+
 ## Helper settings sync — 8 November 2026
 
 - 140 Node tests passed, including legacy migration for every helper key, existing sync precedence, changes during migration, malformed data and storage failures.
