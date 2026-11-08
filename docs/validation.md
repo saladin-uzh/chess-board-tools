@@ -1,5 +1,14 @@
 # Validation and browser coverage
 
+## Fog highlight layering — 8 November 2026
+
+Live Chess.com analysis inspection confirmed last-move highlights have computed
+opacity 0.5, and selection uses a growing-circle pseudo-element with opacity 0.5.
+The fix lifts these native translucent highlights above fog without changing opacity;
+opaque highlights retain their existing layer. All 124 Node tests and all 15
+local browser layer checks passed. The installed extension has not been updated
+for this check.
+
 ## Reproducible local checks
 
 Node.js 18 or newer and Python 3 are sufficient; no dependency installation is
