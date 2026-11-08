@@ -44,13 +44,22 @@
         board.append(overlay);
       }
       const labels = globalThis.ChessArrowBoard.number(arrows, rect.width, rect.height);
-      overlay.replaceChildren(...labels.map(label => {
+      overlay.replaceChildren(...labels.flatMap(label => {
         const badge = document.createElement("span");
         badge.textContent = String(label.ordinal);
         badge.style.left = `${label.x}px`;
         badge.style.top = `${label.y}px`;
         badge.style.borderColor = label.color;
-        return badge;
+        const dx = label.x - label.anchorX, dy = label.y - label.anchorY;
+        const distance = Math.hypot(dx, dy);
+        if (distance <= label.radius * 2) return [badge];
+        const line = document.createElement("i");
+        line.style.left = `${label.anchorX}px`;
+        line.style.top = `${label.anchorY}px`;
+        line.style.width = `${distance}px`;
+        line.style.backgroundColor = label.color;
+        line.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+        return [line, badge];
       }));
     }
   }
