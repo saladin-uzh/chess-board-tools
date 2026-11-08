@@ -51,6 +51,32 @@ tabs. Existing tabs can retain old scripts or stale extension event handlers.
 See [validation coverage](docs/validation.md) for recorded browser checks and
 remaining limits. Temporary Safari installations do not constitute an App Store build.
 
+## Tournament companion (preview)
+
+Open an Arena or Swiss tournament's **Share** dialog, then select **Open
+tournament companion**. A floating window loads a second native tournament page,
+showing its original header and Standings/Games/Chat tabs. Keep **Play** selected
+in the main page. Native chat permissions, sending and updates remain controlled
+by Chess.com. This preview still needs live confirmation-button and reconnect
+validation before release.
+Only the three tab selectors and Chat interactions are active in the child page.
+Games and Standings are read-only and scrollable. Player names open profiles in
+a new browser tab; game-preview actions are blocked. Tournament header/footer actions are also inactive.
+
+Drag the title or resize button, or focus either control and use arrow keys
+(Shift increases the step). **×** closes the companion; Escape also closes it
+when an extension panel control has focus. Native chat keeps its own key handling.
+Close the current companion before selecting a different tournament. Position,
+size, open state and chat data are not saved.
+
+The companion survives navigation between tabs in the Play interface. It closes
+on leaving Play/game routes or reloading. If the child page leaves its tournament
+view, its content is hidden instead of showing unrelated game chat. **Show
+tournament** attempts to restore the native tournament tab in the same frame,
+including after a host-initiated switch when a new game starts. Opening a
+companion loads another full Chess.com app in the background and uses additional
+memory and connections; closing it removes that page.
+
 ## Shortcuts and settings
 
 - `Space` confirms the move.
@@ -195,8 +221,12 @@ piece placement.
 ## Security and privacy
 
 The extension uses the `storage` permission only to save your shortcut, fog, and board helper settings.
-The extension code makes no external network requests and does not collect
-telemetry or game history. It runs only on the listed Chess.com URLs.
+The extension does not collect telemetry or game history. It runs only on the
+listed Chess.com URLs. The optional tournament companion loads an additional
+Chess.com page using your existing browser session. That page makes its normal
+site requests, including third-party resources; native chat sends messages when
+you submit them. No chat content is stored by the extension or sent to a developer
+server.
 
 Shortcut settings use `chrome.storage.sync`. When Chrome Sync is enabled, Chrome
 synchronizes these settings with your other signed-in Chrome browsers. When

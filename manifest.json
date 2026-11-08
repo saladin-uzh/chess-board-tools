@@ -107,7 +107,9 @@
         "settings-view.js",
         "settings-layout.js",
         "floating-settings-geometry.js",
-        "floating-settings.js"
+        "floating-settings.js",
+        "tournament-companion-view.js",
+        "tournament-companion.js"
       ],
       "run_at": "document_idle"
     }

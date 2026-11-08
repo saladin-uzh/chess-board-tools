@@ -16,7 +16,7 @@ The Node suite mocks DOM and Chrome APIs. It covers shortcuts and focus guards,
 legacy/suffixed confirmation classes, preference normalization and save races,
 coordinate geometry and board selection, promotion, premove dispatch, route and
 snapshot validation, overlay visibility/lifecycle, and tick scheduling/audio.
-Package validation checks the 27 runtime files, manifest/popup/CSS references,
+Package validation checks the 29 runtime files, manifest/popup/CSS references,
 ZIP integrity, hashes and provenance. Generated output stays in ignored `build/`.
 
 For a browser DOM regression fixture, serve the repository locally and open
@@ -37,6 +37,44 @@ For floating settings, open `tests/settings-panel.html` from the same server.
 Its 18 checks exercise the real shared settings controllers and panel DOM with
 mocked Chrome APIs, including cross-surface updates, delayed/failed saves, focus,
 keyboard geometry, SPA navigation and host restoration.
+
+For the tournament companion preview, open `tests/tournament-companion.html`.
+It uses the production runtime files with simulated same-origin native pages;
+no Chess.com request is made by the fixture. Its 56 checks cover Share launch,
+one-frame ownership, parent Play retention, native input/handlers/dialogs,
+bounds, unavailable state, close/reopen, route cleanup and pagehide.
+The Node suite also tests Share URL validation, child selection/disposal and
+pointer cancellation/lost capture with the iframe shield. See the separate
+[live release gate](tournament-companion.md#evidence-and-remaining-release-gate).
+On 6 November 2026, all 131 Node tests and 52 companion fixture checks passed.
+The browser run includes the real startup deadline for a missing native view;
+its Node regression failed before the deadline was added. Layout checks also
+passed with a 280×240 override. Real pointer dragging and resizing over the
+iframe were checked separately.
+The mobile header regression uses the observed `#mobile-toolbar` inside
+`.board-layout-nav`; it failed before those selectors were added. Recovery tests
+verify that Show tournament reuses the existing child and never selects a parent tab.
+Pointer/mouse bubbling and the close click are checked against parent-document
+listeners; the regression failed before propagation was stopped at the shadow root.
+The 52-check fixture also passed in Safari 27.2 (22625.2.8.11.9), in a separate
+test window. It verifies native tab selection, read-only Games/Standings and
+detached popovers, unblocked scrolling, and restored Chat activation. Header/
+footer pointer exclusion and detached-popover activation each reproduced a
+failure before their fixes. These are local DOM checks, not live account/game tests.
+The profile-link update passed all 132 Node tests and 56 local Chromium fixture
+checks. These include separate-tab profile routing, no opener access, and rejection
+of game URLs and shortened usernames. The popup call is intercepted by the fixture;
+this does not verify actual browser popup policy or live profile-page loading.
+The updated 56-check fixture also passed in a separate Safari test window.
+The popup call remains intercepted there; actual popup policy/profile loading is
+not established by either local fixture run.
+JavaScript syntax, diff and packaging checks passed with 29 runtime files.
+This is local candidate validation, not installed-extension or live-service proof.
+
+`tests/tournament-companion-security.html` checks that the simulated child page
+rejects unsupported tournament kinds and renders markup-like tab labels as text.
+It also checks normal Arena/Swiss standings, native Chat handlers and missing-view
+behavior. This regression reproduced HTML interpretation before the fixture fix.
 
 ## Unreleased floating settings checks — 28 October 2026
 

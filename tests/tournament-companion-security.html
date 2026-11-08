@@ -1,0 +1,51 @@
+<!doctype html><meta charset="utf-8"><title>Tournament fixture security checks</title>
+<h1>Tournament fixture security checks</h1><ol id="results"></ol>
+<script>
+const check = (name, passed) => {
+  const result = document.createElement("li");
+  result.textContent = `${passed ? "PASS" : "FAIL"}: ${name}`;
+  document.querySelector("#results").append(result);
+  if (!passed) throw new Error(name);
+};
+async function child(kind, missing = false) {
+  const frame = document.createElement("iframe");
+  const url = new URL("tournament-companion-child.html", location.href);
+  url.searchParams.set("kind", kind);
+  url.searchParams.set("fixture", Date.now());
+  if (missing) url.searchParams.set("missing", "1");
+  const loaded = new Promise(resolve => frame.addEventListener("load", resolve, { once: true }));
+  frame.src = url.href;
+  document.body.append(frame);
+  await loaded;
+  return frame;
+}
+(async () => {
+  for (const kind of ["arena", "tournament"]) {
+    const frame = await child(kind), doc = frame.contentDocument;
+    doc.querySelector("#tournament").click();
+    const panel = doc.querySelector(`.${kind}-tab-container`);
+    check(`${kind}: normal tournament and standings mount`, panel?.querySelectorAll(".row-action").length === 100);
+    const tabs = Array.from(panel.querySelectorAll('.underlined-tabs-component button'));
+    for (const label of ['<img data-fixture-injection="text">', '&lt;svg&gt; & "quoted"']) {
+      tabs[1].textContent = label;
+      tabs[1].click();
+      check(`${kind}: DOM label stays literal text`, !panel.querySelector("[data-fixture-injection]") && panel.querySelector(".row-action").textContent === `${label} entry 0`);
+    }
+    tabs[2].click();
+    panel.querySelector(".native-send").click();
+    check(`${kind}: native chat handler remains usable`, panel.dataset.fixtureSends === "1");
+    frame.remove();
+  }
+  for (const kind of ['arena"><svg data-fixture-injection="url"></svg><div class="', "<img data-fixture-injection='url'>", "Arena", ""]) {
+    const frame = await child(kind), doc = frame.contentDocument;
+    doc.querySelector("#tournament").click();
+    check("Unsupported or malicious kind does not mount", !doc.querySelector(".sidebar-content").children.length && !doc.querySelector("[data-fixture-injection]"));
+    frame.remove();
+  }
+  const missing = await child("tournament", true);
+  missing.contentDocument.querySelector("#tournament").click();
+  check("Missing native view remains unavailable", !missing.contentDocument.querySelector(".sidebar-content").children.length);
+  missing.remove();
+  document.title = `PASS: ${document.querySelector("#results").children.length} tournament fixture security checks`;
+})().catch(error => { document.title = "FAIL: " + error.message; throw error; });
+</script>
