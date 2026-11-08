@@ -1,5 +1,16 @@
 # Validation and browser coverage
 
+## Player privacy — 8 November 2026
+
+- 129 Node tests passed, including opt-in defaults, malformed settings, failed saves, stale reads, sync changes and page lifecycle cleanup.
+- All 14 checks in `tests/player-privacy.html` passed in a browser with mocked Chrome APIs and orientation snapshots: identity masking, color changes, panel replacement, clock/capture preservation, restoration and settings synchronization.
+- All 20 shared floating-settings browser fixture checks passed with the new control present.
+- JavaScript syntax, diff checks, 13 Python submission tests and 34-file candidate packaging passed.
+- Live Chess.com DOM inspection covered online lobby, analysis and bot-selection player panels. The new feature has not been tested as an installed extension during live play or between signed-in Chrome devices.
+
+To reproduce the DOM checks, serve the repository locally and open
+`tests/player-privacy.html` and `tests/settings-panel.html`.
+
 ## Reproducible local checks
 
 Node.js 18 or newer and Python 3 are sufficient; no dependency installation is

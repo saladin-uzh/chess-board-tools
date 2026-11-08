@@ -22,6 +22,7 @@ of truth for injected files and URL matches.
 | `fog-visibility.js` | FEN parsing and piece-visibility calculation |
 | `fog-content.js`, `fog.css` | Overlay lifecycle, selection outlines and rendering layers |
 | `arrow-board.js`, `arrow-content.js`, `arrow.css`, `arrow-popup.js` | Native SVG arrow reading, per-color numbering, passive labels and local toggle |
+| `player-content.js`, `player.css`, `player-popup.js` | Optional board player identity masking, color labels and synced preference |
 | `site/` | Static support/privacy pages deployed by `.github/workflows/pages.yml` |
 | `scripts/package-extension.py` | Deterministic runtime ZIP, reference/integrity validation, hashes and provenance |
 
@@ -44,11 +45,18 @@ Puzzle Battle, classrooms and variants. Coordinates are not restricted by these
 overlay rules. Pieces render above the fog; arrows render above the fog and
 ordinary square highlights remain below pieces.
 
-Shortcut preferences use `chrome.storage.sync`; overlay and board-helper
+Shortcut and player privacy preferences use `chrome.storage.sync`; overlay and board-helper
 preferences use separate `chrome.storage.local` keys. Popup revision tracking
 prevents stale initial reads or delayed saves from overwriting incoming changes.
 Existing settings are normalized; new tick options default to Auto and 50%.
 No stored positions or history are required.
+
+Player privacy hides native avatar and user blocks with CSS and inserts passive
+White/Black labels. Native identity data stays intact for restoration. Colors come
+from the panel clock or captured-pieces metadata, with validated coordinate-bridge
+orientation as a fallback for clockless boards. A mutation observer handles panel
+replacement, and a 500ms refresh tracks clockless board flips only while enabled.
+Chat, standings, game lists and exports are outside this feature’s scope.
 
 Page settings live in a shadow root and reuse the popup controllers and storage
 keys. The page panel reads/subscribes to overlay status directly in the isolated

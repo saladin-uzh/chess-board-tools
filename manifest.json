@@ -100,10 +100,23 @@
         "https://www.chess.com/*"
       ],
       "js": [
+        "player-content.js"
+      ],
+      "css": [
+        "player.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.chess.com/*"
+      ],
+      "js": [
         "popup.js",
         "assist-popup.js",
         "fog-popup.js",
         "arrow-popup.js",
+        "player-popup.js",
         "settings-view.js",
         "settings-layout.js",
         "floating-settings-geometry.js",

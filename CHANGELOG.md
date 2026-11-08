@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add an optional Hide player information setting: replace names, avatars and ratings beside the board with White and Black while retaining clocks and captured pieces. The preference uses Chrome Sync.
+
 ## 1.2.2
 
 - Cancel the selected piece as well as queued premoves with the cancel shortcut.
