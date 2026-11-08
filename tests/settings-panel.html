@@ -25,6 +25,7 @@
   function storage(area) {
     return {
       get: async key => ({ [key]: values[area][key] }),
+      remove: async key => { delete values[area][key]; },
       set: async record => {
         if (fixture.saveGate) await fixture.saveGate;
         if (fixture.failSave) throw new Error("Fixture storage failure");
@@ -33,8 +34,12 @@
     };
   }
   window.chrome = {
-    storage: { local: storage("local"), sync: storage("sync"), onChanged: { addListener: listener => changes.push(listener) } },
-    runtime: { getURL: path => "../" + path, onMessage: { addListener: listener => messages.push(listener) } },
+    storage: { local: storage("local"), sync: storage("sync"), onChanged: { addListener: listener => changes.push(listener), removeListener: listener => { const index = changes.indexOf(listener); if (index >= 0) changes.splice(index, 1); } } },
+    runtime: { sendMessage: async message => {
+      const { key } = message;
+      if (message.type === "chess-preferences-save") await chrome.storage.sync.set({ [key]: message.value });
+      return { ok: true, value: (await chrome.storage.sync.get(key))[key] };
+    }, getURL: path => "../" + path, onMessage: { addListener: listener => messages.push(listener) } },
     tabs: { query: async () => [{ id: 1 }], sendMessage: async () => ({ status: "Fog is disabled." }) },
   };
   let boardStatus = "Fog is disabled.";
@@ -91,7 +96,7 @@
     fixture.failSave = false;
     let release; fixture.saveGate = new Promise(resolve => { release = resolve; });
     find("#ticking-enabled").click();
-    fixture.emit("local", "boardAssistPreferences", { keyboard: false, ticking: false, tickMode: "increment" });
+    fixture.emit("sync", "boardAssistPreferences", { keyboard: false, ticking: false, tickMode: "increment" });
     check("Incoming state wins while a save is pending", !find("#keyboard-enabled").checked && find("#tick-frequency").value === "increment" && find("#ticking-enabled").disabled);
     fixture.failSave = true; release(); await tick(); fixture.saveGate = null; fixture.failSave = false;
     check("Failed delayed save retains incoming state", !find("#keyboard-enabled").checked && find("#tick-frequency").value === "increment");

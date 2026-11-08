@@ -69,6 +69,25 @@
     };
   }
 
+  async function requestPreferences(type, key, value) {
+    const response = await chrome.runtime.sendMessage({ type, key, value });
+    if (response?.ok !== true) throw new Error("Preference storage unavailable");
+    return { [key]: response.value };
+  }
+
+  const preferenceLoads = new Map();
+  function loadSyncedPreferences(key) {
+    if (preferenceLoads.has(key)) return preferenceLoads.get(key);
+    const loading = requestPreferences("chess-preferences-load", key);
+    preferenceLoads.set(key, loading);
+    loading.finally(() => preferenceLoads.delete(key)).catch(() => {});
+    return loading;
+  }
+
+  function saveSyncedPreferences(key, value) {
+    return requestPreferences("chess-preferences-save", key, value);
+  }
+
   function isInteractiveTarget(target) {
     return Boolean(target?.isContentEditable || target?.closest?.(
       'input, textarea, select, button, a[href], summary, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="button"], [role="link"], [data-chess-settings-ui]',
@@ -99,5 +118,7 @@
     TICK_FREQUENCIES,
     normalizeAssist,
     normalizeKeybindings,
+    loadSyncedPreferences,
+    saveSyncedPreferences,
   });
 })();

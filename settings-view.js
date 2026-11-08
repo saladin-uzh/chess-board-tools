@@ -73,7 +73,7 @@
         </label>
         <p class="status" id="fog-save-status" role="status" aria-live="polite"></p>
         <p id="fog-board-status">Auto uses your color, or the bottom side when no player color is available.</p>
-        <p>Local fog settings; no position or history storage.</p>
+        <p>Settings use Chrome Sync; no position or history storage.</p>
       </section>
 `;
   globalThis.ChessSettingsView = Object.freeze({
