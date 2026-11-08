@@ -51,6 +51,16 @@ tabs. Existing tabs can retain old scripts or stale extension event handlers.
 See [validation coverage](docs/validation.md) for recorded browser checks and
 remaining limits. Temporary Safari installations do not constitute an App Store build.
 
+## Hide player information
+
+Enable **Hide player information** in the toolbar popup or floating settings to
+hide both players’ names, avatars and ratings beside the board. The panels show
+**White** and **Black**, following each player’s color when the board is flipped.
+Clocks and captured pieces remain visible. The option is off by default and uses
+Chrome Sync. Turning it off restores the current native player information.
+This affects the board’s player panels; chat, game lists, standings, profile pages
+and game exports retain their original information.
+
 ## Shortcuts and settings
 
 - `Space` confirms the move.
@@ -198,7 +208,7 @@ The extension uses the `storage` permission only to save your shortcut, fog, and
 The extension code makes no external network requests and does not collect
 telemetry or game history. It runs only on the listed Chess.com URLs.
 
-Shortcut, fog, arrow numbering and board helper settings use `chrome.storage.sync`. When Chrome Sync is enabled, Chrome
+Shortcut, fog, arrow numbering, player privacy and board helper settings use `chrome.storage.sync`. When Chrome Sync is enabled, Chrome
 synchronizes these settings with your other signed-in Chrome browsers. When
 syncing is disabled, these settings stay local to the browser. Chrome stores
 offline changes locally and resumes synchronization when back online.

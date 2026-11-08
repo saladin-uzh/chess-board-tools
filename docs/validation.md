@@ -1,5 +1,16 @@
 # Validation and browser coverage
 
+## Player privacy — 8 November 2026
+
+- 145 Node tests passed after integrating the helper storage worker, including opt-in defaults, malformed settings, failed saves, stale reads, sync changes and page lifecycle cleanup.
+- All 14 checks in `tests/player-privacy.html` passed in a browser with mocked Chrome APIs and orientation snapshots: identity masking, color changes, panel replacement, clock/capture preservation, restoration and settings synchronization.
+- All 20 shared floating-settings browser fixture checks passed with the new control present.
+- JavaScript syntax, diff checks, 13 Python submission tests and 35-file candidate packaging passed.
+- Live Chess.com DOM inspection covered online lobby, analysis and bot-selection player panels. The new feature has not been tested as an installed extension during live play or between signed-in Chrome devices.
+
+To reproduce the DOM checks, serve the repository locally and open
+`tests/player-privacy.html` and `tests/settings-panel.html`.
+
 ## Fog highlight layering — 8 November 2026
 
 Live Chess.com analysis inspection confirmed last-move highlights have computed
@@ -32,7 +43,7 @@ The Node suite mocks DOM and Chrome APIs. It covers shortcuts and focus guards,
 legacy/suffixed confirmation classes, preference normalization and save races,
 coordinate geometry and board selection, promotion, premove dispatch, route and
 snapshot validation, overlay visibility/lifecycle, and tick scheduling/audio.
-Package validation checks the 32 runtime files, manifest/popup/CSS references,
+Package validation checks the 35 runtime files, manifest/popup/CSS references,
 ZIP integrity, hashes and provenance. Generated output stays in ignored `build/`.
 
 For a browser DOM regression fixture, serve the repository locally and open

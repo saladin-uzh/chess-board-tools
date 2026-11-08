@@ -45,6 +45,13 @@
         <p>Visible game tabs only; interact to enable audio.</p>
         <p class="status" id="assist-save-status" role="status" aria-live="polite"></p>
       </section>
+      <section class="player-settings" aria-label="Player privacy">
+        <label class="field fog-toggle" for="hide-player-info">
+          <span>Hide player information</span><input id="hide-player-info" type="checkbox" disabled>
+        </label>
+        <p>Show White and Black beside the board instead of names, avatars and ratings.</p>
+        <p class="status" id="player-save-status" role="status" aria-live="polite"></p>
+      </section>
       <section class="arrow-settings" aria-label="Arrow annotations">
         <label class="field fog-toggle" for="number-arrows">
           <span>Number arrows</span><input id="number-arrows" type="checkbox" disabled>
@@ -79,10 +86,11 @@
   globalThis.ChessSettingsView = Object.freeze({
     mount(root, options = {}) {
       root.innerHTML = markup;
-      const { shortcuts, assist, fog, arrows } = globalThis.ChessSettingsControllers;
+      const { shortcuts, assist, fog, arrows, players } = globalThis.ChessSettingsControllers;
       shortcuts(root);
       assist(root);
       arrows(root);
+      players(root);
       return fog(root, options);
     },
   });

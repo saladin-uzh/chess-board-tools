@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Player privacy regression checks</title>
+<link rel="stylesheet" href="../player.css">
+<style>body {font:16px system-ui;background:#302e2b;color:#eee;padding:24px} .player-component {display:flex;gap:24px;margin:16px} .player-tagline {min-width:160px} .pass {color:#a4e687}</style>
+<h1>Player privacy regression checks</h1><ol id="results"></ol>
+<div id="toolbar"></div><div id="second"></div>
+<div id="board-layout-player-top"><div class="player-component">
+<div class="player-avatar"><img alt="Avatar of Alice" width="40" height="40"></div>
+<div class="player-tagline"><div class="cc-user-block-component"><button>Alice</button><span>(1800)</span><span>GM</span></div><wc-captured-pieces player-color="2">+1</wc-captured-pieces></div><div class="clock-component clock-black">5:00</div>
+</div></div>
+<wc-chess-board id="board-single"></wc-chess-board>
+<div id="board-layout-player-bottom"><div class="player-component">
+<div class="player-avatar"><img alt="Avatar of Bob" width="40" height="40"></div>
+<div class="player-tagline"><div class="cc-user-block-component"><button>Bob</button><span>(1900)</span></div><wc-captured-pieces player-color="1">+2</wc-captured-pieces></div><div class="clock-component clock-white">4:58</div>
+</div></div>
+<aside id="chat"><div class="cc-user-block-component">Alice in chat</div></aside>
+<script>
+const listeners = [], events = {};
+let values = {}, failSave = false, flipped = false;
+window.chrome = {storage:{local:{get:async()=>({}), remove:async()=>{}},sync:{get:async()=>values,set:async data=>{
+ if(failSave) throw Error('save'); Object.assign(values,data);
+ listeners.forEach(fn=>fn(Object.fromEntries(Object.entries(data).map(([k,v])=>[k,{newValue:v}])), 'sync'));
+}},onChanged:{addListener:fn=>listeners.push(fn)}}};
+window.ChessBoardAssist = {readCoordinates:()=>({flipped})};
+</script>
+<script src="../settings.js"></script><script src="../player-popup.js"></script><script src="../player-content.js"></script>
+<script>
+window.playerFixtureDone = (async()=>{
+ const wait = () => new Promise(r=>setTimeout(r,60));
+ const check = (name,ok)=>{const li=document.createElement('li');li.textContent=(ok?'PASS: ':'FAIL: ')+name;li.className=ok?'pass':'fail';document.querySelector('#results').append(li);if(!ok)throw Error(name)};
+ const visible = e=>getComputedStyle(e).display !== 'none';
+ const panel = document.querySelector('#board-layout-player-top');
+ const block = panel.querySelector('.cc-user-block-component');
+ const avatar = panel.querySelector('.player-avatar');
+ const controls = '<input id="hide-player-info" type="checkbox" disabled><p id="player-save-status"></p>';
+ for(const id of ['toolbar','second']) {const root=document.getElementById(id);root.innerHTML=controls;ChessSettingsControllers.players(root)}
+ await wait(); const toggle=document.querySelector('#hide-player-info');
+ check('Disabled by default',!toggle.checked && visible(block));
+ toggle.click();await wait();
+ check('Both settings surfaces synchronize',document.querySelector('#second input').checked);
+ check('Native name, rating and avatar hidden',!visible(block) && !visible(avatar));
+ check('Color labels match clocks',panel.querySelector('.chess-player-label').textContent==='Black' && document.querySelector('#board-layout-player-bottom .chess-player-label').textContent==='White');
+ check('Clocks and captured pieces remain visible',visible(panel.querySelector('.clock-component')) && visible(panel.querySelector('wc-captured-pieces')));
+ check('Chat remains visible',visible(document.querySelector('#chat .cc-user-block-component')));
+ panel.querySelector('.clock-component').className='clock-component clock-white';await wait();
+ check('Board flip updates color',panel.querySelector('.chess-player-label').textContent==='White');
+ block.querySelector('button').textContent='Carol';
+ toggle.click();await wait();
+ check('Disable restores current native information',visible(block)&&visible(avatar)&&block.textContent.includes('Carol')&&!document.querySelector('.chess-player-label'));
+ failSave=true;toggle.click();await wait();
+ check('Failed save restores disabled preference',!toggle.checked && document.querySelector('#player-save-status').textContent.includes('Could not save'));
+ failSave=false;toggle.click();await wait();
+ panel.innerHTML='<div id="player-top"><div class="player-row-avatar">Avatar</div><div class="cc-user-block-component">New bot (2200)</div></div>';
+ await wait();check('Replaced clockless bot panel uses board orientation',panel.querySelector('.chess-player-label').textContent==='Black' && !visible(panel.querySelector('.player-row-avatar')));
+ flipped=true;await new Promise(r=>setTimeout(r,600));
+ check('Clockless board flip updates label',panel.querySelector('.chess-player-label').textContent==='White');
+ check('Nested player panels do not duplicate labels',panel.querySelectorAll('.chess-player-label').length===1);
+ dispatchEvent(new Event('pagehide'));check('Page exit cleans up',!document.querySelector('.chess-player-label') && !document.documentElement.hasAttribute('data-chess-hide-players'));
+ dispatchEvent(new Event('pageshow'));await wait();check('Page restore reapplies privacy',!!panel.querySelector('.chess-player-label')&&!visible(panel.querySelector('.cc-user-block-component')));
+ document.title='PASS — Player privacy regression checks'; return true;
+})().catch(e=>{document.title='FAIL — Player privacy regression checks';throw e});
+</script></html>
