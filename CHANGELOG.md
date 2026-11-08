@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Hide native last-move and selection highlights on fogged squares so they cannot show through the translucent mask; preserve manual annotations and restore highlights when fog clears.
+
 ## 1.2.2
 
 - Cancel the selected piece as well as queued premoves with the cancel shortcut.

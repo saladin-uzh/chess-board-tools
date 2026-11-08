@@ -1,5 +1,11 @@
 # Validation and browser coverage
 
+## Fog highlight fix — 8 November 2026
+
+- 125 Node tests passed, including a regression that fails on the original controller.
+- The fog layer fixture passed all 19 checks in Chromium 154, including actual computed visibility, annotation reuse and overlay removal.
+- These are mocked controller and local browser checks; live Chess.com and Safari have not been tested for this fix.
+
 ## Reproducible local checks
 
 Node.js 18 or newer and Python 3 are sufficient; no dependency installation is
