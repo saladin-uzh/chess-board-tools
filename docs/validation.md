@@ -1,5 +1,12 @@
 # Validation and browser coverage
 
+## Helper settings sync — 8 November 2026
+
+- 133 Node tests passed, including legacy migration for every helper key, existing sync precedence, a change during migration, malformed data and storage failures.
+- UI/content tests cover incoming sync changes and delayed reads/saves; local geometry remains separate.
+- All 20 floating-settings browser fixture checks passed with mocked Chrome APIs; JavaScript syntax, diff and 31-file packaging checks passed.
+- Real synchronization between two signed-in Chrome devices has not been tested.
+
 ## Reproducible local checks
 
 Node.js 18 or newer and Python 3 are sufficient; no dependency installation is
