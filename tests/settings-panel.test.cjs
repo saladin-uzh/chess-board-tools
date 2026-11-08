@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const zlib = require("node:zlib");
 const test = require("node:test");
 const read = name => fs.readFileSync(path.join(__dirname, "..", name), "utf8");
 const context = vm.createContext({});
@@ -63,11 +64,14 @@ test("toolbar open reports success only after the active page acknowledges it", 
 
 function pointerPanel() {
   class Element {
-    constructor() { this.style = {}; this.listeners = {}; this.isConnected = true; }
+    constructor(tag) { this.tag = tag; this.style = {}; this.listeners = {}; this.isConnected = true; }
     setAttribute() {}
     append(child) { child.parentNode = this; this.panel = child; }
     attachShadow() { return root; }
     addEventListener(type, callback) { this.listeners[type] = callback; }
+    replaceWith(node) { this.replacement = node; }
+    getContext() { return { createImageData: (w, h) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+      putImageData: data => { this.pixels = data.data; } }; }
     focus() {}
     setPointerCapture() {}
     dispatch(type, overrides = {}) {
@@ -75,7 +79,7 @@ function pointerPanel() {
         currentTarget: this, preventDefault() {}, ...overrides });
     }
   }
-  const elements = new Map();
+  const elements = new Map(), created = [];
   const root = new Element();
   root.querySelector = selector => {
     if (!elements.has(selector)) elements.set(selector, new Element());
@@ -83,7 +87,8 @@ function pointerPanel() {
   };
   const writes = [];
   const c = vm.createContext({
-    document: { createElement: () => new Element(), body: new Element(), documentElement: new Element() },
+    document: { createElement: tag => { const element = new Element(tag); created.push(element); return element; }, body: new Element(), documentElement: new Element() },
+    atob: value => Buffer.from(value, "base64").toString("binary"),
     CSSStyleSheet: class { replaceSync() {} },
     ChessSettingsLayout: {},
     MutationObserver: class { observe() {} disconnect() {} },
@@ -100,7 +105,7 @@ function pointerPanel() {
   c.ChessFloatingSettings.open();
   // The panel is the last element appended to the shadow root.
   const styles = () => JSON.parse(JSON.stringify(root.panel.style));
-  return { c, root, elements, writes, styles };
+  return { c, root, elements, created, writes, styles };
 }
 
 for (const control of [".move", ".resize"]) {
@@ -129,3 +134,58 @@ for (const control of [".move", ".resize"]) {
     });
   }
 }
+
+// Decode the checked-in RGB PNG so the embedded fallback cannot silently drift.
+function iconRgb() {
+  const png = fs.readFileSync(path.join(__dirname, "..", "icons/icon-32.png"));
+  const chunks = [];
+  for (let offset = 8; offset < png.length;) {
+    const size = png.readUInt32BE(offset), type = png.toString("ascii", offset + 4, offset + 8);
+    if (type === "IHDR") {
+      assert.equal(png.readUInt32BE(offset + 8), 32);
+      assert.equal(png.readUInt32BE(offset + 12), 32);
+      assert.deepEqual([...png.subarray(offset + 16, offset + 18)], [8, 2]);
+    }
+    if (type === "IDAT") chunks.push(png.subarray(offset + 8, offset + 8 + size));
+    offset += size + 12;
+  }
+  const raw = zlib.inflateSync(Buffer.concat(chunks)), rgb = Buffer.alloc(32 * 32 * 3), stride = 32 * 3;
+  for (let y = 0; y < 32; y++) {
+    const filter = raw[y * (stride + 1)];
+    for (let x = 0; x < stride; x++) {
+      const i = y * stride + x, a = x >= 3 ? rgb[i - 3] : 0, b = y ? rgb[i - stride] : 0;
+      const c = y && x >= 3 ? rgb[i - stride - 3] : 0;
+      let predictor = 0;
+      if (filter === 1) predictor = a;
+      else if (filter === 2) predictor = b;
+      else if (filter === 3) predictor = Math.floor((a + b) / 2);
+      else if (filter === 4) {
+        const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c);
+        predictor = pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+      } else assert.equal(filter, 0);
+      rgb[i] = (raw[y * (stride + 1) + 1 + x] + predictor) & 255;
+    }
+  }
+  return rgb;
+}
+
+test("both icons fall back to the bundled artwork when image loading fails", () => {
+  const { elements, created } = pointerPanel();
+  const images = [created.find(element => element.tag === "img"), elements.get(".mark")];
+  const expected = iconRgb();
+  for (const image of images) {
+    assert.equal(image.src, "icons/icon-32.png");
+    image.dispatch("error");
+    const canvas = image.replacement;
+    assert.equal(canvas.tag, "canvas");
+    assert.equal(canvas.className, image.className);
+    assert.equal(canvas.width, 32);
+    assert.equal(canvas.height, 32);
+    const rgb = [];
+    for (let i = 0; i < canvas.pixels.length; i += 4) {
+      rgb.push(...canvas.pixels.slice(i, i + 3));
+      assert.equal(canvas.pixels[i + 3], 255);
+    }
+    assert.deepEqual(Buffer.from(rgb), expected);
+  }
+});

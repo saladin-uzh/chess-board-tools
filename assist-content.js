@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const { ASSIST_STORAGE_KEY, normalizeAssist, hasInputFocus, CONFIRM_BUTTON_SELECTOR } = globalThis.ChessConfirmMoveSettings;
+  const { loadSyncedPreferences, ASSIST_STORAGE_KEY, normalizeAssist, hasInputFocus, CONFIRM_BUTTON_SELECTOR } = globalThis.ChessConfirmMoveSettings;
   const { read, readCoordinates, clickSquare, clickPromotion, cancelPremoves, cancelSelection } = globalThis.ChessBoardAssist;
   const { createTurnTimer, createAudio } = globalThis.ChessAssistTimer;
   const turnTimer = createTurnTimer(), audio = createAudio();
@@ -134,11 +134,11 @@
     }
   }
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== "local" || !changes[ASSIST_STORAGE_KEY]) return;
+    if (area !== "sync" || !changes[ASSIST_STORAGE_KEY]) return;
     revision++; apply(changes[ASSIST_STORAGE_KEY].newValue);
   });
   const loadRevision = revision;
-  chrome.storage.local.get(ASSIST_STORAGE_KEY).then(data => {
+  loadSyncedPreferences(ASSIST_STORAGE_KEY).then(data => {
     if (revision === loadRevision) apply(data[ASSIST_STORAGE_KEY]);
   }).catch(() => { if (revision === loadRevision) apply(null); });
   const unlock = event => {

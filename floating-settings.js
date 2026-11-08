@@ -18,8 +18,12 @@
       outline: 3px solid var(--color-text-brand, #81b64c); outline-offset: 2px; }
     .launcher, .panel { pointer-events: auto; color: var(--color-text-default, light-dark(#25303b, #f0f3f6));
       background: var(--color-bg-opaque, light-dark(#fff, #262421)); border: 1px solid var(--color-text-brand, #81b64c); }
-    .launcher { position: absolute; right: 12px; bottom: 12px; padding: 6px 10px; border-radius: 18px;
-      max-width: calc(100% - 24px); box-shadow: 0 2px 8px #0003; }
+    .launcher { position: absolute; bottom: 24px; left: calc(62px + 18px); width: 32px; height: 32px;
+      padding: 0; border-radius: 50%; box-shadow: 0 2px 8px #0003; }
+    .launcher img, .launcher canvas { display: block; width: 100%; height: 100%; border-radius: 50%; }
+    @media (max-width: 768px) {
+      .launcher { bottom: calc(100vh - 32px - 12px); left: calc(160px + 18px); }
+    }
     .panel { position: absolute; display: flex; flex-direction: column; border-radius: 12px;
       box-shadow: 0 8px 30px #0005; overflow: hidden; }
     .header { display: flex; flex-shrink: 0; align-items: center; gap: 8px; padding: 8px; border-bottom: 1px solid #8886; }
@@ -30,8 +34,8 @@
     .content { flex: 1; min-height: 0; overflow: auto; padding: 8px 12px; overscroll-behavior: contain; }
     p { margin: 0; font-size: 12px; }
     h2 { margin: 0; font-size: 15px; }
-    .settings, .assist-settings, .fog-settings { display: grid; gap: 4px; }
-    .assist-settings, .fog-settings { border-top: 1px solid #8886; margin-top: 6px; padding-top: 8px; }
+    .settings, .assist-settings, .fog-settings, .arrow-settings { display: grid; gap: 4px; }
+    .assist-settings, .fog-settings, .arrow-settings { border-top: 1px solid #8886; margin-top: 6px; padding-top: 8px; }
     .field { display: grid; gap: 4px; font-weight: 600; }
     .fog-toggle { display: flex; align-items: center; justify-content: space-between; }
     select { width: 100%; min-height: 32px; border: 1px solid #888; border-radius: 6px; padding: 4px;
@@ -47,10 +51,37 @@
       min-width: 28px; min-height: 28px; }
   `);
   root.adoptedStyleSheets = [sheet, globalThis.ChessSettingsLayout];
+  // Keep a pixel-identical fallback for pages that cannot load extension image URLs.
+  // RGB pixels are derived from icons/icon-32.png; update both together.
+  const iconPixels = "GRkYGBgYGBkYGRkYGBkYGBkYGBkYGBkYGBkYGBkYGRkYGBkYGRkYGRkYGBkYGBkYGBkYGBkYGBkYGBkYGBkYGBkYGBkYGRkYGBkYGBgYGBkYGBkYGRkYGBkYGBkYGRkYGBgXGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRkYGBgXGBgYGBgYGBgYGBgYGBgXGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgXGBgXGBgYGBgYGBgYGBgYGBgYGBgXGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgXGBgXGBgYGBgYGBgXGBgYGBgXGBgYGBgYGBgXGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgXGBgXGBgYGBgXGBgYGRkYGBgXGBgYGBgYGBgYGBgYGBgXGBgYGBgYGBgYGBgYGBgYGBgYGRgYFBQUExMSGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgXGBgYGBgYGBgYGBgXGBgYGBgYGBgYGBgYGBgXGBgYGBgYGBgYGBgYGBgYGBgYExMTR0dGSUlJDw8OFxcWGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgXGBgXGBgYGBgXGBgYGBcXGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgXGBgYGBgYCQkJenp67+/vT09PHBwbEREQGBgYGBgYGBgYGBgYGBgYGBgYGBgXGBgYGBgYGBgYGBgXGBgXGBgYGBgYGBgXGBgYGBgYGBgXGBgXGBgYGBgYGBgYGBgYGBgYGBgYEBAQTExM3t7e/////v7+0tLSV1ZWEBAQGBgYGBgYGBgYGBgYGBgYGBgXGBgXGBgYGBgYGBgXGBgYGBgYGRgYGBcXGBgYGBgXGBgYGBgYGBgYGBgYGBgYGBgYGBgYExMTLi4t4+Pj/////v7+////////9/f3V1dXEBAQGBgYGBgYGBgYGBgYGBgYGBgXGBgYGBgYGBgYGBgYGBgYGRgYGBgYGBgYGBgXGBgYGBgYGBgYGBgYGBgYGBgYFxYWFhYWubi5/////v7+/v7+/v7+/v7+////3d3eIyMjFhYWGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgXGBgYGBgYGBgYFxcXGBgYGBgYGBgYGBgXGBgXGBgYGBgYGBgYDg4Og4OD/////v7+/v7+/////v7+/v7+/v7+////bGxsDw8PGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgXGBgYGBgYGBgYFxcXGBgYGBgYGBgYGBgYGBgXGBgXGBgYEhISUlJS9/f3////////////5+fn/fz9/v7+/v7+////paWlDw8PGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRgYFxcXGBgYGBgYGBgYGBgYGBgYGBgYGBgYDg4Of39/////+vn6jo6OV1dXgICA/v7+/v7+/v7+////tbW1EREQGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRkYFxcXGBgYGBgYGBgYGBgYGBgYGBgYGBgYFxcWHx8efX19X19fBgYGISAg19fX/////v7+/v7+////pKSkDw8PGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBcXGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYFxcXDw8PCwsLNDQ0z8/P/////v7+////////////e3t7Dg4OGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgXGBgYGBgYGRkYGBcXGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgXFBQULCws2dnZ/////v7+////2NjYycnJysrKQUBAEBAPExMSFhYWGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRgYGRkYGBgXGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYERERp6en/////v7+////oqKibGxsbm5ub29vb29vb25ubGxsJSUlFhYWGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRkYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYFRUVMDAw8vLy////////7u7ucnJyTEtLHBwcISEhIh4gHiIfSElIYmJiERERGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRkYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYFBQUMjIx5+bn////////3t3edHR0MTAwFhATGREVFTMhCJJAKDwwcG1vEhISGRkYGBgYGBgYGBgYGBgYGBgYGBgYGRkZGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYEhIRKCgoqKio////////z87PdHJzKTMtDWwzFEImCKNHD14wIyAieHd3FRUUGBgYGBgYGRgYGBgYGBgYGBgYGBgYGRkZGBgXGBgYGBgYGBgYGBgYGBgYGBgYGBgYEhISWllZ6enp/////v7+////v76/dHNzIiIhDXQ3BbhOEFwwGREWHBsbfX19GhoaGBgYGBgYGRgYGBgYGBgYGBgYGBgYGRkZGBgYGBgYGBgYGBgYGBgYGBgYGBgYFxcXFxcX1NPU////////////////sbGxdXV1EhERDxAPCzAaDwwODw8PDg4NgICAISEhGBgXGBgYGBgYGBgYGBgYGBgYGBgYGRkYGBgXGBgYGBgYGBgYGBgYGBgYGBgYGBcXFhYWn5+f0dHR0NDQ0NDQ0dHRf39/tra2hYWFdHR0dnJ0dXV1dXV1gICAyMfIIiIiFxcXGBgYGBgYGBgYGBgYGBgYGBgYGRkYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgXFhYWGRkZGRkZGRkZGRkZExMSe3t719fW2NfX19fX19fX19fX19fXiYmJFRUUGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRgYGBgYGBgYGBgYGBgYGBgYGRgYGRgYGBgYGBgYGBgYFxcXFxcXFxcXGBgXGBgYExMTGBgXGBgYGRgYGBgYGBgYGBgYExMSGBgYGRgYGBgYGBgYGBgYGBgYGBgYGBgYGRkYGBgYGBgYGRgYGBgYGBgYGBgYGBgYGRgYGRgYGBgYGBgYGBgYGBgYGRgYGBgYGBgYGBgXFxcXGBgXGBcXGBcXGBgXGBgYGBgYGRgYGBgYGBgYGBgYGBgYGBgYGBgYGRgYGBgYGRgYGRkYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRgYGBgYGRkYGRgYGBgYGBgYGBgYGBgYGBgYGBgYGRkYGBgYGRgYGRgYGRgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRgYGRgYGBgYGBgYGBgYGBgYGBgYGBgYGRgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRgYGBgYGBgYGBgYGRgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRgYGRgYGBgYGBgYGBgYGBgYGBgYGBgYGRgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRkYGBgYGBgYGBgYGRgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGRgYGRgYGRgYGRkYGBgYGRgYGBgYGBgYGBgYGBgYGRgYGRgYGBgYGRgYGRgYGBgYGBgYGRgZGBgYGRgYGRgYGRgYGBgYGRgYGBgYGBgYGBgYGRgZGBgYGRgYGBgYGRgZGRgYGRgZGRgZGBgYGRgYGBgYGBgZGRgYGBgYGBgYGRkY";
+  function setIcon(image) {
+    image.addEventListener("error", () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 32;
+      canvas.className = image.className;
+      canvas.setAttribute("aria-hidden", "true");
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      const pixels = atob(iconPixels), data = context.createImageData(32, 32);
+      for (let i = 0, j = 0; i < pixels.length; i += 3, j += 4) {
+        data.data[j] = pixels.charCodeAt(i);
+        data.data[j + 1] = pixels.charCodeAt(i + 1);
+        data.data[j + 2] = pixels.charCodeAt(i + 2);
+        data.data[j + 3] = 255;
+      }
+      context.putImageData(data, 0, 0);
+      image.replaceWith(canvas);
+    }, { once: true });
+    image.src = chrome.runtime.getURL("icons/icon-32.png");
+  }
   const launcher = document.createElement("button");
   launcher.type = "button";
   launcher.className = "launcher";
-  launcher.textContent = "Chess Board Tools";
+  launcher.setAttribute("aria-label", "Chess Board Tools settings");
+  const launcherIcon = document.createElement("img");
+  setIcon(launcherIcon);
+  launcherIcon.alt = "";
+  launcher.append(launcherIcon);
   launcher.setAttribute("aria-haspopup", "dialog");
   launcher.setAttribute("aria-expanded", "false");
   root.append(launcher);
@@ -152,7 +183,7 @@
       <button type="button" class="resize" aria-label="Resize settings with arrow keys or drag">↘</button>
     </footer>`;
     root.append(panel);
-    root.querySelector(".mark").src = chrome.runtime.getURL("icons/icon-32.png");
+    setIcon(root.querySelector(".mark"));
     move = root.querySelector(".move");
     resize = root.querySelector(".resize");
     refreshStatus = globalThis.ChessSettingsView.mount(root.querySelector(".content"), {

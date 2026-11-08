@@ -5,7 +5,11 @@ const test = require('node:test');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const source = file => fs.readFileSync(path.join(root, file), 'utf8');
-const run = (context, file) => vm.runInContext(source(file), context, { filename: file });
+const attachPreferencesWorker = require('./preferences-harness.cjs');
+const run = (context, file) => {
+  if (file === 'settings.js' && context.chrome?.storage) attachPreferencesWorker(context.chrome);
+  return vm.runInContext(source(file), context, { filename: file });
+};
 const context = vm.createContext({});
 run(context, 'fog-visibility.js');
 run(context, 'settings.js');
@@ -238,17 +242,17 @@ function popup(options = {}) {
   for (const id of ['fog-enabled', 'fog-opacity', 'fog-opacity-value', 'fog-perspective', 'fog-save-status', 'fog-board-status']) {
     elements['#' + id] = { disabled: true, value: '', checked: false, handlers: {}, addEventListener(type, fn) { this.handlers[type] = fn; } };
   }
-  let changed;
+  const changed = new Set();
   const writes = [];
   const ctx = vm.createContext({
     document: { querySelector: selector => elements[selector] },
     chrome: { tabs: { query: async () => [{ id: 1 }], sendMessage: async () => ({ status: 'Fog active for white.' }) }, storage: {
-      local: { get: () => load.promise, set: async value => { writes.push(plain(value)); await write.promise; } },
-      onChanged: { addListener: fn => { changed = fn; } },
+      local: { get: async () => ({}) }, sync: { get: () => load.promise, set: async value => { writes.push(plain(value)); await write.promise; } },
+      onChanged: { addListener: fn => changed.add(fn), removeListener: fn => changed.delete(fn) },
     } },
   });
   run(ctx, 'settings.js'); run(ctx, 'fog-popup.js'); ctx.ChessSettingsControllers.fog(ctx.document, options);
-  return { elements, load, write, writes, change(value, area = 'local') { changed({ fogPreferences: { newValue: value } }, area); } };
+  return { elements, load, write, writes, change(value, area = 'sync') { for (const fn of [...changed]) fn({ fogPreferences: { newValue: value } }, area); } };
 }
 
 test('page fog status adapter ignores stale responses and subscribes without tab access', async () => {
@@ -286,10 +290,10 @@ test('fog popup blocks load/save races and preserves keybinding isolation', asyn
   assert.equal(enable.disabled, false);
 });
 
-test('incoming fog preferences supersede an outdated initial read; sync events are ignored', async () => {
+test('incoming fog preferences supersede an outdated initial read; local events are ignored', async () => {
   const app = popup();
   app.change({ enabled: true, opacity: 0.3, perspective: 'white' });
-  app.change({ enabled: false }, 'sync');
+  app.change({ enabled: false }, 'local');
   app.load.resolve({ fogPreferences: { enabled: false } });
   await flush();
   assert.equal(app.elements['#fog-enabled'].checked, true);
@@ -407,7 +411,8 @@ test('both fog worlds inject on puzzle routes for SPA transitions while retainin
 
 function controller() {
   const loading = deferred();
-  let storageChange, messageListener;
+  const storageChange = new Set();
+  let messageListener;
   const events = {}, frames = new Map(), timers = new Map(), observers = [];
   let counter = 0;
   class Element {
@@ -426,7 +431,7 @@ function controller() {
     append(child) { child.parent = this; this.children.push(child); }
     remove() { if (this.parent) this.parent.children = this.parent.children.filter(child => child !== this); this.isConnected = false; }
     setAttribute(key, value) { this[key] = value; }
-    closest() { return this.className.startsWith('chess-fog-') ? this : this.parent?.closest(); }
+    closest(selector) { return this.className.split(' ').some(name => selector.split(/,\s*/).includes(`.${name}`)) ? this : this.parent?.closest(selector); }
     getBoundingClientRect() { return { width: 640, height: 640 }; }
   }
   class Observer {
@@ -445,7 +450,7 @@ function controller() {
     setInterval: fn => { const id = ++counter; timers.set(id, fn); return id; }, clearInterval: id => timers.delete(id),
     addEventListener: (name, fn) => { events[name] = fn; },
     chrome: { runtime: { onMessage: { addListener: fn => { messageListener = fn; } } }, storage: {
-      local: { get: () => loading.promise }, onChanged: { addListener: fn => { storageChange = fn; } },
+      local: { get: async () => ({}) }, sync: { get: () => loading.promise }, onChanged: { addListener: fn => storageChange.add(fn), removeListener: fn => storageChange.delete(fn) },
     } },
   });
   run(ctx, 'settings.js'); run(ctx, 'fog-visibility.js');
@@ -461,7 +466,7 @@ function controller() {
     get snapshot() { return snapshot; },
     set snapshot(value) { snapshot = value; },
     replace() { const old = current; old.isConnected = false; current = new Element(); current.id = old.id; return old; },
-    change(value) { storageChange({ fogPreferences: { newValue: value } }, 'local'); },
+    change(value) { for (const fn of [...storageChange]) fn({ fogPreferences: { newValue: value } }, 'sync'); },
     status() { let value; messageListener({ type: 'chess-fog-status' }, {}, response => { value = response.status; }); return value; },
   };
 }
@@ -494,6 +499,14 @@ test('overlay avoids its own observer loop, survives replacement/resize, and cle
   assert.equal(app.frames.size, 0);
   mutation.fn([{ target: app.board, type: 'childList', addedNodes: [overlay], removedNodes: [] }]);
   assert.equal(app.frames.size, 0);
+  const arrowOverlay = { classList: { contains: name => name === 'chess-arrow-numbers' }, closest: selector => selector.includes('.chess-arrow-numbers') ? arrowOverlay : null };
+  mutation.fn([{ target: arrowOverlay, type: 'childList', addedNodes: [{}], removedNodes: [] }]);
+  mutation.fn([{ target: app.board, type: 'childList', addedNodes: [arrowOverlay], removedNodes: [] }]);
+  mutation.fn([{ target: app.board, type: 'childList', addedNodes: [], removedNodes: [arrowOverlay] }]);
+  assert.equal(app.frames.size, 0);
+  mutation.fn([{ target: app.board, type: 'childList', addedNodes: [arrowOverlay, {}], removedNodes: [] }]);
+  assert.equal(app.frames.size, 1);
+  app.tick();
   app.observers[1].fn(); app.observers[1].fn();
   assert.equal(app.frames.size, 1);
   app.tick(); assert.equal(app.board.children.length, 1);
@@ -514,7 +527,7 @@ test('overlay avoids its own observer loop, survives replacement/resize, and cle
   app.events.pageshow(); app.tick(); assert.equal(app.board.children.length, 1);
 });
 
-test('content initialization cannot overwrite newer local preferences', async () => {
+test('content initialization cannot overwrite newer synced preferences', async () => {
   const app = controller();
   app.change({ enabled: true, perspective: 'white' }); app.tick();
   app.loading.resolve({ fogPreferences: { enabled: false } }); await flush(); app.tick();
