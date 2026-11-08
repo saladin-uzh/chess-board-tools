@@ -26,7 +26,8 @@
 wc-chess-board:has(> .chess-fog-overlay) > .highlight {
   z-index: 1;
 }
-/* Chess.com annotations use 0.8 opacity; move/selection highlights use 0.5. */
+/* Preserve native transparency while lifting move/selection highlights above fog. */
+wc-chess-board:has(> .chess-fog-overlay) > .highlight[style*="opacity: 0.5;"],
 wc-chess-board:has(> .chess-fog-overlay) > .highlight[style*="opacity: 0.8;"]:not(.growing-circle) {
   z-index: 6;
 }
