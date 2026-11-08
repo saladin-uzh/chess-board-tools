@@ -25,10 +25,13 @@
 <p>Chrome: allow the extension on Chess.com and reload open tabs after installation. For an existing temporary Safari installation, enable Chess Board Tools in Safari Settings → Extensions, allow access to Chess.com, and reopen the test tab after reloading the extension. No macOS App Store edition is published.</p>
 <h2>Common questions</h2>
 <ul>
-<li>Confirmation requires a visible enabled Chess.com button. Cancellation uses the Cancel button or clears all queued premoves on the active game board, even during the opponent’s turn and with keyboard board control disabled.</li>
+<li>Confirmation requires a visible enabled Chess.com button. Cancellation uses the Cancel button or deselects the piece and clears all queued premoves on the active game board, even during the opponent’s turn and with keyboard board control disabled.</li>
+<li>Open the same settings in the toolbar popup or the Chess Board Tools button on Chess.com. Move or resize the floating panel with the pointer or arrow keys; Escape closes it. Its geometry stays local.</li>
+<li>Number arrows labels native arrows near their starts, with a separate sequence for each color. Square annotations are not numbered.</li>
+<li>Hide player information replaces board-side names, avatars and ratings with White/Black labels. It starts disabled and uses Chrome Sync. Clocks and captured pieces stay visible; disabling it restores native details. Chat, lists, profiles and exports are outside its scope.</li>
 <li>Turn ticks offer Auto, Increment and fixed 2–30-second intervals, with volume from 0–100%. Auto needs a known initial time; 0% mutes sound. Ticks are silent in analysis, puzzles and hidden tabs. In a disposable bot game, enable the option and interact once to unlock audio.</li>
-<li>Piece Vision Overlay starts disabled. It supports standard bots, analysis, completed reviews, ongoing Daily analysis and Rated/Daily/Learning puzzles. Active human play, Rush/Battle, variants and unsupported/incomplete states disable it. Squares unseen by both sides have darker fog with diagonal stripes.</li>
-<li>Shortcuts, fog, arrow numbering and board helpers use Chrome Sync when enabled. Existing local helper settings migrate automatically; panel position and size stay local. Safari does not synchronize extension settings.</li>
+<li>Piece Vision Overlay starts disabled. It supports standard bots, analysis, completed reviews, ongoing Daily analysis and Rated/Daily/Learning puzzles. Active human play, Rush/Battle, variants and unsupported/incomplete states disable it. Squares unseen by both sides have darker fog with diagonal stripes. Native translucent move/selection highlights and manual annotations stay above fog; opaque highlights retain their native layer.</li>
+<li>Shortcuts, fog, arrow numbering, player privacy and board helpers use Chrome Sync when enabled. Existing local helper settings migrate automatically; panel position and size stay local. Safari does not synchronize extension settings.</li>
 <li>After updating an unpacked extension, reload it and reopen the Chess.com tab. Temporary Safari extension reloads can require a fresh tab.</li>
 </ul>
 <p>

@@ -30,7 +30,7 @@ one problem or feature. Avoid unrelated refactoring, formatting and dependency
 changes.
 
 Follow existing code patterns and module boundaries. Preserve existing
-preferences, focus guards, privacy behavior and supported-page restrictions.
+preferences, sync migration, focus guards, privacy behavior and supported-page restrictions.
 Discuss changes to these behaviors explicitly.
 
 Describe the problem, the resulting behavior and validation performed. Link the
@@ -67,7 +67,9 @@ version and scenarios tested, and state what remains unverified. Mocked tests
 and local fixtures do not establish live Chess.com or Safari compatibility.
 
 Documentation-only changes should be checked for accurate instructions,
-working links and consistency with the affected behavior.
+working links and consistency with the affected behavior. Keep the English and
+Ukrainian README/support/privacy pages aligned. The Chrome Web Store listing
+text in `docs/chrome-web-store-description.txt` is English only.
 
 ## Review and credit
 
