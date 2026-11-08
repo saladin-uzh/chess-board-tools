@@ -11,7 +11,7 @@ of truth for injected files and URL matches.
 | `settings.js` | Shared selectors, shortcut choices, storage keys and preference normalization |
 | `content.js` | Confirm/cancel shortcuts; legacy and suffixed Chess.com button classes; premove cancellation fallback |
 | `popup.html`, `popup.css`, `popup.js` | Popup layout, appearance and shortcut settings |
-| `assist-popup.js`, `fog-popup.js` | Local helper preferences and overlay status |
+| `assist-popup.js`, `fog-popup.js` | Synced helper preferences and overlay status |
 | `settings-view.js`, `popup-entry.js` | Shared settings markup and toolbar entry point; the popup controllers initialize against either UI root |
 | `floating-settings.js`, `floating-settings-geometry.js` | Isolated-world page panel, local geometry, focus and SPA lifecycle |
 | `assist-bridge.js` | Read-only MAIN-world board snapshots for coordinates, clock metadata and premove counts |
@@ -21,7 +21,7 @@ of truth for injected files and URL matches.
 | `fog-bridge.js`, `fog-board.js` | Read-only MAIN-world adapter and restricted standard-board snapshot validation |
 | `fog-visibility.js` | FEN parsing and piece-visibility calculation |
 | `fog-content.js`, `fog.css` | Overlay lifecycle, selection outlines and rendering layers |
-| `arrow-board.js`, `arrow-content.js`, `arrow.css`, `arrow-popup.js` | Native SVG arrow reading, per-color numbering, passive labels and local toggle |
+| `arrow-board.js`, `arrow-content.js`, `arrow.css`, `arrow-popup.js` | Native SVG arrow reading, per-color numbering, passive labels and synced toggle |
 | `site/` | Static support/privacy pages deployed by `.github/workflows/pages.yml` |
 | `scripts/package-extension.py` | Deterministic runtime ZIP, reference/integrity validation, hashes and provenance |
 
@@ -44,8 +44,12 @@ Puzzle Battle, classrooms and variants. Coordinates are not restricted by these
 overlay rules. Pieces render above the fog; arrows render above the fog and
 ordinary square highlights remain below pieces.
 
-Shortcut preferences use `chrome.storage.sync`; overlay and board-helper
-preferences use separate `chrome.storage.local` keys. Popup revision tracking
+Shortcut, overlay, arrow numbering and board-helper preferences use separate
+`chrome.storage.sync` keys. `settings.js` shares in-flight reads and migrates
+normalized legacy local values only when the sync key is absent, checking sync
+again before writing. Existing sync values win; local backups are removed after
+a successful migration or when sync already has a value. Failed migration writes
+retain local preferences for retry. Popup revision tracking
 prevents stale initial reads or delayed saves from overwriting incoming changes.
 Existing settings are normalized; new tick options default to Auto and 50%.
 No stored positions or history are required.

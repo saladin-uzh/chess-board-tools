@@ -69,6 +69,42 @@
     };
   }
 
+  const preferenceLoads = new Map();
+  async function removeLegacyPreferences(key) {
+    try { await chrome.storage.local.remove(key); } catch { /* Retry cleanup on the next load. */ }
+  }
+  function loadSyncedPreferences(key) {
+    if (preferenceLoads.has(key)) return preferenceLoads.get(key);
+    const loading = (async () => {
+      const synced = await chrome.storage.sync.get(key);
+      if (synced[key] !== undefined) {
+        await removeLegacyPreferences(key);
+        return synced;
+      }
+      const legacy = await chrome.storage.local.get(key);
+      if (legacy[key] === undefined) return synced;
+      // Another settings surface or device may have saved while local storage loaded.
+      const latest = await chrome.storage.sync.get(key);
+      if (latest[key] !== undefined) {
+        await removeLegacyPreferences(key);
+        return latest;
+      }
+      const normalize = key === FOG_STORAGE_KEY ? normalizeFog
+        : key === ASSIST_STORAGE_KEY ? normalizeAssist : normalizeArrows;
+      const migrated = { [key]: normalize(legacy[key]) };
+      try {
+        await chrome.storage.sync.set(migrated);
+        await chrome.storage.local.remove(key);
+      } catch {
+        // Retain the local backup and current behavior if migration cannot complete.
+      }
+      return migrated;
+    })();
+    preferenceLoads.set(key, loading);
+    loading.finally(() => preferenceLoads.delete(key)).catch(() => {});
+    return loading;
+  }
+
   function isInteractiveTarget(target) {
     return Boolean(target?.isContentEditable || target?.closest?.(
       'input, textarea, select, button, a[href], summary, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="button"], [role="link"], [data-chess-settings-ui]',
@@ -99,5 +135,6 @@
     TICK_FREQUENCIES,
     normalizeAssist,
     normalizeKeybindings,
+    loadSyncedPreferences,
   });
 })();
