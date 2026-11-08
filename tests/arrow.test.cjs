@@ -102,7 +102,7 @@ test("arrow observer ignores fog and number overlays but responds to native chan
     MutationObserver: class { constructor(fn) { this.fn = fn; observers.push(this); } observe() {} disconnect() {} },
     ResizeObserver: class { observe() {} disconnect() {} },
     requestAnimationFrame: fn => { frames.set(++id, fn); return id; }, cancelAnimationFrame: key => frames.delete(key),
-    addEventListener() {}, chrome: { storage: { local: { get: async () => ({ arrowNumberPreferences: { enabled: true } }) }, onChanged: { addListener() {} } } },
+    addEventListener() {}, chrome: { storage: { local: { get: async () => ({}) }, sync: { get: async () => ({ arrowNumberPreferences: { enabled: true } }) }, onChanged: { addListener() {} } } },
     ChessArrowBoard: { read: () => [] },
   });
   for (const file of ["settings.js", "arrow-content.js"]) vm.runInContext(fs.readFileSync(path.join(__dirname, "..", file), "utf8"), ctx);

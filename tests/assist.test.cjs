@@ -133,7 +133,7 @@ function harness({ realTimer = false } = {}) {
     setTimeout: (fn, delay) => { const id = ++serial; timeouts.set(id, { fn, due: now + delay }); return id; },
     clearTimeout: id => timeouts.delete(id), setInterval: fn => { const id = ++serial; intervals.set(id, fn); return id; }, clearInterval: id => intervals.delete(id),
     addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
-    chrome: { storage: { local: { get: async () => ({ boardAssistPreferences: { keyboard: true } }) }, onChanged: { addListener: fn => { changed = fn; } } } },
+    chrome: { storage: { local: { get: async () => ({}) }, sync: { get: async () => ({ boardAssistPreferences: { keyboard: true } }) }, onChanged: { addListener: fn => { changed = fn; } } } },
     ChessBoardAssist: { cancelSelection: (...args) => selectionAction(...args), cancelPremoves: (b, state) => { if (!state?.active || !state?.stable || !state?.premoveCount) return false; cancelledBoards.push(b); return true; }, read: b => b.id === 'secondary' ? null : current, readCoordinates: () => current, clickSquare: (b, square) => { clickedBoards.push(b); clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
     ChessAssistTimer: { createTurnTimer: () => ({ reset() { timerResets.push(true); }, update(...args) { timerCalls.push(args); return false; } }), createAudio: () => ({ unlock() { unlocks.push(now); }, close() {}, tick() { ticks.push(now); } }) },
   });
@@ -152,7 +152,7 @@ function harness({ realTimer = false } = {}) {
     poll() { for (const fn of intervals.values()) fn(); },
     confirm(value = true) { confirmation = value ? new Element() : null; },
     state(value) { current = value; }, replace() { board = new Element(); board.id = 'board-single'; },
-    change(value, area = 'local') { changed({ boardAssistPreferences: { newValue: value } }, area); },
+    change(value, area = 'sync') { changed({ boardAssistPreferences: { newValue: value } }, area); },
     picker(piece) { const p = new Element(); p.piece = piece; const picker = new Element(); picker.querySelectorAll = () => [p]; board.picker = picker; },
   };
 }
@@ -349,15 +349,15 @@ function popupHarness() {
     elements['#' + id] = { disabled: true, checked: false, addEventListener(type, fn) { this[type] = fn; } };
   }
   const c = vm.createContext({ document: { querySelector: id => elements[id] }, chrome: { storage: {
-    local: { get: () => load.promise, set: async value => { await save.promise; writes.push(plain(value)); } },
+    local: { get: async () => ({}) }, sync: { get: () => load.promise, set: async value => { await save.promise; writes.push(plain(value)); } },
     onChanged: { addListener: fn => { changed = fn; } },
   } } });
   run(c, 'settings.js'); run(c, 'assist-popup.js'); c.ChessSettingsControllers.assist(c.document);
   return { load, save, writes, keyboard: elements['#keyboard-enabled'], ticking: elements['#ticking-enabled'], status: elements['#assist-save-status'], frequency: elements['#tick-frequency'], volume: elements['#tick-volume'], volumeValue: elements['#tick-volume-value'],
-    change: (value, area = 'local') => changed({ boardAssistPreferences: { newValue: value } }, area) };
+    change: (value, area = 'sync') => changed({ boardAssistPreferences: { newValue: value } }, area) };
 }
 
-test('helper popup protects delayed reads/saves and keeps separate local preferences', async () => {
+test('helper popup protects delayed reads/saves and uses separate synced preferences', async () => {
   const app = popupHarness(); assert.equal(app.keyboard.disabled, true);
   app.change({ keyboard: true, ticking: true });
   app.load.resolve({ boardAssistPreferences: {} }); await flush();
@@ -369,7 +369,7 @@ test('helper popup protects delayed reads/saves and keeps separate local prefere
   app.save.resolve(); await pending;
   assert.equal(app.keyboard.checked, true); assert.equal(app.ticking.checked, false);
   assert.deepEqual(app.writes, [{ boardAssistPreferences: { keyboard: false, ticking: true, tickMode: 'auto', tickFrequency: 10, tickVolume: 50 } }]);
-  app.change({ keyboard: false, ticking: true }, 'sync'); assert.equal(app.keyboard.checked, true);
+  app.change({ keyboard: false, ticking: true }, 'local'); assert.equal(app.keyboard.checked, true);
 });
 
 test('helper popup recovers from load and save failures', async () => {
@@ -380,7 +380,7 @@ test('helper popup recovers from load and save failures', async () => {
   assert.equal(app.keyboard.checked, false); assert.match(app.status.textContent, /Could not save/);
 });
 
-test('single frequency select and volume slider persist local tick preferences', async () => {
+test('single frequency select and volume slider persist synced tick preferences', async () => {
   const app = popupHarness(); app.load.resolve({ boardAssistPreferences: { ticking: true } }); await flush();
   assert.equal(app.frequency.value, 'auto'); assert.equal(app.volume.value, '50');
   app.frequency.value = '5'; app.volume.value = '0'; app.volume.input();

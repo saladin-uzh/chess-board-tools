@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const { ARROW_STORAGE_KEY, normalizeArrows } = globalThis.ChessConfirmMoveSettings;
+  const { loadSyncedPreferences, ARROW_STORAGE_KEY, normalizeArrows } = globalThis.ChessConfirmMoveSettings;
   let enabled = false;
   let revision = 0;
   let frame = null;
@@ -71,10 +71,10 @@
   pageObserver.observe(document.documentElement, { subtree: true, childList: true });
   function apply(value) { enabled = normalizeArrows(value).enabled; schedule(); }
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "local" && changes[ARROW_STORAGE_KEY]) { revision++; apply(changes[ARROW_STORAGE_KEY].newValue); }
+    if (area === "sync" && changes[ARROW_STORAGE_KEY]) { revision++; apply(changes[ARROW_STORAGE_KEY].newValue); }
   });
   const loadingRevision = revision;
-  chrome.storage.local.get(ARROW_STORAGE_KEY).then(data => {
+  loadSyncedPreferences(ARROW_STORAGE_KEY).then(data => {
     if (revision === loadingRevision) apply(data[ARROW_STORAGE_KEY]);
   }).catch(() => { if (revision === loadingRevision) apply(null); });
   addEventListener("resize", schedule);
