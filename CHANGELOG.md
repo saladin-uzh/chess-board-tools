@@ -2,8 +2,6 @@
 
 ## Unreleased
 
-- Render native translucent last-move and selection highlights above Piece Vision Overlay without changing their opacity or the layer of opaque highlights.
-
 ## 1.2.2
 
 - Cancel the selected piece as well as queued premoves with the cancel shortcut.
