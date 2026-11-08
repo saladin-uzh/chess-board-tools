@@ -136,7 +136,7 @@ input:disabled {
   color: var(--status-success);
 }
 
-.fog-settings, .assist-settings {
+.fog-settings, .assist-settings, .player-settings {
   display: grid;
   gap: 4px;
   border-top: 1px solid var(--border);

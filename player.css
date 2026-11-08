@@ -1,0 +1,10 @@
+/* Hide the native identity blocks without changing their text or event handlers. */
+html[data-chess-hide-players] :is(#board-layout-player-top, #board-layout-player-bottom, #player-top, #player-bottom)
+  :is(.player-avatar, .player-row-avatar, .cc-user-block-component) {
+  display: none !important;
+}
+.chess-player-label { display: none; }
+html[data-chess-hide-players] .chess-player-label {
+  display: inline-block;
+  font-weight: 700;
+}

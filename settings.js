@@ -6,6 +6,10 @@
     ':is(.cc-button-primary, [class^="cc-button-primary_"], [class*=" cc-button-primary_"])';
   const CONFIRM_BUTTON_SELECTOR = `div.confirm-move-buttons ${PRIMARY_BUTTON_SELECTOR}`;
   const FOG_STORAGE_KEY = "fogPreferences";
+  const PLAYER_STORAGE_KEY = "playerPrivacyPreferences";
+  const normalizePlayers = value => ({ enabled: value?.enabled === true });
+  const ARROW_STORAGE_KEY = "arrowNumberPreferences";
+  const normalizeArrows = value => ({ enabled: value?.enabled === true });
   const DEFAULT_FOG = Object.freeze({ enabled: false, opacity: 0.55, perspective: "auto" });
 
   function normalizeFog(value) {
@@ -67,6 +71,25 @@
     };
   }
 
+  async function requestPreferences(type, key, value) {
+    const response = await chrome.runtime.sendMessage({ type, key, value });
+    if (response?.ok !== true) throw new Error("Preference storage unavailable");
+    return { [key]: response.value };
+  }
+
+  const preferenceLoads = new Map();
+  function loadSyncedPreferences(key) {
+    if (preferenceLoads.has(key)) return preferenceLoads.get(key);
+    const loading = requestPreferences("chess-preferences-load", key);
+    preferenceLoads.set(key, loading);
+    loading.finally(() => preferenceLoads.delete(key)).catch(() => {});
+    return loading;
+  }
+
+  function saveSyncedPreferences(key, value) {
+    return requestPreferences("chess-preferences-save", key, value);
+  }
+
   function isInteractiveTarget(target) {
     return Boolean(target?.isContentEditable || target?.closest?.(
       'input, textarea, select, button, a[href], summary, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="button"], [role="link"], [data-chess-settings-ui]',
@@ -85,6 +108,10 @@
     CONFIRM_BUTTON_SELECTOR,
     hasInputFocus,
     FOG_STORAGE_KEY,
+    PLAYER_STORAGE_KEY,
+    normalizePlayers,
+    ARROW_STORAGE_KEY,
+    normalizeArrows,
     DEFAULT_FOG,
     normalizeFog,
     KEYBINDING_STORAGE_KEY,
@@ -95,5 +122,7 @@
     TICK_FREQUENCIES,
     normalizeAssist,
     normalizeKeybindings,
+    loadSyncedPreferences,
+    saveSyncedPreferences,
   });
 })();

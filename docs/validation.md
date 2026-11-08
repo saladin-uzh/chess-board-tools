@@ -1,5 +1,41 @@
 # Validation and browser coverage
 
+## 1.2.3 candidate — 8 November 2026
+
+- All 145 Node tests, 13 Python submission tests, JavaScript syntax checks and diff checks passed.
+- All 65 local browser fixture checks passed: settings (20), player privacy (14), fog layers (15) and confirmation buttons (16). Chrome APIs and orientation snapshots are mocked in the relevant fixtures.
+- Packaging validated all 35 runtime files, ZIP integrity, references, hashes and provenance. The candidate manifest is version 1.2.3.
+- All 57 local documentation references resolved. The home, support and privacy pages were checked in a browser; the updated support/privacy views had no horizontal overflow.
+- The saved Chrome Web Store draft was verified as English only, with 1,119 characters. Listing publication is separate from saving the draft.
+- Full installed-extension service-worker integration, live gameplay, Safari runtime and real two-device synchronization remain unverified for this candidate.
+
+## Player privacy — 8 November 2026
+
+- 145 Node tests passed after integrating the helper storage worker, including opt-in defaults, malformed settings, failed saves, stale reads, sync changes and page lifecycle cleanup.
+- All 14 checks in `tests/player-privacy.html` passed in a browser with mocked Chrome APIs and orientation snapshots: identity masking, color changes, panel replacement, clock/capture preservation, restoration and settings synchronization.
+- All 20 shared floating-settings browser fixture checks passed with the new control present.
+- JavaScript syntax, diff checks, 13 Python submission tests and 35-file candidate packaging passed.
+- Live Chess.com DOM inspection covered online lobby, analysis and bot-selection player panels. The new feature has not been tested as an installed extension during live play or between signed-in Chrome devices.
+
+To reproduce the DOM checks, serve the repository locally and open
+`tests/player-privacy.html` and `tests/settings-panel.html`.
+
+## Fog highlight layering — 8 November 2026
+
+Live Chess.com analysis inspection confirmed last-move highlights have computed
+opacity 0.5, and selection uses a growing-circle pseudo-element with opacity 0.5.
+The fix lifts these native translucent highlights above fog without changing opacity;
+opaque highlights retain their existing layer. All 124 Node tests and all 15
+local browser layer checks passed. Full live extension integration remains untested.
+
+## Helper settings sync — 8 November 2026
+
+- 140 Node tests passed, including legacy migration for every helper key, existing sync precedence, changes during migration, malformed data and storage failures.
+- Worker tests use separate client VM contexts and the actual worker to verify queued migrations/saves, late reads, queue recovery and sender/key validation. Two race regressions failed before the fix.
+- UI/content tests cover incoming sync changes and delayed reads/saves; local geometry remains separate.
+- All 20 floating-settings browser fixture checks passed with mocked Chrome APIs; JavaScript syntax, diff and 32-file packaging checks passed.
+- Real synchronization between two signed-in Chrome devices has not been tested.
+
 ## Reproducible local checks
 
 Node.js 18 or newer and Python 3 are sufficient; no dependency installation is
@@ -16,7 +52,7 @@ The Node suite mocks DOM and Chrome APIs. It covers shortcuts and focus guards,
 legacy/suffixed confirmation classes, preference normalization and save races,
 coordinate geometry and board selection, promotion, premove dispatch, route and
 snapshot validation, overlay visibility/lifecycle, and tick scheduling/audio.
-Package validation checks the 27 runtime files, manifest/popup/CSS references,
+Package validation checks the 35 runtime files, manifest/popup/CSS references,
 ZIP integrity, hashes and provenance. Generated output stays in ignored `build/`.
 
 For a browser DOM regression fixture, serve the repository locally and open
@@ -24,17 +60,16 @@ For a browser DOM regression fixture, serve the repository locally and open
 `content.js`; they do not exercise a Chess.com account or installed extension.
 
 `tests/fog-layers.html` checks the real fog stylesheet against native highlight
-markup, including annotation ordering, service highlights, promotion, element
+markup, including annotation ordering, translucent and opaque highlights, promotion, element
 reuse, and overlay removal/reinsertion. On 31 October 2026, all 12 browser checks
 and 99 Node tests passed; syntax, diff and package validation also passed.
 Live Chess.com analysis DOM inspection confirmed inline `opacity: 0.8` for
 right-click annotations, `opacity: 0.5` for last-move highlights, and
-`.growing-circle` with `--opacity: 0.5` for selection. The annotation selector
-depends on that native inline opacity convention. The updated extension was not
-reloaded or tested on a live Chess.com board.
+`.growing-circle` with `--opacity: 0.5` for selection. The highlight selectors depend on those native inline opacity conventions.
+See the current layering checks above for the updated ordering.
 
 For floating settings, open `tests/settings-panel.html` from the same server.
-Its 18 checks exercise the real shared settings controllers and panel DOM with
+Its 20 checks exercise the real shared settings controllers and panel DOM with
 mocked Chrome APIs, including cross-surface updates, delayed/failed saves, focus,
 keyboard geometry, SPA navigation and host restoration.
 
@@ -55,8 +90,7 @@ keyboard geometry, SPA navigation and host restoration.
   actual Chrome sync/local storage, toolbar-to-page messaging, icon loading,
   preference preservation after reload and independent open state in a second tab.
   This was an isolated integration check, not a live Chess.com account/game test.
-- The protected Safari extension was not changed or reloaded. Safari runtime and
-  visual integration with the current authenticated Chess.com UI remain unverified.
+- Safari runtime and visual integration for that candidate remain unverified.
 
 ## 1.2.0 release checks — 26 October 2026
 
@@ -95,8 +129,7 @@ every scenario was repeated against the final release package.
 
 Real two-device Chrome Sync, physical standalone Ctrl, a complete puzzle
 promotion/orientation/review matrix, every fixed tick preset and human-game clock
-metadata were not all runtime-tested. The final confirmation selector was not
-reloaded into the protected Safari installation. No signed macOS App Store or
+metadata were not all runtime-tested. The final confirmation selector did not receive a full Safari integration check. No signed macOS App Store or
 TestFlight build was validated. Temporary Safari checks do not establish App
 Store distribution readiness.
 

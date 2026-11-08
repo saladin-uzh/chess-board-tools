@@ -6,9 +6,13 @@
 [Українська версія](README.uk.md)
 
 A browser extension for Chess.com with keyboard board controls, configurable
-move confirmation shortcuts, and optional sound cues during your turn.
+move confirmation shortcuts, optional sound cues during your turn, numbered arrows,
+and a switch to hide player information beside the board.
 Piece Vision Overlay is available against bots, in analysis, and in
 completed game reviews, and Rated, Daily and Learning puzzles.
+
+See the [changelog](CHANGELOG.md) for changes in 1.2.3 and the
+[English Chrome Web Store description](docs/chrome-web-store-description.txt) for listing text.
 
 ## Installation
 
@@ -51,6 +55,16 @@ tabs. Existing tabs can retain old scripts or stale extension event handlers.
 See [validation coverage](docs/validation.md) for recorded browser checks and
 remaining limits. Temporary Safari installations do not constitute an App Store build.
 
+## Hide player information
+
+Enable **Hide player information** in the toolbar popup or floating settings to
+hide both players’ names, avatars and ratings beside the board. The panels show
+**White** and **Black**, following each player’s color when the board is flipped.
+Clocks and captured pieces remain visible. The option is off by default and uses
+Chrome Sync. Turning it off restores the current native player information.
+This affects the board’s player panels; chat, game lists, standings, profile pages
+and game exports retain their original information.
+
 ## Shortcuts and settings
 
 - `Space` confirms the move.
@@ -71,6 +85,10 @@ scroll. Its position and size are saved locally. It stays open during navigation
 the page, but starts closed after a full reload and in other tabs. Reload existing
 Chess.com tabs after updating the extension to make this panel available.
 
+**Number arrows** adds a number near the start of each drawn arrow. Each color
+has its own sequence, which is recalculated when arrows change. The option is
+off by default and saved with Chrome Sync. Square highlights are not numbered.
+
 Confirmation offers Enter, Space, or Ctrl; cancellation offers Esc, Space, or
 Ctrl. Defaults are Space and Esc, and the two actions require different keys.
 Previously saved unsupported keys fall back to defaults.
@@ -88,7 +106,7 @@ inside buttons and other interactive controls are also ignored.
 
 ## Board control and thinking ticks
 
-The popup has separate **Keyboard board control** and **Tick during my turn** switches. Both start disabled and use local preferences.
+The popup has separate **Keyboard board control** and **Tick during my turn** switches. Both start disabled and use Chrome Sync preferences.
 
 Type coordinates sequentially: `b`, `2` selects b2; `b`, `3` clicks b3.
 Coordinates stay algebraic when flipped. A letter immediately highlights its
@@ -158,7 +176,7 @@ in Puzzle Rush and Puzzle Battle.
 Squares unseen by either side use a darker tint: their remaining transparency is
 half that of ordinary fog. Thin diagonal stripes distinguish these squares from
 ordinary fog. Colored square annotations stay above fog and below pieces; arrows
-stay above pieces. Last-move and selection highlights remain below fog.
+stay above pieces. Native translucent last-move and selection highlights also stay above fog, retaining their original transparency. Opaque highlights retain their native layer.
 
 Clear squares are the union of your pieces' occupied squares and movement
 destinations, except that pawns reveal their two forward capture diagonals
@@ -194,13 +212,12 @@ The extension uses the `storage` permission only to save your shortcut, fog, and
 The extension code makes no external network requests and does not collect
 telemetry or game history. It runs only on the listed Chess.com URLs.
 
-Shortcut settings use `chrome.storage.sync`. When Chrome Sync is enabled, Chrome
+Shortcut, fog, arrow numbering, player privacy and board helper settings use `chrome.storage.sync`. When Chrome Sync is enabled, Chrome
 synchronizes these settings with your other signed-in Chrome browsers. When
 syncing is disabled, these settings stay local to the browser. Chrome stores
 offline changes locally and resumes synchronization when back online.
 
-Fog and board helper preferences use separate `chrome.storage.local` keys
-and are not synchronized. Position
+Existing local helper settings migrate automatically when their sync key is absent; existing synced values take priority. The local copy is removed after successful migration. If migration cannot save, local preferences remain available for retry. Helper preference loads and saves share a per-key worker queue across tabs and settings surfaces, preserving the order of migration and explicit saves. Position
 snapshots are used in memory to draw the mask; positions, move history, and
 account/game identifiers are not stored by the extension.
 

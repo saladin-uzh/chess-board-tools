@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const { FOG_STORAGE_KEY, normalizeFog } = globalThis.ChessConfirmMoveSettings;
+  const { loadSyncedPreferences, FOG_STORAGE_KEY, normalizeFog } = globalThis.ChessConfirmMoveSettings;
   const { read } = globalThis.ChessFogBoard;
   const { visibility } = globalThis.ChessFogVisibility;
   let preferences = normalizeFog(null);
@@ -42,8 +42,9 @@
     board = next;
     if (!board) return;
     boardObserver = new MutationObserver(records => {
-      if (records.some(record => !record.target.closest?.(".chess-fog-overlay") &&
-          !(record.type === "childList" && [...record.addedNodes, ...record.removedNodes].every(node => node === overlay || node.classList?.contains("chess-fog-overlay"))))) schedule();
+      if (records.some(record => !record.target.closest?.(".chess-fog-overlay, .chess-arrow-numbers") &&
+          !(record.type === "childList" && [...record.addedNodes, ...record.removedNodes].every(node => node === overlay ||
+            node.classList?.contains("chess-fog-overlay") || node.classList?.contains("chess-arrow-numbers"))))) schedule();
     });
     boardObserver.observe(board, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "style"] });
     resizeObserver = new ResizeObserver(schedule);
@@ -97,7 +98,7 @@
   }
 
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "local" && changes[FOG_STORAGE_KEY]) {
+    if (area === "sync" && changes[FOG_STORAGE_KEY]) {
       revision++;
       apply(changes[FOG_STORAGE_KEY].newValue);
     }
@@ -106,7 +107,7 @@
     if (message?.type === "chess-fog-status") respond({ status });
   });
   const loadingRevision = revision;
-  chrome.storage.local.get(FOG_STORAGE_KEY).then(data => {
+  loadSyncedPreferences(FOG_STORAGE_KEY).then(data => {
     if (revision === loadingRevision) apply(data[FOG_STORAGE_KEY]);
   }).catch(() => { if (revision === loadingRevision) apply(null); });
   addEventListener("pagehide", () => {

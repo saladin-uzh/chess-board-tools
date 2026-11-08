@@ -1,0 +1,15 @@
+Keyboard controls and optional helpers for Chess.com.
+
+• Confirm or cancel moves with configurable shortcuts (Space/Esc by default).
+• Enter squares with physical QWERTY keys, regardless of keyboard layout, and choose promotions with q/r/b/n.
+• Hear adjustable sound cues during your turn.
+• Number drawn arrows separately for each color.
+• Hide player names, avatars and ratings beside the board; show White and Black instead.
+• Practice with Piece Vision Overlay against standard bots, in analysis, completed reviews and Rated/Daily/Learning puzzles. Fog is unavailable during active human play, in Rush/Battle and variants.
+• Use the toolbar popup or a movable settings panel on Chess.com.
+
+Feature settings use Chrome Sync when enabled; panel position and size stay local. Optional helpers start disabled. Chess.com validates moves and keeps its normal confirmation flow. No engine evaluation, move recommendations or automated play.
+
+No telemetry or stored game history. The extension code makes no external network requests.
+
+Free, with no ads or subscriptions. Independent project, not affiliated with Chess.com.
