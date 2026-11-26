@@ -33,3 +33,8 @@
 wc-chess-board:has(> .chess-assist-square) > .promotion-window--visible {
   z-index: 9;
 }
+
+.chess-assist-clock-highlight {
+  outline: 2px solid #ffd54a;
+  outline-offset: 2px;
+}
