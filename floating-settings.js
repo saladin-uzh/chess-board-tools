@@ -27,11 +27,12 @@
     .panel { position: absolute; display: flex; flex-direction: column; border: 1px solid #8883; border-radius: 8px;
       box-shadow: 0 8px 30px #0005; overflow: hidden; }
     .header { display: flex; flex-shrink: 0; align-items: center; gap: 8px; padding: 8px; background: #0003; }
+    .header button:focus-visible { outline-color: currentColor; }
     .move { flex: 1; min-width: 0; text-align: left; cursor: move; touch-action: none; font-weight: 700;
       border: 0; padding: 4px; background: none; color: inherit; }
     .mark { width: 24px; height: 24px; margin-right: 6px; vertical-align: middle; border-radius: 4px; }
     .close { border: 0; background: none; color: inherit; padding: 4px 8px; font-size: 20px; }
-    .content { flex: 1; min-height: 0; overflow: auto; padding: 8px 12px; overscroll-behavior: contain; }
+    .content { flex: 1; min-height: 0; overflow: auto; padding: 8px 12px; overscroll-behavior: contain; scrollbar-gutter: stable; }
     p { margin: 0; font-size: 12px; }
     h2 { margin: 0; font-size: 15px; }
     .settings, .assist-settings, .player-settings, .fog-settings, .arrow-settings { display: grid; gap: 4px; }
@@ -47,8 +48,9 @@
     .status:empty { display: none; }
     .status--error { color: light-dark(#b42318, #ffb4ab); }
     .status--success { color: light-dark(#137333, #8ddb9f); }
-    .footer { position: relative; display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 4px; padding: 4px 8px; font-size: 11px; }
-    .footer::before { content: ""; position: absolute; top: 0; left: 12px; right: 12px; border-top: 1px solid #8886; }
+    .footer-divider { flex-shrink: 0; padding-inline: 12px; overflow: hidden; scrollbar-gutter: stable; }
+    .footer-divider::before { content: ""; display: block; height: 1px; background: #8886; }
+    .footer { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 4px; padding: 4px 8px; font-size: 11px; }
     .resize { touch-action: none; cursor: nwse-resize; border: 0; background: none; color: inherit;
       min-width: 28px; min-height: 28px; }
   `);
@@ -180,7 +182,7 @@
     panel.innerHTML = `<header class="header">
       <button type="button" class="move" title="Move settings with arrow keys or drag"><img class="mark" alt="">Chess Board Tools</button>
       <button type="button" class="close" aria-label="Close settings">×</button>
-    </header><div class="content"></div><footer class="footer">
+    </header><div class="content"></div><div class="footer-divider" aria-hidden="true"></div><footer class="footer">
       <span>Independent extension</span><span class="geometry-status" role="status"></span>
       <button type="button" class="resize" aria-label="Resize settings with arrow keys or drag">↘</button>
     </footer>`;
