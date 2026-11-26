@@ -48,6 +48,20 @@
     nodes.forEach((node, i) => texts.set(node, sides[i]));
     return true;
   }
+  function maskSummaryTail(name, texts) {
+    const siblings = [];
+    for (let node = name.nextSibling; node?.nodeType === 3; node = node.nextSibling) {
+      siblings.push({ node, original: nativeText(node) });
+    }
+    const firstLine = siblings.map(({ original }) => original).join("").split("\n", 1)[0];
+    const ratingLength = firstLine.match(/^[ \t]*\(\d+\??\)(?=[^\n]*\S)/u)?.[0].length ?? 0;
+    let offset = 0;
+    for (const { node, original } of siblings) {
+      const cleaned = original.slice(Math.max(0, ratingLength - offset), Math.max(0, firstLine.length - offset));
+      if (original !== cleaned) texts.set(node, cleaned);
+      offset += original.length;
+    }
+  }
   function updateGameDetails(colors) {
     const texts = new Map(), blocks = new Set();
     if (colors.size === 2) {
@@ -64,14 +78,7 @@
         // The move tab renders a rating as plain text after each profile
         // link. The time control ends the first line, and projections follow
         // a literal newline in every locale. Scores and separators stay native.
-        for (const name of names) {
-          const tail = name.nextSibling;
-          if (tail?.nodeType !== 3) continue;
-          const original = nativeText(tail);
-          const firstLine = original.split("\n", 1)[0];
-          const cleaned = firstLine.replace(/^[ \t]*\(\d+\??\)(?=[^\n]*\S)/u, "");
-          if (original !== cleaned) texts.set(tail, cleaned);
-        }
+        for (const name of names) maskSummaryTail(name, texts);
       }
     }
     applyMasks(texts, blocks);

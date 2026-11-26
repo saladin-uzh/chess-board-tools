@@ -82,8 +82,13 @@ window.playerFixtureDone = (async()=>{
  await wait();
  check('Changing the active game restores both previous rows',names(activeGame)==='Bob,Alice' && names(otherGame)==='White,Black' && visible(activeGame.querySelector('.cc-user-rating-default')));
  match.innerHTML=originalMatch.replaceAll('1800','1810').replace('win +3 / draw -5 / lose -13','перемога +4 / нічия -4 / поразка -12');
+ const [firstLink,lastLink]=match.querySelectorAll('.username');
+ firstLink.nextSibling.splitText(' (1900)'.length);
+ const lastScore=lastLink.nextSibling.splitText(' (1810)'.length);
+ const projection=lastScore.splitText(lastScore.data.indexOf('\n'));
+ projection.splitText(1);
  await wait();
- check('Host replacement remasks a localized projection',match.textContent.trim()==='GM White [1] vs. Black [1] (15 + 10)');
+ check('Split native text masks standalone ratings and a localized projection',match.textContent.trim()==='GM White [1] vs. Black [1] (15 + 10)');
  toggle.click();await wait();
  check('Disabling restores the latest native rating, projection and controls',match.innerHTML.includes('(1810)') && match.innerHTML.includes('перемога +4') && visible(match.querySelector('.user-chess-title')) && names(otherGame)==='Bob,Alice');
  toggle.click();await wait();
