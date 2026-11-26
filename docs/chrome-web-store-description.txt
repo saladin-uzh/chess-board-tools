@@ -2,9 +2,9 @@ Keyboard controls and optional helpers for Chess.com.
 
 • Confirm or cancel moves with configurable shortcuts (Space/Esc by default).
 • Enter squares with physical QWERTY keys, regardless of keyboard layout, and choose promotions with q/r/b/n.
-• Hear adjustable sound cues during your turn.
+• Get a brief clock highlight and an adjustable two-tone cue during your turn.
 • Number drawn arrows separately for each color.
-• Hide player names, avatars and ratings beside the board; show White and Black instead.
+• Show White and Black in place of player details beside the board and in the current tournament pairing and match summary. Hide projected rating changes.
 • Practice with Piece Vision Overlay against standard bots, in analysis, completed reviews and Rated/Daily/Learning puzzles. Fog is unavailable during active human play, in Rush/Battle and variants.
 • Use the toolbar popup or a movable settings panel on Chess.com.
 
