@@ -4,8 +4,13 @@
   const { read, readCoordinates, clickSquare, clickPromotion, cancelPremoves, cancelSelection } = globalThis.ChessBoardAssist;
   const { createTurnTimer, createAudio } = globalThis.ChessAssistTimer;
   const turnTimer = createTurnTimer(), audio = createAudio();
+  const BOARD_LAYOUT_SELECTOR = "#board-layout-main";
+  const CLOCK_SELECTOR = ":is(#board-layout-player-top, #board-layout-player-bottom, #player-top, #player-bottom) .clock-component";
+  const CLOCK_HIGHLIGHT = "chess-assist-clock-highlight", CLOCK_PULSE_MS = 500;
+  const reducedMotion = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)");
   let preferences = normalizeAssist(null), revision = 0;
-  let lastVisibility = document.visibilityState;
+  let lastVisibility = document.visibilityState, lastRoute = location.pathname;
+  let feedbackTurn = null, pulsingClock = null, clockAnimation = null, clockPulseTimer = null;
   let confirmationButton = null, confirmationOwner = null;
   let preferredBoard = null, timerBoard = null;
   let board = null, identity = null, file = null, bufferTimer = null, pollTimer = null, indicator = null;
@@ -19,6 +24,44 @@
   function clear() {
     clearBuffer();
     squareIndicator?.remove(); squareIndicator = null;
+  }
+  function ownClock(side) {
+    if (side !== "white" && side !== "black") return null;
+    const layout = timerBoard?.closest(BOARD_LAYOUT_SELECTOR);
+    if (!layout) return null;
+    const opposite = side === "white" ? "black" : "white";
+    const clocks = [...layout.querySelectorAll(CLOCK_SELECTOR)].filter(clock => {
+      if (!clock.isConnected || clock.closest(BOARD_LAYOUT_SELECTOR) !== layout ||
+          !clock.classList.contains(`clock-${side}`) || clock.classList.contains(`clock-${opposite}`)) return false;
+      const rect = clock.getBoundingClientRect(), style = getComputedStyle(clock);
+      return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility === "visible" && style.opacity !== "0";
+    });
+    return clocks.length === 1 ? clocks[0] : null;
+  }
+  function clearClockPulse() {
+    clearTimeout(clockPulseTimer);
+    clockAnimation?.cancel();
+    pulsingClock?.classList.remove(CLOCK_HIGHLIGHT);
+    pulsingClock = clockAnimation = clockPulseTimer = null;
+  }
+  function showClockPulse(clock) {
+    clearClockPulse();
+    if (!clock) return;
+    pulsingClock = clock;
+    if (!reducedMotion?.matches) {
+      try {
+        // An additive CSS scale leaves native transforms and animations in place.
+        clockAnimation = clock.animate?.([
+          { scale: "1", easing: "ease-out" }, { scale: "1.25", easing: "ease-in-out" }, { scale: "1" },
+        ], { duration: CLOCK_PULSE_MS, composite: "add" });
+      } catch { /* Older animation implementations can still show the static highlight. */ }
+    }
+    if (!clockAnimation) clock.classList.add(CLOCK_HIGHLIGHT);
+    clockPulseTimer = setTimeout(clearClockPulse, CLOCK_PULSE_MS);
+  }
+  function stopFeedback() {
+    clearClockPulse();
+    audio.stop();
   }
   function showRegion(className, column, row = null) {
     const region = document.createElement("div");
@@ -59,14 +102,18 @@
     if (next !== board) { clear(); identity = null; board = next; }
     const rect = board?.getBoundingClientRect();
     const geometryValid = rect?.width > 0 && rect?.height > 0 && Math.abs(rect.width - rect.height) <= 1;
-    timerBoard = candidates.find(element =>
+    const nextTimerBoard = candidates.find(element =>
       ["board-single", "board-play-computer", "board-analysis-board"].includes(element.id));
+    if (nextTimerBoard !== timerBoard) clearClockPulse();
+    timerBoard = nextTimerBoard;
     const snapshot = timerBoard ? read(timerBoard) : null;
     const coordinates = board && geometryValid ? readCoordinates(board) : null;
     const nextIdentity = coordinates ? `${location.pathname}:${coordinates.session}:${snapshot?.context}:${snapshot?.active}:${coordinates.fen}:${coordinates.flipped}` : null;
     if (!coordinates?.stable) clear();
     if (nextIdentity !== identity) { clear(); identity = nextIdentity; }
     const button = document.querySelector(CONFIRM_BUTTON_SELECTOR);
+    const routeChanged = location.pathname !== lastRoute;
+    lastRoute = location.pathname;
     const owner = snapshot?.side ? `${snapshot.session}:${snapshot.side}` : null;
     if (!clickable(button)) { confirmationButton = null; confirmationOwner = null; }
     else if (button !== confirmationButton) { confirmationButton = button; confirmationOwner = owner; }
@@ -75,7 +122,16 @@
     const visible = document.visibilityState === "visible";
     const resumed = lastVisibility !== "visible" && visible;
     lastVisibility = document.visibilityState;
-    if (preferences.ticking && turnTimer.update(snapshot, performance.now(), visible && !resumed, pending, preferences)) audio.tick(preferences.tickVolume);
+    if (preferences.ticking) {
+      const due = turnTimer.update(snapshot, performance.now(), visible && !resumed && !routeChanged, pending, preferences);
+      if (!visible || routeChanged || turnTimer.turn !== feedbackTurn) stopFeedback();
+      feedbackTurn = turnTimer.turn;
+      if (pulsingClock && (!snapshot?.stable || ownClock(snapshot.side) !== pulsingClock)) clearClockPulse();
+      if (due) {
+        showClockPulse(ownClock(snapshot.side));
+        audio.tick(preferences.tickVolume);
+      }
+    }
     return coordinates;
   }
   function consume(event) { event.preventDefault(); event.stopImmediatePropagation(); }
@@ -124,7 +180,9 @@
   function apply(value) {
     const next = normalizeAssist(value);
     if (next.ticking !== preferences.ticking || next.tickMode !== preferences.tickMode ||
-        next.tickFrequency !== preferences.tickFrequency) turnTimer.reset();
+        next.tickFrequency !== preferences.tickFrequency) {
+      turnTimer.reset(); stopFeedback();
+    } else if (!next.tickVolume && preferences.tickVolume) audio.stop();
     preferences = next;
     clear();
     clearInterval(pollTimer); pollTimer = null;
@@ -167,7 +225,7 @@
     clear(); if (preferences.keyboard || preferences.ticking) update();
   });
   addEventListener("pagehide", () => {
-    clear(); clearInterval(pollTimer); pollTimer = null; turnTimer.reset(); audio.close();
+    clear(); clearClockPulse(); clearInterval(pollTimer); pollTimer = null; turnTimer.reset(); audio.close();
   });
   addEventListener("pageshow", () => apply(preferences));
 })();
