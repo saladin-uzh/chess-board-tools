@@ -129,21 +129,23 @@ may report them as synthetic events. The extension does not hide or bypass
 those checks.
 
 Ticks follow the selected frequency during your own turn in an active game,
-including pending confirmation. The single frequency selector offers:
+including pending confirmation. Each tick plays a two-tone cue and briefly
+enlarges your clock when it can be identified. With reduced motion enabled, the
+clock gets a brief static highlight. The visual cue also works with audio muted
+or locked. The single frequency selector offers:
 
 - **Auto** (default): `ceil(initial seconds / 120)`, bounded to 2–30 seconds.
 - **Increment**: every increment interval; no increment falls back to Auto.
 - **2, 5, 10, 15, 20 or 30 seconds**: a fixed interval.
 
-Auto stays silent when initial time is unavailable, including No Timer games;
-Increment does the same when it falls back to Auto. Fixed intervals still work.
-Volume defaults to 50%,
-with a range of 0–100%; 0% mutes ticks. Changing frequency starts a fresh
+Auto requires a known initial time, including when Increment falls back to
+Auto. Fixed intervals still work in No Timer games. Volume defaults to 50%,
+with a range of 0–100%. At 0%, the sound is muted. Changing frequency starts a fresh
 interval; changing volume preserves the current schedule. Puzzles do not tick.
 
-Each new turn resets the timer. Unknown player color and
-analysis disable sound. First click or press a key in the game tab to unlock
-audio. Hidden tabs stay silent; missed ticks never accumulate. Enabling the
+Each new turn resets the timer. Ticks require a known player color and an
+active game. First click or press a key in the game tab to unlock audio. Ticks
+pause in hidden tabs, and missed ticks are skipped. Enabling the
 feature or loading a page midway through a turn starts timing from that point.
 
 ## Supported pages
