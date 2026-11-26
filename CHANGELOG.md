@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.2.4
+
+- Match the floating settings panel more closely to Chess.com, with clearer keyboard focus and aligned section dividers.
+- Add a two-tone turn cue and a brief highlight on your clock. The visual cue works with audio muted and uses a static highlight when reduced motion is enabled.
+- Extend player privacy to the current Tournament Games pairing and the Moves tab’s match summary, including projected rating changes. Clocks, scores and time control stay visible.
+
 ## 1.2.3
 
 - Add optional per-color numbering of native arrows, with labels near arrow starts and placement adjusted to reduce overlap.

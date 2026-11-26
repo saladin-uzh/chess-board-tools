@@ -10,6 +10,7 @@
   function createTurnTimer() {
     let key = null, session = null, side = null, start = 0, bucket = 0, unavailable = false, interval = 10000;
     return {
+      get turn() { return unavailable ? null : key; },
       reset() { key = null; session = side = null; bucket = 0; unavailable = false; },
       update(snapshot, now, visible, pending = false, preferences = null) {
         if (!snapshot) {
@@ -41,6 +42,8 @@
   }
   function createAudio() {
     let context = null, blocked = false, resuming = false, generation = 0;
+    let cancelTick = null;
+    function stop() { cancelTick?.(); }
     return {
       unlock() {
         if (blocked || resuming) return;
@@ -59,19 +62,37 @@
       },
       tick(volume = 50) {
         if (!context || context.state !== "running" || blocked || !Number.isFinite(volume) || volume <= 0 || volume > 100) return;
+        stop();
+        let oscillator, gain;
+        const release = () => {
+          if (cancelTick === cancel) cancelTick = null;
+          if (oscillator) { oscillator.onended = null; oscillator.disconnect(); oscillator = null; }
+          gain?.disconnect(); gain = null;
+        };
+        const cancel = () => {
+          try { oscillator?.stop(); } catch { /* The source can be stopped before initialization finishes. */ }
+          release();
+        };
         try {
-          const oscillator = context.createOscillator(), gain = context.createGain(), time = context.currentTime;
+          oscillator = context.createOscillator(); gain = context.createGain();
+          const time = context.currentTime, peak = 0.20 * volume / 100;
           oscillator.type = "sine";
-          oscillator.frequency.value = 880;
-          gain.gain.setValueAtTime(0, time);
-          gain.gain.linearRampToValueAtTime(0.20 * volume / 100, time + 0.005);
-          gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.075);
+          for (const [frequency, offset] of [[740, 0], [1110, 0.11]]) {
+            const note = time + offset;
+            oscillator.frequency.setValueAtTime(frequency, note);
+            gain.gain.setValueAtTime(0, note);
+            gain.gain.linearRampToValueAtTime(peak, note + 0.006);
+            gain.gain.exponentialRampToValueAtTime(Math.min(peak, 0.0001), note + 0.084);
+            gain.gain.setValueAtTime(0, note + 0.09);
+          }
           oscillator.connect(gain); gain.connect(context.destination);
-          oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
-          oscillator.start(time); oscillator.stop(time + 0.08);
-        } catch { blocked = true; }
+          oscillator.onended = release;
+          oscillator.start(time); cancelTick = cancel; oscillator.stop(time + 0.20);
+        } catch { blocked = true; cancel(); }
       },
+      stop,
       close() {
+        stop();
         const closedContext = context;
         generation++;
         context = null; blocked = false; resuming = false;

@@ -7,7 +7,7 @@
 
 A browser extension for Chess.com with keyboard board controls, configurable
 move confirmation shortcuts, optional sound cues during your turn, numbered arrows,
-and a switch to hide player information beside the board.
+and a switch to hide player information for the current game.
 Piece Vision Overlay is available against bots, in analysis, and in
 completed game reviews, and Rated, Daily and Learning puzzles.
 
@@ -60,10 +60,11 @@ remaining limits. Temporary Safari installations do not constitute an App Store 
 Enable **Hide player information** in the toolbar popup or floating settings to
 hide both players’ names, avatars and ratings beside the board. The panels show
 **White** and **Black**, following each player’s color when the board is flipped.
-Clocks and captured pieces remain visible. The option is off by default and uses
-Chrome Sync. Turning it off restores the current native player information.
-This affects the board’s player panels; chat, game lists, standings, profile pages
-and game exports retain their original information.
+In Tournament Games, the same labels replace the current pair’s identities.
+The move tab’s match summary also masks that pair and hides the projected rating
+changes. Clocks, captured pieces, the score and time control remain visible.
+The option is off by default and uses Chrome Sync. Turning it off restores
+the native details.
 
 ## Shortcuts and settings
 
@@ -128,21 +129,23 @@ may report them as synthetic events. The extension does not hide or bypass
 those checks.
 
 Ticks follow the selected frequency during your own turn in an active game,
-including pending confirmation. The single frequency selector offers:
+including pending confirmation. Each tick plays a two-tone cue and briefly
+enlarges your clock when it can be identified. With reduced motion enabled, the
+clock gets a brief static highlight. The visual cue also works with audio muted
+or locked. The single frequency selector offers:
 
 - **Auto** (default): `ceil(initial seconds / 120)`, bounded to 2–30 seconds.
 - **Increment**: every increment interval; no increment falls back to Auto.
 - **2, 5, 10, 15, 20 or 30 seconds**: a fixed interval.
 
-Auto stays silent when initial time is unavailable, including No Timer games;
-Increment does the same when it falls back to Auto. Fixed intervals still work.
-Volume defaults to 50%,
-with a range of 0–100%; 0% mutes ticks. Changing frequency starts a fresh
+Auto requires a known initial time, including when Increment falls back to
+Auto. Fixed intervals still work in No Timer games. Volume defaults to 50%,
+with a range of 0–100%. At 0%, the sound is muted. Changing frequency starts a fresh
 interval; changing volume preserves the current schedule. Puzzles do not tick.
 
-Each new turn resets the timer. Unknown player color and
-analysis disable sound. First click or press a key in the game tab to unlock
-audio. Hidden tabs stay silent; missed ticks never accumulate. Enabling the
+Each new turn resets the timer. Ticks require a known player color and an
+active game. First click or press a key in the game tab to unlock audio. Ticks
+pause in hidden tabs, and missed ticks are skipped. Enabling the
 feature or loading a page midway through a turn starts timing from that point.
 
 ## Supported pages

@@ -97,7 +97,7 @@ test('audio waits for gesture, releases nodes and tolerates blocked or missing a
   class Audio {
     constructor() { this.state = 'suspended'; this.currentTime = 1; }
     async resume() { resumes++; this.state = 'running'; }
-    createOscillator() { return { frequency: {}, connect() {}, start() { events.push('start'); }, stop() { this.onended(); }, disconnect() { events.push('disconnect'); } }; }
+    createOscillator() { return { frequency: { setValueAtTime() {} }, connect() {}, start() { events.push('start'); }, stop() { this.onended?.(); }, disconnect() { events.push('disconnect'); } }; }
     createGain() { return { gain: { setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
     async close() { events.push('close'); }
   }
@@ -112,50 +112,67 @@ test('audio waits for gesture, releases nodes and tolerates blocked or missing a
   assert.equal(resumes, 2);
 });
 
-function harness({ realTimer = false } = {}) {
+function harness({ realTimer = false, AudioContext = null, realAudio = false, reducedMotion = false } = {}) {
   const listeners = {}, docListeners = {}, timeouts = new Map(), intervals = new Map(), clicks = [], timerCalls = [], timerResets = [], ticks = [], unlocks = [];
-  let candidates = null, selectionAction = () => false;
+  let candidates = null, clocks = [], selectionAction = () => false;
+  const clockLayout = () => { const layout = { querySelectorAll: () => clocks.filter(clock => clock.layout === layout) }; return layout; };
+  const primaryLayout = clockLayout();
   const clickedBoards = [], cancelledBoards = [];
   let now = 0, serial = 0, changed = new Set(), current = { ...snapshot, context: 'analysis', active: false, side: null }, board, confirmation;
   class Element {
-    constructor() { this.tagName = "WC-CHESS-BOARD"; this.isConnected = true; this.style = {}; this.picker = null; }
+    constructor() {
+      this.tagName = "WC-CHESS-BOARD"; this.isConnected = true; this.style = {}; this.picker = null;
+      const classes = new Set();
+      this.classList = { contains: name => classes.has(name), add: name => classes.add(name), remove: name => classes.delete(name) };
+      this.animations = [];
+    }
     getBoundingClientRect() { return { left: 0, top: 0, width: 800, height: 800 }; }
     append(child) { (this.children ??= []).push(child); }
     getAttribute() { return null; }
     setAttribute() {}
     remove() { this.removed = true; }
     querySelector() { return this.picker; }
+    closest(selector) { return selector === '#board-layout-main' ? this.layout : null; }
+    animate(keyframes, options) {
+      const animation = { keyframes, options, cancelled: false, cancel() { this.cancelled = true; } };
+      this.animations.push(animation);
+      return animation;
+    }
   }
-  board = new Element(); board.id = 'board-single';
+  board = new Element(); board.id = 'board-single'; board.layout = primaryLayout;
   const document = { activeElement: null, visibilityState: 'visible', body: { append() {} },
-    querySelectorAll: () => candidates || [board],
+    querySelectorAll: selector => selector === 'wc-chess-board' ? candidates || [board] : clocks,
     querySelector: selector => selector.startsWith('wc-') ? board : selector.startsWith('div.confirm-') ? confirmation : null,
     createElement: () => new Element(), addEventListener: (type, fn) => { docListeners[type] = fn; } };
   const c = vm.createContext({ document, navigator: { userActivation: { isActive: true } }, location: { pathname: '/analysis' },
-    getComputedStyle: () => ({ display: 'block', visibility: 'visible', pointerEvents: 'auto' }),
+    AudioContext, matchMedia: () => ({ matches: reducedMotion }),
+    getComputedStyle: element => ({ display: 'block', visibility: 'visible', pointerEvents: 'auto', ...element.style }),
     performance: { now: () => now },
     setTimeout: (fn, delay) => { const id = ++serial; timeouts.set(id, { fn, due: now + delay }); return id; },
     clearTimeout: id => timeouts.delete(id), setInterval: fn => { const id = ++serial; intervals.set(id, fn); return id; }, clearInterval: id => intervals.delete(id),
     addEventListener: (type, fn) => { (listeners[type] ??= []).push(fn); },
     chrome: { storage: { local: { get: async () => ({}) }, sync: { get: async () => ({ boardAssistPreferences: { keyboard: true } }) }, onChanged: { addListener: fn => changed.add(fn), removeListener: fn => changed.delete(fn) } } },
     ChessBoardAssist: { cancelSelection: (...args) => selectionAction(...args), cancelPremoves: (b, state) => { if (!state?.active || !state?.stable || !state?.premoveCount) return false; cancelledBoards.push(b); return true; }, read: b => b.id === 'secondary' ? null : current, readCoordinates: () => current, clickSquare: (b, square) => { clickedBoards.push(b); clicks.push(square); return true; }, clickPromotion: p => { clicks.push(p.piece); return true; } },
-    ChessAssistTimer: { createTurnTimer: () => ({ reset() { timerResets.push(true); }, update(...args) { timerCalls.push(args); return false; } }), createAudio: () => ({ unlock() { unlocks.push(now); }, close() {}, tick() { ticks.push(now); } }) },
+    ChessAssistTimer: { createTurnTimer: () => ({ reset() { timerResets.push(true); }, update(...args) { timerCalls.push(args); return false; } }), createAudio: () => ({ unlock() { unlocks.push(now); }, close() {}, stop() {}, tick() { ticks.push(now); } }) },
   });
   run(c, 'settings.js');
   if (realTimer) {
     const createAudio = c.ChessAssistTimer.createAudio;
     run(c, 'assist-timer.js');
-    c.ChessAssistTimer = { ...c.ChessAssistTimer, createAudio };
+    if (!realAudio) c.ChessAssistTimer = { ...c.ChessAssistTimer, createAudio };
   }
   run(c, 'assist-content.js');
   function dispatch(type, event = {}) { event.type = type; for (const fn of listeners[type] || []) fn(event); }
   return { document, get board() { return board; }, selectionAction(value) { selectionAction = value; }, clickedBoards, cancelledBoards, cancelPremoves: () => c.ChessAssistInput.cancelPremoves(), boards(value) { candidates = value; }, clicks, ticks, unlocks, navigator: c.navigator, timerCalls, timerResets, listeners, docListeners,
+    clock(color, layout = primaryLayout) { const clock = new Element(); if (color) clock.classList.add(`clock-${color}`); clock.layout = layout; clocks.push(clock); return clock; },
+    clockLayout,
+    route(pathname) { c.location.pathname = pathname; },
     key(key, extra = {}) { const code = /^[a-z]$/.test(key) ? `Key${key.toUpperCase()}` : /^[1-8]$/.test(key) ? `Digit${key}` : key === 'Escape' ? 'Escape' : ''; const e = { key, code, target: {}, preventDefault() { this.prevented = true; }, stopImmediatePropagation() {}, ...extra }; dispatch('keydown', e); return e; },
     activation(value) { c.navigator = value; },
     dispatch, advance(ms) { now += ms; for (const [id, t] of timeouts) if (t.due <= now) { timeouts.delete(id); t.fn(); } },
     poll() { for (const fn of intervals.values()) fn(); },
     confirm(value = true) { confirmation = value ? new Element() : null; },
-    state(value) { current = value; }, replace() { board = new Element(); board.id = 'board-single'; },
+    state(value) { current = value; }, replace() { board = new Element(); board.id = 'board-single'; board.layout = primaryLayout; },
     change(value, area = 'sync') { for (const fn of [...changed]) fn({ boardAssistPreferences: { newValue: value } }, area); },
     picker(piece) { const p = new Element(); p.piece = piece; const picker = new Element(); picker.querySelectorAll = () => [p]; board.picker = picker; },
   };
@@ -269,17 +286,25 @@ test('Auto stays silent without initial time and resumes with a fresh interval w
   assert.equal(timer.update(unknown, 122000, true, false, amount), true);
 });
 
-test('audio volume defaults to 50 percent, supports mute and bounds peak gain', () => {
-  const peaks = []; let nodes = 0;
+test('audio plays two distinct scheduled tones in 200 ms, applies volume and skips mute', () => {
+  const peaks = [], pitches = [], lengths = []; let nodes = 0;
   class Audio {
     constructor() { this.state = 'running'; this.currentTime = 0; }
-    createOscillator() { nodes++; return { frequency: {}, connect() {}, disconnect() {}, start() {}, stop() { this.onended(); } }; }
+    createOscillator() {
+      nodes++;
+      return { frequency: { setValueAtTime(hz, time) { pitches.push([hz, time]); } }, connect() {}, disconnect() {}, start() {},
+        stop(time) { lengths.push(time); this.onended?.(); } };
+    }
     createGain() { return { gain: { setValueAtTime() {}, linearRampToValueAtTime(value) { peaks.push(value); }, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
   }
   const c = vm.createContext({ AudioContext: Audio }); run(c, 'assist-timer.js');
   const audio = c.ChessAssistTimer.createAudio(); audio.unlock();
   audio.tick(); audio.tick(100); audio.tick(0); audio.tick(-1); audio.tick(NaN);
-  assert.deepEqual(peaks, [0.1, 0.2]); assert.equal(nodes, 2);
+  assert.deepEqual(peaks, [0.1, 0.1, 0.2, 0.2]); assert.equal(nodes, 2);
+  assert.notEqual(pitches[0][0], pitches[1][0]);
+  assert.equal(pitches[0][1], 0);
+  assert.ok(pitches[1][1] >= 0.09 && pitches[1][1] <= 0.12);
+  assert.deepEqual(lengths, [0.2, 0.2]);
 });
 
 test('premove cancellation dispatches native right pointer events only for owned active games with a queue', () => {
@@ -524,6 +549,116 @@ test('real content timer survives board replacement at nine seconds', async () =
   app.advance(1000); app.poll(); assert.deepEqual(app.ticks, [10000]);
 });
 
+test('a due tick pulses only the owned clock even when sound is muted, locked or unsupported', async () => {
+  for (const scenario of ['muted', 'locked', 'unsupported']) {
+    let started = 0;
+    const app = harness({ realTimer: true, realAudio: true, AudioContext: scenario === 'unsupported' ? null : class {
+      constructor() { this.state = scenario === 'locked' ? 'suspended' : 'running'; }
+      resume() { return new Promise(() => {}); }
+      createOscillator() { started++; }
+    } });
+    const black = app.clock('black'), white = app.clock('white');
+    app.route('/game/live/123');
+    app.state({ ...snapshot, context: 'human', side: 'black', turn: 'black', flipped: false, fen: snapshot.fen.replace(' w ', ' b ') });
+    app.change({ ticking: true, tickVolume: scenario === 'muted' ? 0 : 50 });
+    app.dispatch('pointerdown', { pointerType: 'mouse', isTrusted: true });
+    await flush();
+    app.advance(9999); app.poll(); assert.equal(black.animations.length, 0, scenario);
+    app.advance(1); app.poll();
+    assert.equal(black.animations.length, 1, scenario);
+    assert.equal(white.animations.length, 0, scenario);
+    assert.deepEqual(plain(black.animations[0].keyframes.map(frame => frame.scale)), ['1', '1.25', '1']);
+    assert.equal(black.animations[0].options.duration, 500);
+    assert.equal(black.animations[0].options.composite, 'add');
+    assert.equal(started, 0, scenario);
+  }
+});
+
+test('ambiguous, unknown and hidden clocks never receive a tick highlight', async () => {
+  const app = harness({ realTimer: true });
+  app.route('/play/computer');
+  const white = app.clock('white'), duplicate = app.clock('white'), unknown = app.clock();
+  const conflicting = app.clock('white'); conflicting.classList.add('clock-black');
+  const black = app.clock('black');
+  app.state(snapshot); app.change({ ticking: true }); await flush();
+  app.advance(10000); app.poll();
+  assert.deepEqual(app.ticks, [10000]);
+  for (const clock of [white, duplicate, unknown, conflicting, black]) assert.equal(clock.animations.length, 0);
+  duplicate.style.visibility = 'hidden'; app.advance(10000); app.poll();
+  assert.equal(white.animations.length, 1);
+  assert.equal(duplicate.animations.length, 0);
+});
+
+test('a clockless owned board never pulses a same-color clock in another native layout', async () => {
+  const app = harness({ realTimer: true });
+  app.route('/play/computer');
+  const unrelated = app.clock('white', app.clockLayout());
+  app.state(snapshot); app.change({ ticking: true }); await flush();
+  app.advance(10000); app.poll();
+  assert.deepEqual(app.ticks, [10000]); assert.equal(unrelated.animations.length, 0);
+  const own = app.clock('white');
+  app.advance(10000); app.poll();
+  assert.equal(own.animations.length, 1); assert.equal(unrelated.animations.length, 0);
+});
+
+test('a transparent ancestor excludes a duplicate clock from a muted tick', async () => {
+  const app = harness({ realTimer: true });
+  app.route('/play/computer');
+  const own = app.clock('white'), duplicate = app.clock('white');
+  duplicate.parentElement = { style: {}, parentElement: { style: { opacity: '0' } } };
+  app.state(snapshot); app.change({ ticking: true, tickVolume: 0 }); await flush();
+  app.advance(10000); app.poll();
+  assert.equal(own.animations.length, 1);
+  assert.equal(duplicate.animations.length, 0);
+});
+
+test('reduced motion shows a brief static highlight which clears across tick lifecycle changes', async () => {
+  const highlight = 'chess-assist-clock-highlight';
+  for (const action of ['timeout', 'turn', 'position', 'hidden', 'deactivated', 'route', 'board', 'clock', 'pagehide', 'missing']) {
+    const app = harness({ realTimer: true, reducedMotion: true });
+    const clock = app.clock('white'); clock.classList.add('native-clock-style');
+    app.route('/game/live/123');
+    app.state({ ...snapshot, context: 'human' }); app.change({ ticking: true }); await flush();
+    app.advance(10000); app.poll();
+    assert.equal(clock.classList.contains(highlight), true, action);
+    assert.equal(clock.animations.length, 0, action);
+    assert.deepEqual(app.ticks, [10000]);
+    switch (action) {
+      case 'timeout': app.advance(500); break;
+      case 'turn': app.state({ ...snapshot, turn: 'black' }); app.poll(); break;
+      case 'position': app.state({ ...snapshot, fen: snapshot.fen.replace('P7', '1P6') }); app.poll(); break;
+      case 'hidden': app.document.visibilityState = 'hidden'; app.docListeners.visibilitychange(); break;
+      case 'deactivated': app.change({ ticking: false }); break;
+      case 'route': app.route('/game/live/456'); app.poll(); break;
+      case 'board': app.replace(); app.poll(); break;
+      case 'clock': clock.isConnected = false; app.clock('white'); app.poll(); break;
+      case 'pagehide': app.dispatch('pagehide'); break;
+      case 'missing': app.state(null); app.poll(); break;
+    }
+    assert.equal(clock.classList.contains(highlight), false, action);
+    assert.equal(clock.classList.contains('native-clock-style'), true, action);
+    assert.deepEqual(app.ticks, [10000], action);
+  }
+});
+
+test('a same-game route transition clears stale feedback and preserves pending-turn cadence', async () => {
+  const app = harness({ realTimer: true });
+  app.route('/play/online');
+  const clock = app.clock('white');
+  app.state({ ...snapshot, context: 'human' }); app.change({ ticking: true }); await flush();
+  app.confirm();
+  app.state({ ...snapshot, context: 'human', turn: 'black', fen: snapshot.fen.replace(' w ', ' b ') });
+  app.advance(9000); app.poll();
+  app.route('/game/123'); app.poll();
+  app.advance(1000); app.poll();
+  assert.deepEqual(app.ticks, [10000]); assert.equal(clock.animations.length, 1);
+  app.advance(10000); app.route('/game/live/123'); app.poll();
+  assert.deepEqual(app.ticks, [10000]); assert.equal(clock.animations.length, 1);
+  app.poll(); assert.deepEqual(app.ticks, [10000]);
+  app.advance(10000); app.poll();
+  assert.deepEqual(app.ticks, [10000, 30000]); assert.equal(clock.animations.length, 2);
+});
+
 test('missing snapshots keep elapsed time but never replay unavailable deadlines', async () => {
   const app = harness({ realTimer: true }); await flush();
   app.state(snapshot); app.change({ ticking: true });
@@ -557,7 +692,7 @@ test('stale audio resume resolve and reject cannot affect a reopened context', a
       constructor() { this.state = 'suspended'; this.currentTime = 0; this.pending = deferred(); this.resumes = 0; instances.push(this); }
       resume() { this.resumes++; return this.pending.promise; }
       close() { this.state = 'closed'; return Promise.resolve(); }
-      createOscillator() { return { frequency: {}, connect() {}, disconnect() {}, start() { ticks.push(true); }, stop() { this.onended(); } }; }
+      createOscillator() { return { frequency: { setValueAtTime() {} }, connect() {}, disconnect() {}, start() { ticks.push(true); }, stop() { this.onended?.(); } }; }
       createGain() { return { gain: { setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {}, disconnect() {} }; }
     }
     const c = vm.createContext({ AudioContext: Audio }); run(c, 'assist-timer.js');
@@ -570,6 +705,25 @@ test('stale audio resume resolve and reject cannot affect a reopened context', a
     audio.tick(); assert.deepEqual(ticks, [true]);
     audio.close(); audio.unlock(); assert.equal(instances.length, 3);
   }
+});
+
+test('turn audio stops the remaining cue and releases nodes when cancelled', () => {
+  const events = [];
+  class Audio {
+    constructor() { this.state = 'running'; this.currentTime = 1; }
+    createOscillator() {
+      return { frequency: { setValueAtTime() {} }, connect() {}, start() {}, stop(time) { events.push(['stop', time]); },
+        disconnect() { events.push('oscillator disconnect'); } };
+    }
+    createGain() {
+      return { gain: { setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} },
+        connect() {}, disconnect() { events.push('gain disconnect'); } };
+    }
+  }
+  const c = vm.createContext({ AudioContext: Audio }); run(c, 'assist-timer.js');
+  const audio = c.ChessAssistTimer.createAudio();
+  audio.unlock(); audio.tick(); audio.stop(); audio.stop();
+  assert.deepEqual(events, [['stop', 1.2], ['stop', undefined], 'oscillator disconnect', 'gain disconnect']);
 });
 
 test('audio unlock accepts only trusted activating input in visible tabs', async () => {

@@ -49,7 +49,7 @@
         <label class="field fog-toggle" for="hide-player-info">
           <span>Hide player information</span><input id="hide-player-info" type="checkbox" disabled>
         </label>
-        <p>Show White and Black beside the board instead of names, avatars and ratings.</p>
+        <p>Show White and Black instead of current player details, including in the tournament list and match summary.</p>
         <p class="status" id="player-save-status" role="status" aria-live="polite"></p>
       </section>
       <section class="arrow-settings" aria-label="Arrow annotations">
