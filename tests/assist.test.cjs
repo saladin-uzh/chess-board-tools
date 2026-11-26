@@ -601,6 +601,17 @@ test('a clockless owned board never pulses a same-color clock in another native 
   assert.equal(own.animations.length, 1); assert.equal(unrelated.animations.length, 0);
 });
 
+test('a transparent ancestor excludes a duplicate clock from a muted tick', async () => {
+  const app = harness({ realTimer: true });
+  app.route('/play/computer');
+  const own = app.clock('white'), duplicate = app.clock('white');
+  duplicate.parentElement = { style: {}, parentElement: { style: { opacity: '0' } } };
+  app.state(snapshot); app.change({ ticking: true, tickVolume: 0 }); await flush();
+  app.advance(10000); app.poll();
+  assert.equal(own.animations.length, 1);
+  assert.equal(duplicate.animations.length, 0);
+});
+
 test('reduced motion shows a brief static highlight which clears across tick lifecycle changes', async () => {
   const highlight = 'chess-assist-clock-highlight';
   for (const action of ['timeout', 'turn', 'position', 'hidden', 'deactivated', 'route', 'board', 'clock', 'pagehide', 'missing']) {

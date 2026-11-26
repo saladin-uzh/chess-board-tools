@@ -34,7 +34,11 @@
       if (!clock.isConnected || clock.closest(BOARD_LAYOUT_SELECTOR) !== layout ||
           !clock.classList.contains(`clock-${side}`) || clock.classList.contains(`clock-${opposite}`)) return false;
       const rect = clock.getBoundingClientRect(), style = getComputedStyle(clock);
-      return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility === "visible" && style.opacity !== "0";
+      if (rect.width <= 0 || rect.height <= 0 || style.display === "none" || style.visibility !== "visible" || style.opacity === "0") return false;
+      for (let ancestor = clock.parentElement; ancestor; ancestor = ancestor.parentElement) {
+        if (getComputedStyle(ancestor).opacity === "0") return false;
+      }
+      return true;
     });
     return clocks.length === 1 ? clocks[0] : null;
   }
