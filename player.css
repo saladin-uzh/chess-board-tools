@@ -8,3 +8,8 @@ html[data-chess-hide-players] .chess-player-label {
   display: inline-block;
   font-weight: 700;
 }
+
+html[data-chess-hide-players] .open-games-player-tagline[data-chess-private-player-block] > :not([data-test-element="user-tagline-username"]),
+html[data-chess-hide-players] .moves-tab-rating-info-ratingInfo[data-chess-private-player-block] > .user-chess-title {
+  display: none !important;
+}

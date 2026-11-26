@@ -7,7 +7,7 @@
 
 A browser extension for Chess.com with keyboard board controls, configurable
 move confirmation shortcuts, optional sound cues during your turn, numbered arrows,
-and a switch to hide player information beside the board.
+and a switch to hide player information for the current game.
 Piece Vision Overlay is available against bots, in analysis, and in
 completed game reviews, and Rated, Daily and Learning puzzles.
 
@@ -60,10 +60,11 @@ remaining limits. Temporary Safari installations do not constitute an App Store 
 Enable **Hide player information** in the toolbar popup or floating settings to
 hide both players’ names, avatars and ratings beside the board. The panels show
 **White** and **Black**, following each player’s color when the board is flipped.
-Clocks and captured pieces remain visible. The option is off by default and uses
-Chrome Sync. Turning it off restores the current native player information.
-This affects the board’s player panels; chat, game lists, standings, profile pages
-and game exports retain their original information.
+In Tournament Games, the same labels replace the current pair’s identities.
+The move tab’s match summary also masks that pair and hides the projected rating
+changes. Clocks, captured pieces, the score and time control remain visible.
+The option is off by default and uses Chrome Sync. Turning it off restores
+the native details.
 
 ## Shortcuts and settings
 
