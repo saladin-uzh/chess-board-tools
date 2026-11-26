@@ -4,16 +4,22 @@
 <style>body {font:16px system-ui;background:#302e2b;color:#eee;padding:24px} .player-component {display:flex;gap:24px;margin:16px} .player-tagline {min-width:160px} .pass {color:#a4e687}</style>
 <h1>Player privacy regression checks</h1><ol id="results"></ol>
 <div id="toolbar"></div><div id="second"></div>
+<div id="board-layout-main">
 <div id="board-layout-player-top"><div class="player-component">
 <div class="player-avatar"><img alt="Avatar of Alice" width="40" height="40"></div>
-<div class="player-tagline"><div class="cc-user-block-component"><button>Alice</button><span>(1800)</span><span>GM</span></div><wc-captured-pieces player-color="2">+1</wc-captured-pieces></div><div class="clock-component clock-black">5:00</div>
+<div class="player-tagline"><div class="cc-user-block-component"><button data-test-element="user-tagline-username">Alice</button><span>(1800)</span><span>GM</span></div><wc-captured-pieces player-color="2">+1</wc-captured-pieces></div><div class="clock-component clock-black">5:00</div>
 </div></div>
 <wc-chess-board id="board-single"></wc-chess-board>
 <div id="board-layout-player-bottom"><div class="player-component">
 <div class="player-avatar"><img alt="Avatar of Bob" width="40" height="40"></div>
-<div class="player-tagline"><div class="cc-user-block-component"><button>Bob</button><span>(1900)</span></div><wc-captured-pieces player-color="1">+2</wc-captured-pieces></div><div class="clock-component clock-white">4:58</div>
+<div class="player-tagline"><div class="cc-user-block-component"><button data-test-element="user-tagline-username">Bob</button><span>(1900)</span></div><wc-captured-pieces player-color="1">+2</wc-captured-pieces></div><div class="clock-component clock-white">4:58</div>
 </div></div>
+</div>
 <aside id="chat"><div class="cc-user-block-component">Alice in chat</div></aside>
+<div class="floating-modal-component"><div class="open-games-list-component open-games-list-floating" id="games"></div></div>
+<div class="game-start-message-component moves-tab-rating-info-ratingInfo" id="match"><a class="user-chess-title">GM</a> <a class="user-username username" href="#bob">Bob</a> (1900) [1] vs. <a class="user-username username" href="#alice">Alice</a> (1800) [1] (15 + 10)
+win +3 / draw -5 / lose -13</div>
+<div class="game-start-message-component" id="chat-copy"></div>
 <script>
 const listeners = [], events = {};
 let values = {}, failSave = false, flipped = false;
@@ -25,6 +31,20 @@ window.ChessBoardAssist = {readCoordinates:()=>({flipped})};
 </script>
 <script src="../settings.js"></script><script src="../player-popup.js"></script><script src="../player-content.js"></script>
 <script>
+function gameItem(white, black, classes) {
+ const item=document.createElement('div');
+ item.className='open-games-item-component '+classes;
+ const row=(name,time)=>`<div class="open-games-player-component"><div class="cc-user-block-component open-games-player-tagline"><div role="button" tabindex="0" data-test-element="user-tagline-username">${name}</div><span class="cc-user-rating-default">(1500)</span><span class="cc-country-flag-component">Flag</span></div><span class="open-games-player-result">${time}</span></div>`;
+ item.innerHTML=`<div class="open-games-item-players">${row(white,'14:58')}${row(black,'14:56')}</div>`;
+ document.querySelector('#games').append(item);
+ return item;
+}
+const activeGame=gameItem('Bob','Alice','open-games-item-active open-games-item-broadcaster');
+const otherGame=gameItem('Bob','Alice','open-games-item-broadcaster');
+const otherPair=gameItem('Alice','Carol','open-games-item-active open-games-item-broadcaster');
+const personalList=gameItem('Bob','Alice','open-games-item-active');
+const match=document.querySelector('#match'), originalMatch=match.innerHTML;
+document.querySelector('#chat-copy').innerHTML=originalMatch;
 window.playerFixtureDone = (async()=>{
  const wait = () => new Promise(r=>setTimeout(r,60));
  const check = (name,ok)=>{const li=document.createElement('li');li.textContent=(ok?'PASS: ':'FAIL: ')+name;li.className=ok?'pass':'fail';document.querySelector('#results').append(li);if(!ok)throw Error(name)};
@@ -42,6 +62,35 @@ window.playerFixtureDone = (async()=>{
  check('Color labels match clocks',panel.querySelector('.chess-player-label').textContent==='Black' && document.querySelector('#board-layout-player-bottom .chess-player-label').textContent==='White');
  check('Clocks and captured pieces remain visible',visible(panel.querySelector('.clock-component')) && visible(panel.querySelector('wc-captured-pieces')));
  check('Chat remains visible',visible(document.querySelector('#chat .cc-user-block-component')));
+ const nameSelector='[data-test-element="user-tagline-username"]';
+ const names=e=>Array.from(e.querySelectorAll(nameSelector),n=>n.textContent).join(',');
+ check('Only the active tournament pair gets its board colors',names(activeGame)==='White,Black' && names(otherGame)==='Bob,Alice' && names(otherPair)==='Alice,Carol' && names(personalList)==='Bob,Alice');
+ const otherPanel=document.createElement('div');
+ otherPanel.id='player-top';
+ otherPanel.innerHTML='<div class="cc-user-block-component"><button data-test-element="user-tagline-username">Carol</button></div><div class="clock-black">5:00</div>';
+ document.body.append(otherPanel);await wait();
+ check('Only the primary board layout identifies the active pair',names(activeGame)==='White,Black' && names(otherPair)==='Alice,Carol');
+ otherPanel.remove();await wait();
+ check('Tournament ratings and flags are hidden while both clocks stay visible',Array.from(activeGame.querySelectorAll('.cc-user-rating-default,.cc-country-flag-component')).every(n=>!visible(n)) && Array.from(activeGame.querySelectorAll('.open-games-player-result')).every(n=>visible(n)) && activeGame.textContent.includes('14:58') && activeGame.textContent.includes('14:56') && visible(otherGame.querySelector('.cc-country-flag-component')));
+ check('Move summary keeps scores, separator and time control and hides the full projection',match.textContent.trim()==='GM White [1] vs. Black [1] (15 + 10)' && !visible(match.querySelector('.user-chess-title')) && document.querySelector('#chat-copy').innerHTML===originalMatch);
+ let clicks=0;
+ for(const link of [match.querySelector('.username'),activeGame.querySelector(nameSelector)]) {
+   link.addEventListener('click',e=>{e.preventDefault();clicks++},{once:true}); link.click();
+ }
+ check('Native links and row controls still handle activation',clicks===2 && match.querySelector('.username').getAttribute('href')==='#bob');
+ activeGame.classList.remove('open-games-item-active');otherGame.classList.add('open-games-item-active');
+ await wait();
+ check('Changing the active game restores both previous rows',names(activeGame)==='Bob,Alice' && names(otherGame)==='White,Black' && visible(activeGame.querySelector('.cc-user-rating-default')));
+ match.innerHTML=originalMatch.replaceAll('1800','1810').replace('win +3 / draw -5 / lose -13','перемога +4 / нічия -4 / поразка -12');
+ await wait();
+ check('Host replacement remasks a localized projection',match.textContent.trim()==='GM White [1] vs. Black [1] (15 + 10)');
+ toggle.click();await wait();
+ check('Disabling restores the latest native rating, projection and controls',match.innerHTML.includes('(1810)') && match.innerHTML.includes('перемога +4') && visible(match.querySelector('.user-chess-title')) && names(otherGame)==='Bob,Alice');
+ toggle.click();await wait();
+ const exposed=match.querySelector('.username');
+ exposed.firstChild.data='SomeoneElse';await wait();
+ check('A reused summary for another pair retains the native update',match.textContent.includes('SomeoneElse (1900)') && match.textContent.includes('Alice (1810)') && match.textContent.includes('перемога +4'));
+ match.innerHTML=originalMatch;await wait();
  panel.querySelector('.clock-component').className='clock-component clock-white';await wait();
  check('Board flip updates color',panel.querySelector('.chess-player-label').textContent==='White');
  block.querySelector('button').textContent='Carol';
