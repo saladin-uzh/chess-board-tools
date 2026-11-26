@@ -69,9 +69,12 @@ No stored positions or history are required.
 Player privacy hides native avatar and user blocks with CSS and inserts passive
 White/Black labels. Native identity data stays intact for restoration. Colors come
 from the panel clock or captured-pieces metadata, with validated coordinate-bridge
-orientation as a fallback for clockless boards. A mutation observer handles panel
-replacement, and a 500ms refresh tracks clockless board flips only while enabled.
-Chat, standings, game lists and exports are outside this feature’s scope.
+orientation as a fallback for clockless boards. On live game boards, the active
+Tournament Games item and the move tab’s rating summary are matched against both
+board-side usernames. The extension masks the matching identities and removes
+rating projections from the visible summary. It keeps the native text for
+restoration and leaves clocks and scores in place. A mutation observer handles
+replacements and reused nodes, and a 500ms refresh runs only while enabled.
 
 Page settings live in a shadow root and reuse the popup controllers and storage
 keys. The page panel reads/subscribes to overlay status directly in the isolated
