@@ -17,16 +17,16 @@
     button:focus-visible, input:focus-visible, select:focus-visible, [role=dialog]:focus-visible {
       outline: 3px solid var(--color-text-brand, #81b64c); outline-offset: 2px; }
     .launcher, .panel { pointer-events: auto; color: var(--color-text-default, light-dark(#25303b, #f0f3f6));
-      background: var(--color-bg-opaque, light-dark(#fff, #262421)); border: 1px solid var(--color-text-brand, #81b64c); }
+      background: var(--color-bg-opaque, light-dark(#fff, #262421)); }
     .launcher { position: absolute; bottom: 24px; left: calc(62px + 18px); width: 32px; height: 32px;
-      padding: 0; border-radius: 50%; box-shadow: 0 2px 8px #0003; }
+      padding: 0; border: 1px solid var(--color-text-brand, #81b64c); border-radius: 50%; box-shadow: 0 2px 8px #0003; }
     .launcher img, .launcher canvas { display: block; width: 100%; height: 100%; border-radius: 50%; }
     @media (max-width: 768px) {
       .launcher { bottom: calc(100vh - 32px - 12px); left: calc(160px + 18px); }
     }
-    .panel { position: absolute; display: flex; flex-direction: column; border-radius: 12px;
+    .panel { position: absolute; display: flex; flex-direction: column; border: 1px solid #8883; border-radius: 8px;
       box-shadow: 0 8px 30px #0005; overflow: hidden; }
-    .header { display: flex; flex-shrink: 0; align-items: center; gap: 8px; padding: 8px; border-bottom: 1px solid #8886; }
+    .header { display: flex; flex-shrink: 0; align-items: center; gap: 8px; padding: 8px; background: #0003; }
     .move { flex: 1; min-width: 0; text-align: left; cursor: move; touch-action: none; font-weight: 700;
       border: 0; padding: 4px; background: none; color: inherit; }
     .mark { width: 24px; height: 24px; margin-right: 6px; vertical-align: middle; border-radius: 4px; }
@@ -34,8 +34,9 @@
     .content { flex: 1; min-height: 0; overflow: auto; padding: 8px 12px; overscroll-behavior: contain; }
     p { margin: 0; font-size: 12px; }
     h2 { margin: 0; font-size: 15px; }
-    .settings, .assist-settings, .fog-settings, .arrow-settings { display: grid; gap: 4px; }
-    .assist-settings, .fog-settings, .arrow-settings { border-top: 1px solid #8886; margin-top: 6px; padding-top: 8px; }
+    .settings, .assist-settings, .player-settings, .fog-settings, .arrow-settings { display: grid; gap: 4px; }
+    .assist-settings, .player-settings, .fog-settings, .arrow-settings, .assist-settings > label[for="ticking-enabled"] {
+      border-top: 1px solid #8886; margin-top: 6px; padding-top: 8px; }
     .field { display: grid; gap: 4px; font-weight: 600; }
     .fog-toggle { display: flex; align-items: center; justify-content: space-between; }
     select { width: 100%; min-height: 32px; border: 1px solid #888; border-radius: 6px; padding: 4px;
@@ -46,7 +47,8 @@
     .status:empty { display: none; }
     .status--error { color: light-dark(#b42318, #ffb4ab); }
     .status--success { color: light-dark(#137333, #8ddb9f); }
-    .footer { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 4px; padding: 4px 8px; font-size: 11px; }
+    .footer { position: relative; display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 4px; padding: 4px 8px; font-size: 11px; }
+    .footer::before { content: ""; position: absolute; top: 0; left: 12px; right: 12px; border-top: 1px solid #8886; }
     .resize { touch-action: none; cursor: nwse-resize; border: 0; background: none; color: inherit;
       min-width: 28px; min-height: 28px; }
   `);
